@@ -6,7 +6,8 @@ python-dateutil>=2.9
 requests>=2.32        # WhatsApp Business Cloud API
 python-dotenv>=1.0
 
-# Production extras (optional)
-# psycopg[binary]>=3.2   # PostgreSQL
-# gunicorn>=22.0         # WSGI server
-# whitenoise>=6.7        # static files without a separate web server
+# Production server, PostgreSQL driver, database URL parser, and static serving.
+psycopg[binary]>=3.2
+gunicorn>=22.0
+whitenoise>=6.7
+dj-database-url>=2.2

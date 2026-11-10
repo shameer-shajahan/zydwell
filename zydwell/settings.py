@@ -1,6 +1,7 @@
 """Django settings for the ZyDwell rental management system."""
 import os
 from pathlib import Path
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -8,7 +9,9 @@ SECRET_KEY = os.environ.get(
     'ZYDWELL_SECRET_KEY',
     'django-insecure-dev-only-change-me-in-production-0x9f3a',
 )
-DEBUG = os.environ.get('ZYDWELL_DEBUG', '1') == '1'
+DEBUG = os.environ.get(
+    'ZYDWELL_DEBUG', '0' if os.environ.get('RENDER') else '1',
+) == '1'
 ALLOWED_HOSTS = [h for h in os.environ.get('ZYDWELL_ALLOWED_HOSTS', '*').split(',') if h]
 # Django 4+ rejects HTTPS form posts unless the origin is trusted.
 CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get(
@@ -40,6 +43,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -75,7 +79,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'zydwell.wsgi.application'
 
-if os.environ.get('ZYDWELL_DB_ENGINE') == 'postgres':
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.parse(
+            os.environ['DATABASE_URL'],
+            conn_max_age=600,
+            ssl_require=not DEBUG,
+        )
+    }
+elif os.environ.get('ZYDWELL_DB_ENGINE') == 'postgres':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -116,6 +128,12 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 

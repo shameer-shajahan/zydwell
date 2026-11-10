@@ -122,6 +122,23 @@ have never restored is a guess.
 
 ## 3. Going live
 
+### Render
+
+The repository includes `render-build.sh`, `render-start.sh`, and a `Procfile` for
+Render web services. Set the service build command to `bash render-build.sh` and
+the start command to `bash render-start.sh`. The start command applies migrations
+before launching Gunicorn; the build command collects static files for WhiteNoise.
+
+Create a PostgreSQL database in Render and add its **internal database URL** to the
+web service as `DATABASE_URL` (use Render's “from database” reference so credentials
+are not copied into source control). Also set `ZYDWELL_SECRET_KEY` to a generated
+secret, `ZYDWELL_DEBUG=0`, `ZYDWELL_ALLOWED_HOSTS` to the service hostname, and
+`ZYDWELL_CSRF_TRUSTED_ORIGINS` to its HTTPS origin. Django uses `DATABASE_URL`
+automatically when present and retains SQLite for local development.
+
+After the first deploy, run `python manage.py seed_platform` once if the database
+is empty, then set or rotate the super admin password before using the service.
+
 1. `ZYDWELL_DEBUG=0`, a real `ZYDWELL_SECRET_KEY`, and `ZYDWELL_ALLOWED_HOSTS` set.
 2. PostgreSQL (`ZYDWELL_DB_ENGINE=postgres`) rather than SQLite once more than a couple
    of people use it at once.
