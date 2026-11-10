@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Client" %}{% endblock %}
+{% block topbar_title %}{% trans "Client account" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% if tenant_obj %}{{ tenant_obj.name }}{% else %}{% trans "New client" %}{% endif %}</h1>
+<div class="sub">{% trans "Limits, currency and the owner account. Master data is seeded automatically." %}</div></div></div>
+<div class="card" style="max-width:900px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form wide_fields="notes" %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save client" %}</button>
+      <a class="btn" href="{% url 'platform:tenant_list' %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{# Applied before first paint so the page never flashes the wrong theme. #}
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem('zydwell-theme');
+    if (saved === 'light' || saved === 'dark') {
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+  } catch (err) { /* private window: fall back to the system preference */ }
+})();
+</script>

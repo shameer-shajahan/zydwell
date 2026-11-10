@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Status" %}{% endblock %}
+{% block topbar_title %}{% trans "Edit status" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ status.name }}</h1><div class="sub">{{ status.get_kind_display }}</div></div></div>
+<div class="card" style="max-width:640px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save" %}</button>
+      <a class="btn" href="{% url 'reports:status_list' %}?kind={{ status.kind }}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

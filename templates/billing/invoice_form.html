@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% trans "New invoice" %}{% endblock %}
+{% block topbar_title %}{% trans "New invoice" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "New invoice" %}</h1><div class="sub">{% trans "Rent for a period, plus any extra charge." %}</div></div></div>
+<div class="card" style="max-width:860px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form wide_fields="notes" %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Create invoice" %}</button>
+      <a class="btn" href="{% back_or 'billing:invoice_list' %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Send a message" %}{% endblock %}
+{% block topbar_title %}{% trans "Send a message" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Send a message" %}</h1>
+<div class="sub">{% trans "Pick an approved template, or write the text yourself." %}</div></div></div>
+<div class="card" style="max-width:760px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form one_column=1 %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit" name="open_in_whatsapp" value="1"
+              {% if chat_new_tab %}formtarget="_blank"{% endif %}>{% trans "Open in WhatsApp" %}</button>
+      <button class="btn" type="submit">{% trans "Send automatically" %}</button>
+      <a class="btn" href="{% url 'messaging:log' %}">{% trans "Cancel" %}</a>
+    </div>
+    <p class="muted" style="font-size:12.5px;margin-top:12px">
+      {% trans "Opening in WhatsApp loads the message on your phone or WhatsApp Web so you can read it and press send. Sending automatically needs the Business API switched on and the template approved." %}
+    </p>
+  </form>
+</div></div>
+{% endblock %}

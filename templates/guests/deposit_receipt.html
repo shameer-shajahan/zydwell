@@ -1,0 +1,76 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{{ entry.receipt_number }}{% endblock %}
+{% block topbar_title %}{% trans "Deposit receipt" %}{% endblock %}
+{% block content %}
+<div class="crumbs">
+  <a href="{% url 'guests:tenancy_detail' entry.tenancy_id %}">{{ entry.tenancy.guest.full_name }}</a>
+  <span>/</span><span>{{ entry.receipt_number }}</span>
+</div>
+<div class="page-head">
+  <div><h1>{{ entry.receipt_title }}</h1>
+    <div class="sub">{{ entry.tenancy.guest.full_name }} · {{ currency }} {{ entry.amount|floatformat:2 }}
+      · {{ entry.happened_on|date:"d M Y" }}</div></div>
+  <div class="actions no-print">
+    <a class="btn" href="{{ public_url }}" target="_blank" rel="noopener">{% trans "Preview as the guest sees it" %}</a>
+    <a class="btn primary"{% if chat_new_tab %} target="_blank" rel="noopener"{% endif %}
+       href="{% url 'guests:deposit_receipt_whatsapp' entry.pk %}">{% trans "Send on WhatsApp" %}</a>
+    <a class="btn" data-print href="#">{% trans "Browser print" %}</a>
+  </div>
+</div>
+
+<div class="grid split">
+  <div class="card">
+    <header><h2>{% trans "Preview" %}</h2>
+      <span class="badge soft-slate">{{ printer.paper_width|default:"80" }} mm</span></header>
+    <div class="body"><pre class="receipt">{{ text }}</pre></div>
+  </div>
+
+  <div>
+    <div class="card no-print">
+      <header><h3>{% trans "Send it to the guest" %}</h3></header>
+      <div class="body">
+        <p class="muted" style="font-size:12.5px">
+          {% blocktrans %}The guest gets a link to read this on their phone — nothing to download, and read-only. It stops working after {{ link_days }} days.{% endblocktrans %}
+        </p>
+        <div class="linkbox">
+          <input type="text" readonly id="deposit-url" value="{{ public_url }}"
+                 aria-label="{% trans 'Receipt link' %}" onfocus="this.select()">
+          <button class="btn sm" type="button" data-copy="#deposit-url"
+                  data-copied="{% trans 'Copied' %}">{% trans "Copy" %}</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card no-print">
+      <header><h3>{% trans "Print on a thermal printer" %}</h3></header>
+      <div class="body">
+        {% if printers %}
+          <form method="post" action="{% url 'guests:deposit_receipt_print' entry.pk %}">
+            {% csrf_token %}
+            <div class="field" style="margin-bottom:12px">
+              <label for="id_printer">{% trans "Printer" %}</label>
+              <select name="printer" id="id_printer">
+                {% for p in printers %}<option value="{{ p.pk }}" {% if p.is_default %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <button class="btn primary" type="submit">{% trans "Send to printer" %}</button>
+          </form>
+        {% else %}
+          <p class="muted">{% trans "No printer is set up yet." %}</p>
+          <a class="btn" href="{% url 'billing:printer_list' %}">{% trans "Set up a printer" %}</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <header><h3>{% trans "Deposit position" %}</h3></header>
+      <div class="body"><dl class="kv">
+        <dt>{% trans "Agreed" %}</dt><dd>{{ currency }} {{ entry.tenancy.deposit_amount|floatformat:2 }}</dd>
+        <dt>{% trans "Held now" %}</dt><dd><strong>{{ currency }} {{ entry.tenancy.deposit_held|floatformat:2 }}</strong></dd>
+        <dt>{% trans "Recorded by" %}</dt><dd>{{ entry.recorded_by.display_name|default:"—" }}</dd>
+        {% if entry.reason %}<dt>{% trans "Reason" %}</dt><dd>{{ entry.reason }}</dd>{% endif %}
+      </dl></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

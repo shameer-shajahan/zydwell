@@ -1,0 +1,72 @@
+{% extends "base.html" %}{% load i18n listing %}
+{% block title %}{% trans "Waiting to send" %}{% endblock %}
+{% block topbar_title %}{% trans "Waiting to send" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Waiting to send" %}</h1>
+    <div class="sub">{% trans "Reminders the system prepared. Tap one to open it in WhatsApp, check it, and press send." %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'messaging:log' %}">{% trans "Full log" %}</a>
+    {% if can_send %}<a class="btn primary" href="{% url 'messaging:send_manual' %}">{% trans "Write a message" %}</a>{% endif %}
+  </div>
+</div>
+
+{% if not api_on %}
+  <div class="banner">
+    {% trans "Nothing leaves the system by itself. The nightly job writes the reminders; an admin or a staff member sends them from here, and their name goes on each one." %}
+  </div>
+{% endif %}
+
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      {% if request.GET.mine %}<input type="hidden" name="mine" value="{{ request.GET.mine }}">{% endif %}
+      {% include "partials/_location_filter.html" %}
+    </div>
+  </div>
+</form>
+
+<div class="grid k3" style="margin-bottom:16px">
+  <div class="kpi amber"><div class="label">{% trans "Waiting for someone" %}</div>
+    <div class="value">{{ total }}</div></div>
+  <div class="kpi teal"><div class="label">{% trans "You sent today" %}</div>
+    <div class="value">{{ sent_today }}</div>
+    <div class="hint">{{ user.display_name }}</div></div>
+  <div class="kpi slate"><div class="label">{% trans "Who can send" %}</div>
+    <div class="value" style="font-size:16px;line-height:1.4">
+      {% if can_send %}{% trans "You can" %}{% else %}{% trans "View only" %}{% endif %}</div>
+    <div class="hint">{{ user.get_role_display }}</div></div>
+</div>
+
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr>
+    <th>{% trans "Guest" %}</th><th>{% trans "Where" %}</th><th>{% trans "Number" %}</th>
+    <th>{% trans "Message" %}</th><th>{% trans "Prepared" %}</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for m in page %}
+    <tr>
+      <td><strong>{{ m.guest.full_name|default:"—" }}</strong>
+        <div class="muted" style="font-size:11.5px">{{ m.template_code }}</div></td>
+      <td class="muted" style="font-size:12px">{% if m.tenancy %}{{ m.tenancy.location_label }}{% else %}—{% endif %}</td>
+      <td class="mono">{{ m.to_number|default:"—" }}</td>
+      <td class="muted" style="font-size:12.5px;max-width:420px">{{ m.body|truncatechars:150 }}</td>
+      <td class="nowrap">{{ m.created_at|date:"d M H:i" }}
+        <div class="muted" style="font-size:10.5px">
+          {% if m.sent_by %}{{ m.sent_by.display_name }}{% else %}{% trans "Automatic" %}{% endif %}</div></td>
+      <td class="right">
+        {% if can_send and m.to_number %}
+          <a class="btn sm primary"{% if chat_new_tab %} target="_blank" rel="noopener"{% endif %}
+             href="{% url 'messaging:open_log' m.pk %}">{% trans "Open in WhatsApp" %}</a>
+        {% elif not m.to_number %}
+          <span class="badge soft-red">{% trans "No number" %}</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6">{% include "partials/_empty.html" with message=_("Nothing waiting. Everything prepared has been sent.") %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>{% include "partials/_pager.html" %}</div></div>
+{% endblock %}

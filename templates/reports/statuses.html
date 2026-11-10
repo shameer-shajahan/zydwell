@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Statuses" %}{% endblock %}
+{% block topbar_title %}{% trans "Status management" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Statuses" %}</h1>
+<div class="sub">{% trans "Add a status, set its colour and its behaviour flag — no code change needed." %}</div></div>
+<div class="actions"><a class="btn" href="{% url 'reports:settings_home' %}">{% trans "Settings" %}</a></div></div>
+<div class="tabs">
+  {% for value, label in kinds %}
+    <a class="{% if kind == value %}active{% endif %}" href="?kind={{ value }}">{{ label }}</a>
+  {% endfor %}
+</div>
+<div class="grid split">
+  <div class="card"><div class="body tight"><div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>{% trans "Status" %}</th><th>{% trans "Code" %}</th><th>{% trans "Behaviour" %}</th>
+      <th>{% trans "Default" %}</th><th></th></tr></thead>
+      <tbody>{% for s in rows %}
+        <tr><td><span class="badge" style="background:{{ s.color }}1f;color:{{ s.color }}"><i class="dot"></i>{{ s.name }}</span></td>
+          <td class="mono">{{ s.code }}</td>
+          <td>
+            {% if s.counts_as_available %}<span class="badge soft-green">{% trans "counts as available" %}</span>{% endif %}
+            {% if s.counts_as_occupied %}<span class="badge soft-red">{% trans "counts as occupied" %}</span>{% endif %}
+            {% if s.counts_as_settled %}<span class="badge soft-teal">{% trans "counts as settled" %}</span>{% endif %}
+            {% if s.is_protected %}<span class="badge soft-slate">{% trans "protected" %}</span>{% endif %}
+          </td>
+          <td>{% if s.is_default %}<span class="badge soft-amber">{% trans "Default" %}</span>{% endif %}</td>
+          <td class="right nowrap"><a class="btn sm" href="{% url 'reports:status_edit' s.pk %}">{% trans "Edit" %}</a>
+            {% if not s.is_protected %}<form method="post" action="{% url 'reports:status_delete' s.pk %}" style="display:inline" data-confirm="{% trans 'Delete this status?' %}">{% csrf_token %}
+              <button class="btn sm danger" type="submit">×</button></form>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="5">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+{% include "partials/_pager.html" with page=rows %}
+  <div class="card"><header><h3>{% trans "Add a status" %}</h3></header><div class="body">
+    <form method="post">{% csrf_token %}
+      {% include "partials/_form.html" with form=form one_column=1 %}
+      <button class="btn primary" type="submit" style="margin-top:12px">{% trans "Add status" %}</button>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

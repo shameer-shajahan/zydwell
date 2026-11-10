@@ -1,0 +1,29 @@
+{% load i18n %}{% get_current_language as LANG %}{% get_current_language_bidi as LANG_BIDI %}<!doctype html>
+<html lang="{{ LANG }}" dir="{% if LANG_BIDI %}rtl{% else %}ltr{% endif %}">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>{% trans "Account locked" %}</title>
+{% include "partials/_theme_head.html" %}
+{% load static %}<link rel="stylesheet" href="{% static 'css/app.css' %}"></head>
+<body>
+<div style="min-height:100vh;display:grid;place-items:center;padding:24px">
+  <div class="card" style="max-width:520px">
+    <header><h2>{% trans "Account locked" %}</h2></header>
+    <div class="body">
+      <p>{% blocktrans with name=tenant.name %}Access to <strong>{{ name }}</strong> is suspended.{% endblocktrans %}</p>
+      {% if subscription %}
+        <dl class="kv">
+          <dt>{% trans "Plan" %}</dt><dd>{{ subscription.plan }}</dd>
+          <dt>{% trans "Expired on" %}</dt><dd>{{ subscription.expires_on }}</dd>
+          <dt>{% trans "Grace ended" %}</dt><dd>{{ subscription.grace_end }}</dd>
+        </dl>
+      {% endif %}
+      <p class="muted" style="margin-top:14px">{% trans "Please contact Hostlane Technolab to restore access." %}</p>
+      <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+        <button class="btn primary" type="submit">{% trans "Sign out" %}</button>
+      </form>
+    </div>
+  </div>
+</div>
+</body></html>

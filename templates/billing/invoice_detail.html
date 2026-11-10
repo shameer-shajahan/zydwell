@@ -1,0 +1,85 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{{ invoice.number }}{% endblock %}
+{% block topbar_title %}{% trans "Invoice" %} {{ invoice.number }}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="{% url 'billing:invoice_list' %}">{% trans "Invoices" %}</a> <span>/</span> <span>{{ invoice.number }}</span></div>
+<div class="page-head">
+  <div><h1>{{ invoice.number }}</h1>
+    <div class="sub">{{ invoice.tenancy.guest.full_name }} · {{ invoice.tenancy.location_label }} · {{ invoice.period_label }}
+      {% include "partials/_status.html" with status=invoice.status %}</div></div>
+  <div class="actions">
+    <a class="btn" data-print href="#">{% trans "Print" %}</a>
+    {% if credit > 0 and invoice.balance > 0 and can_collect %}
+      <form method="post" action="{% url 'billing:apply_credit' invoice.pk %}" style="display:inline">{% csrf_token %}
+        <button class="btn" type="submit">{% trans "Use advance credit" %}</button></form>
+    {% endif %}
+    {% if can_collect and invoice.balance > 0 %}<a class="btn accent" href="{% url 'billing:payment_create' %}?invoice={{ invoice.pk }}&amp;{% return_here %}">{% trans "Collect payment" %}</a>{% endif %}
+    {% if is_admin %}
+      <a class="btn" href="{% url 'billing:invoice_edit' invoice.pk %}">{% trans "Edit" %}</a>
+      <form method="post" action="{% url 'billing:invoice_delete' invoice.pk %}" style="display:inline" data-confirm="{% trans 'Delete this invoice for good? This cannot be undone.' %}">{% csrf_token %}
+        <button class="btn danger" type="submit">{% trans "Delete" %}</button></form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid split">
+  <div class="card">
+    <header><h2>{% trans "Charges" %}</h2></header>
+    <div class="body tight"><div class="table-wrap">
+    <table class="data">
+      <tbody>
+        <tr><td>{% trans "Rent" %}{% if invoice.is_prorata %} <span class="badge soft-slate">{% trans "pro-rata" %}</span>{% endif %}</td>
+          <td class="num">{{ currency }} {{ invoice.rent_amount|floatformat:2 }}</td></tr>
+        {% for l in lines %}
+          <tr><td>{{ l.description }}<div class="muted" style="font-size:11px">{{ l.category.name }}</div></td>
+            <td class="num">{{ currency }} {{ l.amount|floatformat:2 }}</td></tr>
+        {% endfor %}
+        {% if invoice.late_fee %}<tr><td>{% trans "Late fee" %}</td><td class="num">{{ currency }} {{ invoice.late_fee|floatformat:2 }}</td></tr>{% endif %}
+        {% if invoice.discount_amount %}
+          <tr><td>{% trans "Discount / waiver" %}<div class="muted" style="font-size:11px">{{ invoice.discount_reason }}{% if invoice.discount_approved_by %} · {% trans "approved by" %} {{ invoice.discount_approved_by.display_name }}{% endif %}</div></td>
+            <td class="num">− {{ currency }} {{ invoice.discount_amount|floatformat:2 }}</td></tr>
+        {% endif %}
+        <tr style="background:#f7f9fa"><td><strong>{% trans "Net total" %}</strong></td><td class="num"><strong>{{ currency }} {{ invoice.total|floatformat:2 }}</strong></td></tr>
+        <tr><td>{% trans "Paid" %}</td><td class="num">{{ currency }} {{ invoice.paid_amount|floatformat:2 }}</td></tr>
+        <tr><td><strong>{% trans "Balance" %}</strong></td><td class="num"><strong style="color:{% if invoice.balance > 0 %}var(--red){% else %}var(--green){% endif %}">{{ currency }} {{ invoice.balance|floatformat:2 }}</strong></td></tr>
+      </tbody>
+    </table></div></div>
+    <div class="body">
+      <dl class="kv">
+        <dt>{% trans "Issued" %}</dt><dd>{{ invoice.issue_date|date:"d M Y" }}</dd>
+        <dt>{% trans "Due" %}</dt><dd>{{ invoice.due_date|date:"d M Y" }}{% if invoice.days_overdue %} <span class="badge soft-red">{{ invoice.days_overdue }} {% trans "days late" %}</span>{% endif %}</dd>
+        <dt>{% trans "Aging" %}</dt><dd>{{ invoice.aging_bucket }}</dd>
+        <dt>{% trans "Raised by" %}</dt><dd>{{ invoice.created_by.display_name|default:_("System") }}</dd>
+      </dl>
+      {% if invoice.notes %}<p class="muted" style="margin-top:12px">{{ invoice.notes }}</p>{% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <header><h3>{% trans "Payments against this invoice" %}</h3></header>
+      <div class="body tight"><table class="data">
+        <tbody>{% for p in payments %}
+          <tr {% if p.is_reversed %}style="opacity:.5"{% endif %}>
+            <td><a class="mono" href="{% url 'billing:receipt' p.pk %}">{{ p.receipt_number }}</a>
+              <div class="muted" style="font-size:11px">{{ p.paid_on|date:"d M Y" }} · {{ p.mode|default:"—" }}{% if p.is_reversed %} · {% trans "reversed" %}{% endif %}</div></td>
+            <td class="num">{{ currency }} {{ p.amount|floatformat:2 }}</td></tr>
+        {% empty %}<tr><td class="muted" style="padding:16px">{% trans "Nothing collected yet." %}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+
+    {% if is_admin %}
+    <div class="card no-print">
+      <header><h3>{% trans "Discount or waiver" %}</h3></header>
+      <div class="body">
+        <p class="muted" style="font-size:12.5px">{% trans "Only the building owner can approve this. It is written to the audit log." %}</p>
+        <form method="post">{% csrf_token %}
+          {% include "partials/_form.html" with form=discount_form one_column=1 %}
+          <button class="btn" type="submit" style="margin-top:12px">{% trans "Approve discount" %}</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

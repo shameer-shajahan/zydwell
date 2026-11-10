@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Templates" %}{% endblock %}
+{% block topbar_title %}{% trans "Message templates & schedule" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Templates & schedule" %}</h1>
+<div class="sub">{% trans "WhatsApp Business templates must be approved by Meta before they can be sent." %}</div></div>
+<div class="actions"><a class="btn" href="{% url 'messaging:log' %}">{% trans "Back to log" %}</a></div></div>
+<div class="grid split">
+  <div class="card"><header><h2>{% trans "Templates" %}</h2></header>
+    <div class="body tight"><div class="table-wrap"><table class="data">
+      <thead><tr><th>{% trans "Name" %}</th><th>{% trans "Code" %}</th><th>{% trans "Meta template" %}</th><th>{% trans "Approved" %}</th><th></th></tr></thead>
+      <tbody>{% for t in templates %}
+        <tr {% if not t.is_active %}style="opacity:.5"{% endif %}>
+          <td><strong>{{ t.name }}</strong><div class="muted" style="font-size:11px">{{ t.body|truncatechars:80 }}</div></td>
+          <td class="mono">{{ t.code }}</td><td class="mono">{{ t.whatsapp_template_name|default:"—" }}</td>
+          <td>{% if t.is_approved %}<span class="badge soft-green">{% trans "Yes" %}</span>{% else %}<span class="badge soft-amber">{% trans "Pending" %}</span>{% endif %}</td>
+          <td class="right"><a class="btn sm" href="{% url 'messaging:template_edit' t.pk %}">{% trans "Edit" %}</a></td></tr>
+      {% empty %}<tr><td colspan="5">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+    </table></div></div>
+{% include "partials/_pager.html" with page=templates %}
+  </div>
+  <div>
+    <div class="card"><header><h3>{% trans "Rent reminder schedule" %}</h3></header>
+      <div class="body tight"><table class="data"><tbody>
+        {% for r in rules %}
+          <tr><td>{{ r }}<div class="muted" style="font-size:11px">{{ r.template.name }}</div></td>
+            <td class="right">{% if r.is_active %}<span class="badge soft-green">{% trans "On" %}</span>{% else %}<span class="badge soft-slate">{% trans "Off" %}</span>{% endif %}
+              <form method="post" action="{% url 'messaging:rule_delete' r.pk %}" style="display:inline">{% csrf_token %}
+                <button class="btn sm danger" type="submit">×</button></form></td></tr>
+        {% empty %}<tr><td class="muted" style="padding:16px">{% trans "No reminders scheduled." %}</td></tr>{% endfor %}
+      </tbody></table></div>
+{% include "partials/_pager.html" with page=rules %}
+      <div class="body">
+        <form method="post" action="{% url 'messaging:rule_save' %}">{% csrf_token %}
+          {% include "partials/_form.html" with form=rule_form one_column=1 %}
+          <button class="btn" type="submit" style="margin-top:10px">{% trans "Save reminder" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

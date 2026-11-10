@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Recurring expenses" %}{% endblock %}
+{% block topbar_title %}{% trans "Recurring expenses" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Recurring expenses" %}</h1>
+<div class="sub">{% trans "DEWA, salaries, internet — raised automatically each month by the nightly job." %}</div></div>
+<div class="actions"><a class="btn" href="{% url 'accounting:ledger' %}">{% trans "Back to ledger" %}</a></div></div>
+<div class="grid split">
+  <div class="card"><div class="body tight"><div class="table-wrap"><table class="data">
+    <thead><tr><th>{% trans "Name" %}</th><th>{% trans "Category" %}</th><th>{% trans "Tagged to" %}</th>
+    <th>{% trans "Day" %}</th><th class="num">{% trans "Amount" %}</th><th>{% trans "Last raised" %}</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}
+      <tr {% if not r.is_active %}style="opacity:.5"{% endif %}>
+        <td><strong>{{ r.name }}</strong></td><td>{{ r.category.name }}</td>
+        <td class="muted" style="font-size:12px">{{ r.floor|default:r.building|default:"—" }}</td>
+        <td>{{ r.day_of_month }}</td><td class="num">{{ currency }} {{ r.amount|floatformat:2 }}</td>
+        <td class="nowrap">{{ r.last_generated_for|date:"M Y"|default:"—" }}</td>
+        <td class="right nowrap"><form method="post" action="{% url 'accounting:recurring_run' r.pk %}" style="display:inline">{% csrf_token %}
+          <button class="btn sm" type="submit">{% trans "Raise now" %}</button></form>
+          <form method="post" action="{% url 'accounting:recurring_delete' r.pk %}" style="display:inline" data-confirm="{% trans 'Delete this recurring expense? Expenses already raised stay in the ledger.' %}">{% csrf_token %}
+            <button class="btn sm danger" type="submit">×</button></form></td></tr>
+    {% empty %}<tr><td colspan="7">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+  </table></div>{% include "partials/_pager.html" with page=rows %}</div></div>
+  <div class="card"><header><h3>{% trans "Add a recurring expense" %}</h3></header><div class="body">
+    <form method="post">{% csrf_token %}
+      {% include "partials/_form.html" with form=form one_column=1 %}
+      <button class="btn primary" type="submit" style="margin-top:12px">{% trans "Save" %}</button>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

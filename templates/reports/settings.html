@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Settings" %}{% endblock %}
+{% block topbar_title %}{% trans "Settings" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Settings" %}</h1>
+<div class="sub">{% trans "Account details, currency, statuses and the audit trail." %}</div></div></div>
+<div class="tabs">
+  <a class="active" href="{% url 'reports:settings_home' %}">{% trans "Account" %}</a>
+  <a href="{% url 'reports:status_list' %}">{% trans "Statuses" %}</a>
+  <a href="{% url 'accounting:category_list' %}">{% trans "Categories" %}</a>
+  <a href="{% url 'properties:room_type_list' %}">{% trans "Room types" %}</a>
+  <a href="{% url 'billing:payment_mode_list' %}">{% trans "Payment modes" %}</a>
+  <a href="{% url 'billing:late_fee_rule' %}">{% trans "Late fee" %}</a>
+  <a href="{% url 'billing:printer_list' %}">{% trans "Printers" %}</a>
+  <a href="{% url 'messaging:template_list' %}">{% trans "WhatsApp" %}</a>
+  <a href="{% url 'reports:audit_log' %}">{% trans "Audit log" %}</a>
+  <a href="{% url 'accounts:login_history' %}">{% trans "Login history" %}</a>
+</div>
+<div class="grid split">
+  <div class="card"><header><h2>{% trans "Account" %}</h2></header><div class="body">
+    <form method="post">{% csrf_token %}
+      {% include "partials/_form.html" with form=form %}
+      <div class="btn-row" style="margin-top:16px"><button class="btn primary" type="submit">{% trans "Save settings" %}</button></div>
+    </form>
+  </div></div>
+  <div>
+    <div class="card"><header><h3>{% trans "Plan limits" %}</h3></header><div class="body">
+      {% for label, used, allowed in limits %}
+        <div style="margin-bottom:10px">
+          <div style="display:flex;font-size:12.5px"><span>{{ label }}</span>
+            <span style="margin-inline-start:auto" class="mono">{{ used }} / {{ allowed }}</span></div>
+          <div class="meter" style="margin-top:4px"><i style="width:{% widthratio used allowed 100 %}%"></i></div>
+        </div>
+      {% endfor %}
+    </div></div>
+    {% if subscription %}
+    <div class="card"><header><h3>{% trans "Subscription" %}</h3></header><div class="body"><dl class="kv">
+      <dt>{% trans "Plan" %}</dt><dd>{{ subscription.plan }}</dd>
+      <dt>{% trans "Renews" %}</dt><dd>{{ subscription.expires_on|date:"d M Y" }}
+        {% if subscription.is_expired %}<span class="badge soft-red">{% trans "Expired" %}</span>
+        {% elif subscription.days_left < 15 %}<span class="badge soft-amber">{{ subscription.days_left }} {% trans "days left" %}</span>{% endif %}</dd>
+      <dt>{% trans "Grace" %}</dt><dd>{{ subscription.grace_days }} {% trans "days" %}</dd>
+    </dl></div></div>
+    {% endif %}
+    <div class="card"><header><h3>{% trans "Data" %}</h3></header><div class="body">
+      <p class="muted" style="font-size:12.5px">{% trans "Export every module to one Excel workbook. Backups run on the server; see the runbook for the restore procedure." %}</p>
+      <a class="btn primary" href="{% url 'reports:export_everything' %}">{% trans "Export all modules" %}</a>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

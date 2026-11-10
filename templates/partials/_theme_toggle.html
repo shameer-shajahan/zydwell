@@ -1,0 +1,24 @@
+{% load i18n %}
+<button type="button" class="icon-btn always" data-theme-toggle
+        data-label-auto="{% trans 'Appearance: follows the device. Tap for light.' %}"
+        data-label-light="{% trans 'Appearance: light. Tap for dark.' %}"
+        data-label-dark="{% trans 'Appearance: dark. Tap to follow the device.' %}"
+        aria-label="{% trans 'Change appearance' %}">
+  {# Auto: half sun, half moon #}
+  <svg data-theme-icon="auto" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="8"/>
+    <path d="M12 4a8 8 0 010 16z" fill="currentColor" stroke="none"/>
+  </svg>
+  {# Light mode is on: show the sun #}
+  <svg data-theme-icon="light" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.4"/>
+    <path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/>
+  </svg>
+  {# Dark mode is on: show the moon #}
+  <svg data-theme-icon="dark" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M20 14.2A8.4 8.4 0 019.8 4 8.4 8.4 0 1020 14.2z"/>
+  </svg>
+</button>

@@ -1,0 +1,63 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Profile" %}{% endblock %}
+{% block topbar_title %}{% trans "My profile" %}{% endblock %}
+{% block content %}
+{% if user.is_staff_member and not nav_items %}
+  <div class="banner">
+    <strong>{% trans "You have no screens yet." %}</strong>
+    {% trans "Your building owner decides what you can open. Ask them to set your permissions." %}
+  </div>
+{% endif %}
+<div class="page-head"><div><h1>{% trans "My profile" %}</h1><div class="sub">{{ user.get_role_display }}{% if tenant %} · {{ tenant.name }}{% endif %}</div></div></div>
+<div class="grid split">
+  <div>
+    <div class="card">
+      <header><h2>{% trans "Details" %}</h2></header>
+      <div class="body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}<input type="hidden" name="action" value="profile">
+          {% include "partials/_form.html" with form=profile_form %}
+          <div class="btn-row" style="margin-top:14px"><button class="btn primary" type="submit">{% trans "Save" %}</button></div>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <header><h2>{% trans "Change password" %}</h2></header>
+      <div class="body">
+        <form method="post">
+          {% csrf_token %}<input type="hidden" name="action" value="password">
+          {% include "partials/_form.html" with form=password_form %}
+          <div class="btn-row" style="margin-top:14px"><button class="btn" type="submit">{% trans "Update password" %}</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div>
+  <div class="card">
+    <header><h3>{% trans "Appearance" %}</h3></header>
+    <div class="body">
+      <p class="muted" style="font-size:12.5px;margin-bottom:12px">
+        {% trans "Saved on this device, so a shared office tablet and your own phone can differ." %}</p>
+      <div class="seg" style="width:100%">
+        <a href="#" data-theme-set="auto" style="flex:1;text-align:center">{% trans "Automatic" %}</a>
+        <a href="#" data-theme-set="light" style="flex:1;text-align:center">{% trans "Light" %}</a>
+        <a href="#" data-theme-set="dark" style="flex:1;text-align:center">{% trans "Dark" %}</a>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <header><h3>{% trans "Recent sign-ins" %}</h3></header>
+    <div class="body tight">
+      <table class="data">
+        <tbody>
+        {% for row in logins %}
+          <tr><td>{{ row.created_at|date:"d M Y H:i" }}<div class="muted mono" style="font-size:11px">{{ row.ip_address|default:"—" }}</div></td>
+          <td class="right">{% if row.successful %}<span class="badge soft-green">{% trans "OK" %}</span>{% else %}<span class="badge soft-red">{% trans "Failed" %}</span>{% endif %}</td></tr>
+        {% empty %}<tr><td class="empty">{% trans "No sign-ins recorded." %}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </div>
+</div>
+{% endblock %}

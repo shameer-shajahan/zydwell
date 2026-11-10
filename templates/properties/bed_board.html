@@ -1,0 +1,60 @@
+{% extends "base.html" %}{% load i18n listing %}
+{% block title %}{% trans "Bed board" %}{% endblock %}
+{% block topbar_title %}{% trans "Floor-wise bed occupancy map" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Bed board" %}</h1><div class="sub">{% trans "Live occupancy across every floor you look after." %}</div></div>
+  <div class="actions"><a class="btn" href="{% url 'properties:building_list' %}">{% trans "Buildings" %}</a></div>
+</div>
+
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi navy"><div class="label">{% trans "Total beds" %}</div><div class="value">{{ overall.total }}</div></div>
+  <div class="kpi green"><div class="label">{% trans "Available now" %}</div><div class="value">{{ overall.available }}</div></div>
+  <div class="kpi teal"><div class="label">{% trans "Occupancy" %}</div><div class="value">{{ overall.percent }}%</div></div>
+  <div class="kpi slate"><div class="label">{% trans "Out of service" %}</div><div class="value">{{ overall.other }}</div></div>
+</div>
+
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <input class="fb-search" type="search" data-filter=".plan-room" enterkeyhint="search"
+             aria-label="{% trans 'Filter by room or guest' %}" placeholder="{% trans 'Search' %}"
+             data-hint="{% trans 'Filter by room or guest…' %}" title="{% trans 'Filter by room or guest…' %}">
+      {% include "partials/_location_filter.html" %}
+    </div>
+  </div>
+  <div class="status-legend">{% for s in statuses %}<span><i style="background:{{ s.color }}"></i>{{ s.name }}</span>{% endfor %}</div>
+</form>
+
+{% for block in blocks %}
+  <div class="card" style="margin-bottom:16px">
+    <header>
+      <h2>{{ block.building.name }}</h2>
+      <span class="badge soft-teal">{{ block.occupancy.percent }}% {% trans "full" %}</span>
+      <div class="actions"><a class="btn sm" href="{% url 'properties:building_detail' block.building.pk %}">{% trans "Open" %}</a></div>
+    </header>
+    <div class="body">
+      {% for fb in block.floors %}
+        <div class="floor-block">
+          <div class="floor-head">
+            <h3>{{ fb.floor.name }}</h3>
+            <span class="badge soft-slate">{{ fb.occupancy.occupied }}/{{ fb.occupancy.total }}</span>
+            <div style="flex:1;max-width:220px;margin-inline-start:auto"><div class="meter"><i style="width:{{ fb.occupancy.percent }}%"></i></div></div>
+          </div>
+          {% for flat in fb.apartments %}
+            <div class="apartment-block">
+              <div class="apartment-head">
+                <span class="apt-badge">{% trans "Apartment" %} {{ flat.apartment.name }}</span>
+                <span class="badge soft-slate">{{ flat.occupancy.occupied }}/{{ flat.occupancy.total }}</span>
+              </div>
+              <div class="plan">{% for row in flat.rooms %}{% include "partials/_plan_room.html" %}{% endfor %}</div>
+            </div>
+          {% empty %}<div class="muted" style="font-size:13px">{% trans "No apartments." %}</div>{% endfor %}
+        </div>
+      {% empty %}<div class="muted">{% trans "No floors set up." %}</div>{% endfor %}
+    </div>
+  </div>
+{% empty %}
+  <div class="card"><div class="body">{% include "partials/_empty.html" with message=_("Nothing to show — no buildings are assigned to you.") %}</div></div>
+{% endfor %}
+{% endblock %}

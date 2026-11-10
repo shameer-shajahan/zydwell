@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{{ heading }}{% endblock %}
+{% block topbar_title %}{{ heading }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ heading }}</h1>{% if subheading %}<div class="sub">{{ subheading }}</div>{% endif %}</div></div>
+<div class="card" style="max-width:820px"><div class="body">
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% include "partials/_form.html" with form=form %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save" %}</button>
+      <a class="btn" href="{% back_or cancel_url %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Approvals" %}{% endblock %}
+{% block topbar_title %}{% trans "Money awaiting approval" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Money awaiting approval" %}</h1>
+    <div class="sub">{% trans "What your collectors have taken in but you have not confirmed yet." %}</div></div>
+  <div class="actions"><a class="btn" href="{% url 'billing:daily_collection' %}">{% trans "Daily cash report" %}</a></div>
+</div>
+
+<div class="grid k3" style="margin-bottom:16px">
+  <div class="kpi amber"><div class="label">{% trans "Rent awaiting approval" %}</div>
+    <div class="value">{{ currency }} {{ total|floatformat:2 }}</div>
+    <div class="hint">{{ payments.paginator.count }} {% trans "receipts" %}</div></div>
+  <div class="kpi navy"><div class="label">{% trans "Deposits awaiting approval" %}</div>
+    <div class="value">{{ currency }} {{ deposit_total|floatformat:2 }}</div>
+    <div class="hint">{{ deposits.paginator.count }} {% trans "entries" %}</div></div>
+  <div class="kpi slate"><div class="label">{% trans "Rejecting" %}</div>
+    <div class="value" style="font-size:15px;line-height:1.45">{% trans "Reverses the receipt and puts the debt back" %}</div></div>
+</div>
+
+<div class="card">
+  <header><h2>{% trans "Rent collected" %}</h2></header>
+  <div class="body tight"><div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>{% trans "Receipt" %}</th><th>{% trans "Guest" %}</th><th>{% trans "Collected by" %}</th>
+    <th>{% trans "Mode" %}</th><th class="num">{% trans "Amount" %}</th><th>{% trans "Decide" %}</th></tr></thead>
+    <tbody>{% for p in payments %}
+      <tr>
+        <td class="mono"><a href="{% url 'billing:payment_detail' p.pk %}">{{ p.receipt_number }}</a>
+          <div class="muted" style="font-size:11px">{{ p.paid_on|date:"d M Y" }}</div></td>
+        <td>{{ p.tenancy.guest.full_name }}
+          <div class="muted" style="font-size:11px">{{ p.tenancy.location_label }}</div></td>
+        <td><strong>{{ p.collected_by_name|default:"—" }}</strong>
+          <div class="muted" style="font-size:11px">{{ p.collected_by.get_role_display|default:"" }}</div></td>
+        <td>{{ p.mode|default:"—" }}{% if p.reference %}<div class="muted mono" style="font-size:11px">{{ p.reference }}</div>{% endif %}</td>
+        <td class="num"><strong>{{ currency }} {{ p.amount|floatformat:2 }}</strong></td>
+        <td class="right nowrap">
+          <form method="post" action="{% url 'billing:payment_decide' p.pk 'approve' %}" style="display:inline">
+            {% csrf_token %}<button class="btn sm primary" type="submit">{% trans "Approve" %}</button></form>
+          <button class="btn sm danger" type="button" data-modal-open="reject-p{{ p.pk }}">{% trans "Reject" %}</button>
+          <div class="modal-back" id="reject-p{{ p.pk }}">
+            <div class="modal">
+              <header><h3>{% trans "Reject" %} {{ p.receipt_number }}</h3>
+                <button class="x" type="button" data-modal-close aria-label="{% trans 'Close' %}">×</button></header>
+              <div class="body">
+                <p class="muted" style="font-size:13px">
+                  {% blocktrans with amount=p.amount|floatformat:2 who=p.collected_by_name %}This says {{ who }} did not actually receive {{ currency }} {{ amount }}. The receipt is reversed and the guest owes it again.{% endblocktrans %}</p>
+                <form method="post" action="{% url 'billing:payment_decide' p.pk 'reject' %}">
+                  {% csrf_token %}
+                  <div class="field" style="margin:14px 0">
+                    <label for="rp{{ p.pk }}">{% trans "Why is it being rejected?" %}</label>
+                    <textarea id="rp{{ p.pk }}" name="reason" rows="2" required></textarea>
+                  </div>
+                  <div class="btn-row">
+                    <button class="btn danger" type="submit">{% trans "Reject and reverse" %}</button>
+                    <button class="btn" type="button" data-modal-close>{% trans "Cancel" %}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">{% include "partials/_empty.html" with message=_("Nothing waiting. Every receipt is accounted for.") %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div></div>
+{% include "partials/_pager.html" with page=payments %}
+</div>
+
+{% if deposits %}
+<div class="card">
+  <header><h2>{% trans "Deposits taken" %}</h2></header>
+  <div class="body tight"><div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>{% trans "Receipt" %}</th><th>{% trans "Guest" %}</th><th>{% trans "Taken by" %}</th>
+    <th>{% trans "Mode" %}</th><th class="num">{% trans "Amount" %}</th><th>{% trans "Decide" %}</th></tr></thead>
+    <tbody>{% for d in deposits %}
+      <tr>
+        <td class="mono">{{ d.receipt_number }}
+          <div class="muted" style="font-size:11px">{{ d.happened_on|date:"d M Y" }}</div></td>
+        <td>{{ d.tenancy.guest.full_name }}</td>
+        <td><strong>{{ d.recorded_by.display_name|default:"—" }}</strong></td>
+        <td>{{ d.mode|default:"—" }}</td>
+        <td class="num"><strong>{{ currency }} {{ d.amount|floatformat:2 }}</strong></td>
+        <td class="right nowrap">
+          <form method="post" action="{% url 'billing:deposit_decide' d.pk 'approve' %}" style="display:inline">
+            {% csrf_token %}<button class="btn sm primary" type="submit">{% trans "Approve" %}</button></form>
+          <button class="btn sm danger" type="button" data-modal-open="reject-d{{ d.pk }}">{% trans "Reject" %}</button>
+          <div class="modal-back" id="reject-d{{ d.pk }}">
+            <div class="modal">
+              <header><h3>{% trans "Reject" %} {{ d.receipt_number }}</h3>
+                <button class="x" type="button" data-modal-close aria-label="{% trans 'Close' %}">×</button></header>
+              <div class="body">
+                <form method="post" action="{% url 'billing:deposit_decide' d.pk 'reject' %}">
+                  {% csrf_token %}
+                  <div class="field" style="margin-bottom:14px">
+                    <label for="rd{{ d.pk }}">{% trans "Why is it being rejected?" %}</label>
+                    <textarea id="rd{{ d.pk }}" name="reason" rows="2" required></textarea>
+                  </div>
+                  <div class="btn-row">
+                    <button class="btn danger" type="submit">{% trans "Reject and remove" %}</button>
+                    <button class="btn" type="button" data-modal-close>{% trans "Cancel" %}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    {% endfor %}</tbody>
+  </table></div></div>
+{% include "partials/_pager.html" with page=deposits %}
+</div>
+{% endif %}
+{% endblock %}

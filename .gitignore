@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+db.sqlite3
+db.sqlite3.*
+/media/
+/staticfiles/
+/backups/
+*.mo
+.env
+.DS_Store
+tests/js/node_modules/
+tests/js/package-lock.json
+.npm-cache/

@@ -1,0 +1,30 @@
+{% extends "guests/public_base.html" %}{% load i18n %}
+{% block title %}{% trans "Your receipts" %}{% endblock %}
+{% block strapline %}{% trans "Your receipts" %}{% endblock %}
+
+{% block content %}
+<div class="pubcard">
+  <a class="pubback" href="{% url 'guest_profile' invite.token %}">‹ {% trans "Back" %}</a>
+  <h1>{% trans "Your receipts" %}</h1>
+  <p class="pubintro">
+    {% trans "Every payment and deposit recorded against your stay. Tap one to read it." %}
+  </p>
+
+  {% for row in rows %}
+    <a class="receipt-row" href="{% url 'guest_portal_receipt' invite.token row.kind row.pk %}">
+      <span class="rr-main">
+        <b class="mono">{{ row.number }}</b>
+        <span>{{ row.label }}{% if row.note %} · {{ row.note }}{% endif %}</span>
+      </span>
+      <span class="rr-side">
+        <b {% if not row.money_in %}class="out"{% endif %}>
+          {% if not row.money_in %}−{% endif %}{{ org_currency }}{{ row.amount|floatformat:2 }}</b>
+        <span>{{ row.date|date:"d M Y" }}</span>
+      </span>
+    </a>
+  {% empty %}
+    <p class="pubnote center" style="margin-top:20px">{% trans "Nothing recorded yet." %}</p>
+  {% endfor %}
+{% include "partials/_pager.html" with page=rows %}
+</div>
+{% endblock %}

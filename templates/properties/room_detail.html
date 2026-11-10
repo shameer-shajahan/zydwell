@@ -1,0 +1,135 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% trans "Room" %} {{ room.number }}{% endblock %}
+{% block topbar_title %}{% trans "Room" %} {{ room.number }}{% endblock %}
+{% block content %}
+<div class="crumbs">
+  <a href="{% url 'properties:building_list' %}">{% trans "Buildings" %}</a> <span>/</span>
+  <a href="{% url 'properties:building_detail' room.apartment.floor.building_id %}">{{ room.building.name }}</a> <span>/</span>
+  <span>{{ room.floor.name }}</span> <span>/</span>
+  <span>{% trans "Apartment" %} {{ room.apartment.name }}</span> <span>/</span>
+  <span>{% trans "Room" %} {{ room.number }}</span>
+</div>
+<div class="page-head">
+  <div><h1>{% trans "Room" %} {{ room.number }}</h1>
+    <div class="sub">{{ room.room_type.name|default:_("Room") }} · {{ room.get_rent_basis_display }} · {% trans "capacity" %} {{ room.capacity }}</div></div>
+  <div class="actions">
+    {% if can_edit %}<a class="btn" href="{% url 'properties:room_edit' room.pk %}">{% trans "Edit room" %}</a>{% endif %}
+    {% if can_delete %}
+      <form method="post" action="{% url 'properties:room_delete' room.pk %}" data-confirm="{% trans 'Delete this room? If it is in use it will be archived instead.' %}">{% csrf_token %}
+        <button class="btn danger" type="submit">{% trans "Delete / archive" %}</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid split">
+  <div>
+    <div class="card">
+      <header><h2>{% trans "Beds" %}</h2>
+        <span class="badge soft-teal">{{ occupancy.occupied }}/{{ occupancy.total }} {% trans "occupied" %}</span>
+        <div class="actions">{% if can_edit %}<a class="btn sm" href="{% url 'properties:bed_create' %}?room={{ room.pk }}&amp;{% return_here %}">+ {% trans "Bed" %}</a>{% endif %}</div>
+      </header>
+      <div class="body">
+        {% if room.lets_whole_unit %}
+          <div class="unit-let {% if not unit_tenancy %}vacant{% endif %}" style="margin:0 0 14px">
+            {% if unit_tenancy %}{% trans "Let as a whole unit to" %} <strong>{{ unit_tenancy.guest.full_name }}</strong>
+              · {{ currency }} {{ unit_tenancy.monthly_rent|floatformat:2 }}/{% trans "month" %}
+            {% else %}{% trans "Whole unit is vacant" %} · {{ currency }} {{ room.monthly_rent|floatformat:2 }}/{% trans "month" %}{% endif %}
+          </div>
+        {% endif %}
+        <div class="bed-list" style="padding:0">
+          {% for item in beds %}{% include "partials/_bed_tile.html" %}{% empty %}
+            <span class="muted">{% trans "No beds in this room yet." %}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% if beds %}
+      <div class="body tight"><div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>{% trans "Bed" %}</th><th>{% trans "Status" %}</th><th>{% trans "Guest" %}</th><th class="num">{% trans "Price" %}</th><th></th></tr></thead>
+          <tbody>
+          {% for item in beds %}
+            <tr>
+              <td><strong>{{ item.obj.label }}</strong></td>
+              <td>
+                {% if can_edit %}
+                <form method="post" action="{% url 'properties:bed_status' item.obj.pk %}" style="display:flex;gap:6px;align-items:center">{% csrf_token %}
+                  <select name="status" data-autosubmit style="width:auto;font-size:12px;padding:4px 7px">
+                    {% for s in room.tenant.statuses.all %}{% if s.kind == 'bed' %}
+                      <option value="{{ s.pk }}" {% if item.obj.status_id == s.pk %}selected{% endif %}>{{ s.name }}</option>
+                    {% endif %}{% endfor %}
+                  </select>
+                </form>
+                {% else %}{% include "partials/_status.html" with status=item.obj.status %}{% endif %}
+              </td>
+              <td>{% if item.tenancy %}<a href="{% url 'guests:tenancy_detail' item.tenancy.pk %}">{{ item.tenancy.guest.full_name }}</a>
+                  <div class="muted" style="font-size:11px">{% trans "since" %} {{ item.tenancy.check_in_date|date:"d M Y" }}</div>
+                  {% else %}<span class="muted">—</span>{% endif %}</td>
+              <td class="num">{{ currency }} {{ item.obj.monthly_price|floatformat:2 }}</td>
+              <td class="right nowrap">
+                {% if not item.tenancy and can_edit %}<a class="btn sm accent" href="{% url 'guests:check_in' %}?bed={{ item.obj.pk }}&amp;{% return_here %}">{% trans "Check in" %}</a>{% endif %}
+                {% if can_edit %}<a class="btn sm" href="{% url 'properties:bed_edit' item.obj.pk %}">{% trans "Edit" %}</a>{% endif %}
+                {% if can_delete %}
+                  <form method="post" action="{% url 'properties:bed_delete' item.obj.pk %}" style="display:inline" data-confirm="{% trans 'Delete this bed?' %}">{% csrf_token %}
+                    <button class="btn sm danger" type="submit">×</button></form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div></div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <header><h3>{% trans "Stay history" %}</h3></header>
+      <div class="body tight"><div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>{% trans "Guest" %}</th><th>{% trans "Bed" %}</th><th>{% trans "From" %}</th><th>{% trans "To" %}</th><th>{% trans "Status" %}</th></tr></thead>
+          <tbody>
+          {% for t in history %}
+            <tr><td><a href="{% url 'guests:tenancy_detail' t.pk %}">{{ t.guest.full_name }}</a></td>
+              <td>{{ t.bed.label|default:"—" }}</td>
+              <td class="nowrap">{{ t.check_in_date|date:"d M Y" }}</td>
+              <td class="nowrap">{{ t.actual_check_out|date:"d M Y"|default:"—" }}</td>
+              <td>{% include "partials/_status.html" with status=t.status %}</td></tr>
+          {% empty %}<tr><td colspan="5">{% include "partials/_empty.html" with message=_("Nobody has stayed here yet.") %}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="hc-art" style="height:92px;position:relative;overflow:hidden">{% include "partials/_art_home.html" %}</div>
+      <div class="body">
+        <dl class="kv">
+          <dt>{% trans "Building" %}</dt><dd>{{ room.building.name }}</dd>
+          <dt>{% trans "Floor" %}</dt><dd>{{ room.floor.name }}</dd>
+          <dt>{% trans "Apartment" %}</dt><dd>{{ room.apartment.name }}</dd>
+          <dt>{% trans "Type" %}</dt><dd>{{ room.room_type.name|default:"—" }}</dd>
+          <dt>{% trans "Rent basis" %}</dt><dd>{{ room.get_rent_basis_display }}</dd>
+          <dt>{% trans "Capacity" %}</dt><dd>{{ room.capacity }}</dd>
+          <dt>{% trans "AC" %}</dt><dd>{% if room.has_ac %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</dd>
+          <dt>{% trans "Attached bath" %}</dt><dd>{% if room.has_attached_bath %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</dd>
+        </dl>
+        {% if room.notes %}<p class="muted" style="margin-top:12px">{{ room.notes }}</p>{% endif %}
+      </div>
+    </div>
+
+    {% if can_edit and occupancy.total < room.capacity %}
+    <div class="card">
+      <header><h3>{% trans "Add beds quickly" %}</h3></header>
+      <div class="body">
+        <form method="post">{% csrf_token %}
+          {% include "partials/_form.html" with form=bulk_form one_column=1 %}
+          <button class="btn primary" type="submit" style="margin-top:12px">{% trans "Create beds" %}</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

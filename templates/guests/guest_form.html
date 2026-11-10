@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% trans "Guest" %}{% endblock %}
+{% block topbar_title %}{% trans "Guest profile" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% if guest %}{{ guest.full_name }}{% else %}{% trans "New guest" %}{% endif %}</h1>
+<div class="sub">{% trans "Identity, contact, emergency contact and employer." %}</div></div></div>
+<div class="card" style="max-width:900px"><div class="body">
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% include "partials/_form.html" with form=form wide_fields="notes" %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save guest" %}</button>
+      <a class="btn" href="{% back_or 'guests:guest_list' %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

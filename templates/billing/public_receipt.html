@@ -1,0 +1,45 @@
+{% extends "guests/public_base.html" %}{% load i18n %}
+{% block title %}{% trans "Receipt" %} {{ payment.receipt_number }}{% endblock %}
+{% block strapline %}{% trans "Rent receipt" %}{% endblock %}
+
+{% block content %}
+<div class="pubcard slip">
+  {% if back_to %}<a class="pubback" href="{{ back_to }}">‹ {% trans "Your receipts" %}</a>{% endif %}
+
+  <div class="slip-head">
+    <span class="slip-tick" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+    </span>
+    <p class="slip-kicker">{% trans "Payment received" %}</p>
+    <p class="slip-amount">{{ org_currency }}{{ payment.amount|floatformat:2 }}</p>
+    <p class="slip-number mono">{{ payment.receipt_number }}</p>
+  </div>
+
+  <dl class="slip-rows">
+    <dt>{% trans "Date" %}</dt><dd>{{ payment.paid_on|date:"d M Y" }}</dd>
+    <dt>{% trans "Guest" %}</dt><dd>{{ guest.full_name }}</dd>
+    <dt>{% trans "Building" %}</dt><dd>{{ building.name }}</dd>
+    <dt>{% trans "Room" %}</dt>
+    <dd>{{ tenancy.room.number }}{% if tenancy.bed %} · {% trans "bed" %} {{ tenancy.bed.label }}{% endif %}</dd>
+    {% if invoice %}
+      <dt>{% trans "For" %}</dt><dd>{{ invoice.period_label }}</dd>
+      <dt>{% trans "Invoice" %}</dt><dd class="mono">{{ invoice.number }}</dd>
+    {% endif %}
+    <dt>{% trans "Paid by" %}</dt><dd>{{ payment.mode|default:"—" }}</dd>
+    {% if payment.reference %}<dt>{% trans "Reference" %}</dt><dd class="mono">{{ payment.reference }}</dd>{% endif %}
+    <dt>{% trans "Received by" %}</dt><dd>{{ payment.collected_by_name|default:"—" }}</dd>
+  </dl>
+
+  {% if invoice %}
+    <div class="slip-total">
+      <span>{% trans "Still to pay on this invoice" %}</span>
+      <b {% if balance > 0 %}class="due"{% endif %}>{{ org_currency }}{{ balance|floatformat:2 }}</b>
+    </div>
+  {% endif %}
+
+  <p class="pubnote center">
+    {% blocktrans with name=building.name %}Keep this for your records. Questions about it go to the {{ name }} office.{% endblocktrans %}
+  </p>
+</div>
+{% endblock %}

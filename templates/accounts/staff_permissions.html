@@ -1,0 +1,66 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Access" %}{% endblock %}
+{% block topbar_title %}{% trans "Module access" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ staff.display_name }}</h1><div class="sub">{% trans "Grant or revoke access per module. Staff can never delete records or edit rent amounts unless you allow it — and with nothing ticked they land on their profile with nowhere to go." %}</div></div>
+  <div class="actions"><a class="btn" href="{% url 'accounts:staff_list' %}">{% trans "Back to staff" %}</a></div>
+</div>
+<div class="grid split">
+  <div class="card">
+    <header><h2>{% trans "Permissions" %}</h2>
+      <label class="checkline tick-all" style="margin-inline-start:auto">
+        <span>{% trans "Select everything" %}</span>
+        <input type="checkbox" data-check-all="#permission-grid"
+               aria-label="{% trans 'Tick every permission' %}">
+      </label>
+    </header>
+    <div class="body tight">
+      <form method="post"><input type="hidden" name="action" value="permissions">{% csrf_token %}
+        <div class="table-wrap">
+        <table class="data" id="permission-grid">
+          <thead><tr>
+            <th>{% trans "Module" %}</th>
+            {% for column in form.columns %}
+              <th class="center">{{ column }}
+                <div><input type="checkbox" data-check-col="{{ forloop.counter }}"
+                            aria-label="{% blocktrans %}Tick {{ column }} for every module{% endblocktrans %}"></div></th>
+            {% endfor %}
+            <th class="center">{% trans "Row" %}</th>
+          </tr></thead>
+          <tbody>
+          {% for row in form.rows %}
+            <tr><td>{{ row.label }}</td>
+              {% for f in row.fields %}<td class="center">{{ f }}</td>{% endfor %}
+              <td class="center"><input type="checkbox" data-check-row
+                      aria-label="{% blocktrans with name=row.label %}Tick everything for {{ name }}{% endblocktrans %}"></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        </div>
+        <div class="body"><button class="btn primary" type="submit">{% trans "Save permissions" %}</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <header><h3>{% trans "Restrict to floors" %}</h3></header>
+    <div class="body">
+      <p class="muted" style="font-size:12.5px">{% trans "With no assignment the staff member sees every building in your account." %}</p>
+      <form method="post"><input type="hidden" name="action" value="assign">{% csrf_token %}
+        {% include "partials/_form.html" with form=assignment_form one_column=1 %}
+        <button class="btn" type="submit" style="margin-top:10px">{% trans "Add assignment" %}</button>
+      </form>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      {% for a in assignments %}
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span class="badge soft-teal">{{ a.floor|default:a.building }}</span>
+          <form method="post" action="{% url 'accounts:assignment_delete' a.pk %}" style="margin-inline-start:auto">{% csrf_token %}
+            <button class="btn sm danger" type="submit">{% trans "Remove" %}</button>
+          </form>
+        </div>
+      {% empty %}<div class="muted">{% trans "No restrictions." %}</div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

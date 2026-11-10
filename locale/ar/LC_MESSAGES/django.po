@@ -1,0 +1,6594 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-03 21:57+0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#: accounting/forms.py:21
+msgid "That code is already used for this kind."
+msgstr ""
+
+#: accounting/forms.py:61
+msgid "That category belongs to the other ledger."
+msgstr ""
+
+#: accounting/forms.py:65
+msgid "That room is not in the selected apartment."
+msgstr "هذه الغرفة ليست في الشقة المحددة."
+
+#: accounting/forms.py:67 accounts/forms.py:174
+msgid "That apartment is not on the selected floor."
+msgstr "هذه الشقة ليست في الطابق المحدد."
+
+#: accounting/forms.py:69 accounts/forms.py:172
+msgid "That floor is not in the selected building."
+msgstr ""
+
+#: accounting/forms.py:72
+msgid "Tag the entry to a building, floor, apartment or room."
+msgstr "اربط القيد بمبنى أو طابق أو شقة أو غرفة."
+
+#: accounting/models.py:13 templates/accounting/categories.html:9
+#: templates/accounting/ledger.html:11 templates/accounting/ledger.html:18
+#: templates/accounting/ledger.html:29 templates/reports/dashboard.html:42
+#: templates/reports/dashboard.html:49 templates/reports/profit.html:13
+#: templates/reports/profit.html:19
+msgid "Income"
+msgstr "الدخل"
+
+#: accounting/models.py:13 templates/accounting/categories.html:20
+#: templates/accounting/ledger.html:12 templates/accounting/ledger.html:19
+#: templates/accounting/ledger.html:30 templates/reports/dashboard.html:50
+#: templates/reports/index.html:12 templates/reports/profit.html:14
+#: templates/reports/profit.html:20
+msgid "Expense"
+msgstr "المصروف"
+
+#: accounting/models.py:25
+msgid "Seeded category the system posts to automatically."
+msgstr ""
+
+#: accounting/models.py:31
+msgid "categories"
+msgstr ""
+
+#: accounting/models.py:56
+msgid "Manual entry"
+msgstr ""
+
+#: accounting/models.py:57
+msgid "Rent payment"
+msgstr ""
+
+#: accounting/models.py:58 templates/reports/dashboard.html:35
+msgid "Deposit movement"
+msgstr "حركة التأمينات"
+
+#: accounting/models.py:59
+msgid "Recurring expense"
+msgstr ""
+
+#: accounting/models.py:85
+msgid "Expenses only."
+msgstr ""
+
+#: accounting/models.py:88
+msgid "Bill or invoice photo."
+msgstr ""
+
+#: accounting/models.py:100
+msgid "ledger entries"
+msgstr ""
+
+#: accounting/views.py:62
+msgid "Automatic entries cannot be edited here."
+msgstr ""
+
+#: accounting/views.py:74
+#, python-format
+msgid "%(kind)s %(amount)s — %(cat)s"
+msgstr ""
+
+#: accounting/views.py:78
+msgid "Entry saved."
+msgstr ""
+
+#: accounting/views.py:88
+msgid "Automatic entries are removed by reversing their source."
+msgstr ""
+
+#: accounting/views.py:91
+#, python-format
+msgid "Deleted ledger entry %(a)s"
+msgstr ""
+
+#: accounting/views.py:93
+msgid "Entry deleted."
+msgstr ""
+
+#: accounting/views.py:107
+#, python-format
+msgid "Category %(n)s added"
+msgstr ""
+
+#: accounting/views.py:108
+msgid "Category added."
+msgstr ""
+
+#: accounting/views.py:125
+#, python-format
+msgid "Category %(n)s %(state)s"
+msgstr ""
+
+#: accounting/views.py:127
+msgid "enabled"
+msgstr ""
+
+#: accounting/views.py:127
+msgid "disabled"
+msgstr ""
+
+#: accounting/views.py:139
+#, python-format
+msgid "Recurring expense %(n)s added"
+msgstr ""
+
+#: accounting/views.py:140
+msgid "Recurring expense saved."
+msgstr ""
+
+#: accounting/views.py:156
+#, python-format
+msgid "Recurring expense raised: %(n)s"
+msgstr ""
+
+#: accounting/views.py:157
+msgid "Expense raised for this month."
+msgstr ""
+
+#: accounting/views.py:159
+msgid "Already raised for this month, or not due yet."
+msgstr ""
+
+#: accounts/forms.py:18
+msgid ""
+"That username and password do not match. Check for capital letters and try "
+"again."
+msgstr ""
+"اسم المستخدم أو كلمة المرور غير صحيحة. تحقّق من الأحرف الكبيرة وحاول مرة أخرى."
+
+#: accounts/forms.py:20
+msgid ""
+"This account has been switched off. Ask your building owner to turn it back "
+"on."
+msgstr "تم إيقاف هذا الحساب. اطلب من مالك المبنى إعادة تفعيله."
+
+#: accounts/forms.py:25 reports/views.py:504 templates/accounts/login.html:100
+msgid "Username"
+msgstr "اسم المستخدم"
+
+#: accounts/forms.py:33
+msgid "e.g. supervisor1"
+msgstr "مثال: supervisor1"
+
+#: accounts/forms.py:37 accounts/forms.py:60 templates/accounts/login.html:108
+msgid "Password"
+msgstr "كلمة المرور"
+
+#: accounts/forms.py:61
+msgid "Leave blank to keep the current password."
+msgstr ""
+
+#: accounts/forms.py:68
+msgid "Account active"
+msgstr ""
+
+#: accounts/forms.py:80
+msgid "That username is already taken."
+msgstr ""
+
+#: accounts/forms.py:91
+#, python-format
+msgid "Your plan allows %(n)d active staff seats. Deactivate someone first."
+msgstr ""
+
+#: accounts/forms.py:123 templates/guests/guest_detail.html:79
+msgid "View"
+msgstr "عرض"
+
+#: accounts/forms.py:123
+msgid "Create"
+msgstr "إنشاء"
+
+#: accounts/forms.py:123 templates/accounting/ledger.html:60
+#: templates/accounts/staff_list.html:36
+#: templates/billing/payment_modes.html:26
+#: templates/billing/printer_list.html:28 templates/core/tenant_detail.html:11
+#: templates/guests/guest_detail.html:12
+#: templates/guests/tenancy_detail.html:20
+#: templates/messaging/templates.html:17
+#: templates/properties/building_detail.html:56
+#: templates/properties/building_list.html:35
+#: templates/properties/room_detail.html:71 templates/reports/statuses.html:28
+msgid "Edit"
+msgstr "تعديل"
+
+#: accounts/forms.py:123 templates/accounting/entry_form.html:15
+#: templates/guests/guest_delete.html:8 templates/guests/guest_delete.html:11
+#: templates/guests/guest_detail.html:15
+msgid "Delete"
+msgstr "حذف"
+
+#: accounts/forms.py:177
+msgid "That apartment is not in the selected building."
+msgstr "هذه الشقة ليست في المبنى المحدد."
+
+#: accounts/forms.py:188
+msgid "Current password"
+msgstr ""
+
+#: accounts/forms.py:189 core/forms.py:173
+#: templates/core/admin_password.html:24
+msgid "New password"
+msgstr "كلمة المرور الجديدة"
+
+#: accounts/forms.py:190
+msgid "Confirm new password"
+msgstr ""
+
+#: accounts/forms.py:199
+msgid "That is not your current password."
+msgstr ""
+
+#: accounts/forms.py:205
+msgid "The two new passwords do not match."
+msgstr ""
+
+#: accounts/models.py:15
+msgid "Super admin"
+msgstr ""
+
+#: accounts/models.py:16
+msgid "Admin (building owner)"
+msgstr ""
+
+#: accounts/models.py:17
+msgid "Staff (supervisor / collector)"
+msgstr ""
+
+#: accounts/models.py:23
+msgid "Empty only for the platform super admin."
+msgstr ""
+
+#: accounts/models.py:32
+msgid "Comma-separated IPs. Super admin only; empty means no restriction."
+msgstr ""
+
+#: accounts/models.py:154
+msgid "Leave empty for the whole building."
+msgstr ""
+
+#: accounts/models.py:159
+msgid "Leave empty for the whole floor."
+msgstr "اتركه فارغًا لكامل الطابق."
+
+#: accounts/models.py:192
+msgid "login history"
+msgstr ""
+
+#: accounts/views.py:36
+msgid "Signed in"
+msgstr ""
+
+#: accounts/views.py:38
+msgid "Please set a new password."
+msgstr ""
+
+#: accounts/views.py:49
+msgid "Signed out"
+msgstr ""
+
+#: accounts/views.py:64
+msgid "Profile updated."
+msgstr ""
+
+#: accounts/views.py:74
+msgid "Changed own password"
+msgstr ""
+
+#: accounts/views.py:75
+msgid "Password changed."
+msgstr ""
+
+#: accounts/views.py:112
+#, python-format
+msgid "Staff account %(name)s saved"
+msgstr ""
+
+#: accounts/views.py:114
+msgid "Staff account saved."
+msgstr ""
+
+#: accounts/views.py:130
+#, python-format
+msgid "Updated module permissions for %(name)s"
+msgstr ""
+
+#: accounts/views.py:133
+msgid "Permissions saved."
+msgstr ""
+
+#: accounts/views.py:143
+msgid "That assignment already exists."
+msgstr ""
+
+#: accounts/views.py:147
+#, python-format
+msgid "Assigned %(name)s to %(where)s"
+msgstr ""
+
+#: accounts/views.py:149
+msgid "Assignment added."
+msgstr ""
+
+#: accounts/views.py:168
+#, python-format
+msgid "Removed assignment %(where)s"
+msgstr ""
+
+#: accounts/views.py:170
+msgid "Assignment removed."
+msgstr ""
+
+#: accounts/views.py:181
+#, python-format
+msgid "%(state)s staff account %(name)s"
+msgstr ""
+
+#: accounts/views.py:182
+msgid "Activated"
+msgstr ""
+
+#: accounts/views.py:182
+msgid "Deactivated"
+msgstr ""
+
+#: accounts/views.py:184
+msgid "Account updated."
+msgstr ""
+
+#: accounts/views.py:211
+msgid "This account may only sign in from an approved IP address."
+msgstr ""
+
+#: billing/forms.py:16 templates/guests/tenancy_detail.html:3
+#: templates/guests/tenancy_detail.html:108
+msgid "Tenancy"
+msgstr ""
+
+#: billing/forms.py:17
+msgid "Period from"
+msgstr ""
+
+#: billing/forms.py:19
+msgid "Period to"
+msgstr ""
+
+#: billing/forms.py:21
+msgid "Due date"
+msgstr "تاريخ الاستحقاق"
+
+#: billing/forms.py:22 billing/receipts.py:66 guests/views.py:528
+#: reports/views.py:475 templates/billing/invoice_detail.html:26
+#: templates/guests/guest_detail.html:34 templates/guests/guest_list.html:27
+#: templates/guests/tenancy_list.html:19 templates/reports/rent_roll.html:26
+msgid "Rent"
+msgstr "الإيجار"
+
+#: billing/forms.py:23
+msgid "Extra charge category"
+msgstr ""
+
+#: billing/forms.py:25
+msgid "Extra charge description"
+msgstr ""
+
+#: billing/forms.py:27
+msgid "Extra charge amount"
+msgstr ""
+
+#: billing/forms.py:29
+msgid "Note on the invoice"
+msgstr ""
+
+#: billing/forms.py:47
+msgid "The period end is before its start."
+msgstr ""
+
+#: billing/forms.py:49
+msgid "Pick a category for the extra charge."
+msgstr ""
+
+#: billing/forms.py:54
+msgid "An invoice already covers that period."
+msgstr ""
+
+#: billing/forms.py:61 templates/billing/invoice_detail.html:34
+msgid "Discount / waiver"
+msgstr ""
+
+#: billing/forms.py:63 billing/receipts.py:134 guests/forms.py:174
+#: reports/views.py:333 reports/views.py:493
+#: templates/billing/payment_detail.html:31
+#: templates/guests/deposit_receipt.html:71
+#: templates/guests/public_deposit_receipt.html:28
+msgid "Reason"
+msgstr ""
+
+#: billing/forms.py:90
+msgid "Leave empty to hold the money as advance credit."
+msgstr ""
+
+#: billing/forms.py:104
+msgid "That invoice belongs to a different guest."
+msgstr ""
+
+#: billing/forms.py:107 guests/forms.py:251
+#, python-format
+msgid "Add the %(mode)s reference."
+msgstr ""
+
+#: billing/forms.py:110 billing/models.py:332
+msgid "Record when it falls due."
+msgstr ""
+
+#: billing/forms.py:114
+#, python-format
+msgid ""
+"That is more than the %(bal)s outstanding on this invoice. Record the excess "
+"as a separate advance payment."
+msgstr ""
+
+#: billing/forms.py:121
+msgid "Reason for reversal"
+msgstr ""
+
+#: billing/forms.py:153 guests/forms.py:143 guests/forms.py:235
+msgid "Note"
+msgstr ""
+
+#: billing/forms.py:157 templates/billing/approvals.html:52
+#: templates/billing/approvals.html:98
+msgid "Why is it being rejected?"
+msgstr "ما سبب الرفض؟"
+
+#: billing/models.py:27
+msgid "Fixed amount"
+msgstr ""
+
+#: billing/models.py:28
+msgid "Percent of rent"
+msgstr ""
+
+#: billing/models.py:29
+msgid "Per day overdue"
+msgstr ""
+
+#: billing/models.py:35
+msgid "0 means no cap."
+msgstr ""
+
+#: billing/models.py:72
+msgid "counts as cash in hand"
+msgstr ""
+
+#: billing/models.py:73
+msgid "Included in the daily cash handover to the owner."
+msgstr ""
+
+#: billing/models.py:76
+msgid "needs a reference"
+msgstr ""
+
+#: billing/models.py:77
+msgid "Cheque number, UPI reference, card last four digits."
+msgstr ""
+
+#: billing/models.py:80
+msgid "needs a due date"
+msgstr ""
+
+#: billing/models.py:81
+msgid "Post-dated cheques, so the office can be reminded."
+msgstr ""
+
+#: billing/models.py:84
+msgid "draws on the guest’s advance"
+msgstr ""
+
+#: billing/models.py:85
+msgid "No new money — it spends credit the guest already paid in."
+msgstr ""
+
+#: billing/models.py:248 guests/models.py:436
+msgid "No approval needed"
+msgstr "لا تحتاج موافقة"
+
+#: billing/models.py:249 guests/models.py:437
+msgid "Waiting for the owner"
+msgstr "بانتظار المالك"
+
+#: billing/models.py:250 guests/models.py:438
+#: templates/messaging/templates.html:11
+msgid "Approved"
+msgstr "تمت الموافقة"
+
+#: billing/models.py:251 guests/models.py:439
+msgid "Rejected"
+msgstr "مرفوض"
+
+#: billing/models.py:257
+msgid "Empty for an advance held as credit."
+msgstr ""
+
+#: billing/models.py:270
+msgid "Settled out of the guest’s advance credit."
+msgstr ""
+
+#: billing/models.py:293
+msgid "approval"
+msgstr ""
+
+#: billing/models.py:325
+msgid "Enter an amount greater than zero."
+msgstr ""
+
+#: billing/models.py:327
+msgid "That invoice belongs to a different tenancy."
+msgstr ""
+
+#: billing/models.py:329
+#, python-format
+msgid "Record the %(mode)s reference."
+msgstr ""
+
+#: billing/models.py:447
+msgid "USB"
+msgstr ""
+
+#: billing/models.py:448
+msgid "Network (IP:port)"
+msgstr ""
+
+#: billing/models.py:449
+msgid "Bluetooth"
+msgstr ""
+
+#: billing/models.py:454
+msgid "192.168.1.50:9100, a USB device path, or a MAC address."
+msgstr ""
+
+#: billing/receipts.py:44
+msgid "RENT RECEIPT"
+msgstr ""
+
+#: billing/receipts.py:49 billing/receipts.py:119 reports/views.py:332
+#: reports/views.py:406 reports/views.py:487 reports/views.py:492
+#: templates/billing/approvals.html:26 templates/billing/approvals.html:76
+#: templates/billing/daily_collection.html:26
+#: templates/billing/payment_detail.html:10
+#: templates/billing/payment_list.html:35
+#: templates/billing/payment_list.html:49
+#: templates/billing/public_receipt.html:2 templates/billing/receipt.html:2
+#: templates/billing/receipt.html:3 templates/billing/receipt.html:6
+#: templates/guests/statement.html:34 templates/guests/tenancy_detail.html:55
+#: templates/guests/tenancy_detail.html:62
+#: templates/guests/tenancy_detail.html:95 templates/reports/collection.html:33
+#: templates/reports/deposits.html:45 templates/reports/deposits.html:61
+msgid "Receipt"
+msgstr "إيصال"
+
+#: billing/receipts.py:50 billing/receipts.py:120 reports/views.py:332
+#: reports/views.py:406 reports/views.py:427 reports/views.py:487
+#: reports/views.py:492 reports/views.py:499
+#: templates/accounting/ledger.html:47 templates/billing/payment_list.html:35
+#: templates/billing/public_receipt.html:20
+#: templates/guests/public_deposit_receipt.html:23
+#: templates/guests/statement.html:34 templates/guests/tenancy_detail.html:55
+#: templates/guests/tenancy_detail.html:72 templates/reports/collection.html:33
+#: templates/reports/deposits.html:45 templates/reports/expense.html:17
+msgid "Date"
+msgstr "التاريخ"
+
+#: billing/receipts.py:52 reports/views.py:406
+#: templates/billing/invoice_detail.html:3
+#: templates/billing/invoice_list.html:28 templates/billing/overdue.html:27
+#: templates/billing/payment_detail.html:26
+#: templates/billing/payment_list.html:36
+#: templates/billing/public_receipt.html:27
+#: templates/guests/guest_detail.html:50 templates/guests/statement.html:21
+#: templates/guests/tenancy_detail.html:40 templates/reports/dashboard.html:89
+msgid "Invoice"
+msgstr "فاتورة"
+
+#: billing/receipts.py:53 billing/receipts.py:121 guests/forms.py:35
+#: messaging/forms.py:30 reports/views.py:332 reports/views.py:382
+#: reports/views.py:406 reports/views.py:475 reports/views.py:481
+#: reports/views.py:487 reports/views.py:492
+#: templates/billing/approvals.html:26 templates/billing/approvals.html:76
+#: templates/billing/daily_collection.html:26
+#: templates/billing/invoice_list.html:28 templates/billing/overdue.html:27
+#: templates/billing/payment_list.html:35
+#: templates/billing/public_receipt.html:21
+#: templates/guests/expiring_documents.html:19
+#: templates/guests/guest_form.html:2 templates/guests/guest_list.html:26
+#: templates/guests/public_deposit_receipt.html:24
+#: templates/guests/tenancy_list.html:18 templates/messaging/waiting.html:35
+#: templates/properties/room_detail.html:49
+#: templates/properties/room_detail.html:89
+#: templates/reports/collection.html:33 templates/reports/dashboard.html:89
+#: templates/reports/deposits.html:45 templates/reports/rent_roll.html:25
+#: templates/reports/staff_dashboard.html:44
+msgid "Guest"
+msgstr "النزيل"
+
+#: billing/receipts.py:54 billing/receipts.py:122 reports/views.py:382
+#: reports/views.py:472 templates/guests/guest_detail.html:141
+#: templates/guests/guest_list.html:26
+msgid "Mobile"
+msgstr "رقم الجوال"
+
+#: billing/receipts.py:55 billing/receipts.py:123 properties/views.py:155
+#: reports/views.py:382 reports/views.py:428 reports/views.py:455
+#: reports/views.py:459 templates/guests/tenancy_detail.html:111
+#: templates/properties/building_detail.html:12
+#: templates/properties/building_list.html:36
+#: templates/properties/room_detail.html:110
+#: templates/reports/dashboard.html:72 templates/reports/occupancy.html:20
+#: templates/reports/rent_roll.html:25
+msgid "Floor"
+msgstr "الطابق"
+
+#: billing/receipts.py:57 billing/receipts.py:125 properties/views.py:180
+#: reports/views.py:382 reports/views.py:455 reports/views.py:459
+#: reports/views.py:466 templates/guests/tenancy_detail.html:112
+#: templates/properties/bed_board.html:44
+#: templates/properties/building_detail.html:13
+#: templates/properties/building_detail.html:42
+#: templates/properties/building_detail.html:50
+#: templates/properties/room_detail.html:9
+#: templates/properties/room_detail.html:111
+#: templates/reports/occupancy.html:29
+msgid "Apartment"
+msgstr "شقة"
+
+#: billing/receipts.py:58 billing/receipts.py:126 guests/forms.py:36
+#: properties/models.py:162 properties/views.py:228 reports/views.py:332
+#: reports/views.py:383 reports/views.py:428 reports/views.py:459
+#: reports/views.py:466 templates/billing/public_receipt.html:23
+#: templates/guests/public_deposit_receipt.html:26
+#: templates/guests/tenancy_detail.html:113
+#: templates/partials/_plan_room.html:7 templates/partials/_plan_room.html:8
+#: templates/properties/building_detail.html:14
+#: templates/properties/building_detail.html:57
+#: templates/properties/room_detail.html:2
+#: templates/properties/room_detail.html:3
+#: templates/properties/room_detail.html:10
+#: templates/properties/room_detail.html:13
+#: templates/properties/room_detail.html:14
+msgid "Room"
+msgstr "الغرفة"
+
+#: billing/receipts.py:60 billing/receipts.py:128 guests/forms.py:37
+#: properties/views.py:318 reports/views.py:383 reports/views.py:466
+#: templates/guests/tenancy_detail.html:114
+#: templates/properties/room_detail.html:30
+#: templates/properties/room_detail.html:49
+#: templates/properties/room_detail.html:89
+msgid "Bed"
+msgstr "السرير"
+
+#: billing/receipts.py:62 reports/views.py:481
+#: templates/billing/invoice_list.html:29 templates/guests/guest_detail.html:50
+#: templates/guests/statement.html:21 templates/guests/tenancy_detail.html:40
+msgid "Period"
+msgstr "الفترة"
+
+#: billing/receipts.py:70 templates/billing/invoice_detail.html:32
+#: templates/reports/settings.html:13
+msgid "Late fee"
+msgstr "رسوم التأخير"
+
+#: billing/receipts.py:72
+msgid "Discount"
+msgstr "خصم"
+
+#: billing/receipts.py:73
+msgid "Invoice total"
+msgstr ""
+
+#: billing/receipts.py:74 billing/receipts.py:175
+msgid "AMOUNT PAID"
+msgstr ""
+
+#: billing/receipts.py:76 reports/views.py:482
+#: templates/billing/invoice_detail.html:39
+#: templates/billing/invoice_list.html:30 templates/billing/overdue.html:28
+#: templates/guests/guest_detail.html:50 templates/guests/statement.html:22
+#: templates/guests/tenancy_detail.html:41 templates/reports/dashboard.html:89
+msgid "Balance"
+msgstr "الرصيد"
+
+#: billing/receipts.py:78 billing/receipts.py:139 reports/views.py:406
+#: reports/views.py:487 templates/billing/approvals.html:27
+#: templates/billing/approvals.html:77
+#: templates/billing/daily_collection.html:26
+#: templates/billing/payment_detail.html:16
+#: templates/billing/payment_list.html:22
+#: templates/billing/payment_list.html:36 templates/guests/statement.html:34
+#: templates/guests/tenancy_detail.html:56 templates/reports/collection.html:34
+msgid "Mode"
+msgstr "طريقة الدفع"
+
+#: billing/receipts.py:80 billing/receipts.py:141 guests/forms.py:234
+#: reports/views.py:406 templates/billing/payment_detail.html:24
+#: templates/billing/public_receipt.html:30
+msgid "Reference"
+msgstr "المرجع"
+
+#: billing/receipts.py:81 reports/views.py:407 reports/views.py:488
+#: templates/billing/approvals.html:26 templates/billing/payment_detail.html:27
+#: templates/billing/payment_list.html:36 templates/guests/statement.html:35
+#: templates/guests/tenancy_detail.html:56 templates/reports/collection.html:34
+msgid "Collected by"
+msgstr "حُصِّل بواسطة"
+
+#: billing/receipts.py:83 billing/receipts.py:145
+msgid "Guest signature: "
+msgstr ""
+
+#: billing/receipts.py:131 billing/receipts.py:176
+msgid "AMOUNT RECEIVED"
+msgstr "المبلغ المستلم"
+
+#: billing/receipts.py:131 billing/receipts.py:177
+msgid "AMOUNT PAID OUT"
+msgstr "المبلغ المدفوع"
+
+#: billing/receipts.py:135 templates/guests/check_out.html:24
+msgid "Deposit agreed"
+msgstr "التأمين المتفق عليه"
+
+#: billing/receipts.py:136
+msgid "Deposit now held"
+msgstr "التأمين المحتفظ به الآن"
+
+#: billing/receipts.py:142 reports/views.py:333
+#: templates/guests/deposit_receipt.html:70
+#: templates/guests/public_deposit_receipt.html:29
+msgid "Recorded by"
+msgstr "سُجّل بواسطة"
+
+#: billing/receipts.py:147
+msgid ""
+"A deposit is held, not rent. It is returned at check-out less any agreed "
+"deduction."
+msgstr ""
+
+#: billing/receipts.py:191
+msgid "No printer configured."
+msgstr ""
+
+#: billing/receipts.py:195
+msgid "Network printer address must be IP:port."
+msgstr ""
+
+#: billing/receipts.py:200
+#, python-format
+msgid "Sent %(n)d bytes to %(addr)s"
+msgstr ""
+
+#: billing/receipts.py:202
+#, python-format
+msgid "Printer unreachable: %(err)s"
+msgstr ""
+
+#: billing/receipts.py:207
+#, python-format
+msgid "Sent to %(addr)s"
+msgstr ""
+
+#: billing/receipts.py:209
+#, python-format
+msgid "USB device error: %(err)s"
+msgstr ""
+
+#: billing/receipts.py:210
+msgid "Bluetooth printing is handled by the local print agent."
+msgstr ""
+
+#: billing/services.py:57
+#, python-format
+msgid "Invoice %(no)s raised for %(guest)s (%(period)s)"
+msgstr ""
+
+#: billing/services.py:166
+#, python-format
+msgid "Receipt %(no)s — %(amount)s from %(guest)s by %(mode)s%(flag)s"
+msgstr ""
+
+#: billing/services.py:169
+msgid " (awaiting approval)"
+msgstr ""
+
+#: billing/services.py:182
+#, python-format
+msgid "Approved receipt %(no)s collected by %(who)s"
+msgstr ""
+
+#: billing/services.py:197
+#, python-format
+msgid "Rejected by the owner: %(reason)s"
+msgstr ""
+
+#: billing/services.py:199
+#, python-format
+msgid "Rejected receipt %(no)s collected by %(who)s: %(reason)s"
+msgstr ""
+
+#: billing/services.py:211
+#, python-format
+msgid "Reversed receipt %(no)s: %(reason)s"
+msgstr ""
+
+#: billing/services.py:228
+msgid "Settled from advance credit"
+msgstr ""
+
+#: billing/services.py:232
+#, python-format
+msgid "Applied %(amount)s advance credit to %(no)s"
+msgstr ""
+
+#: billing/services.py:249
+#, python-format
+msgid "Late fee on %(no)s set to %(fee)s"
+msgstr ""
+
+#: billing/services.py:262
+msgid "Unspecified"
+msgstr ""
+
+#: billing/views.py:91
+#, python-format
+msgid "Invoice %(no)s created."
+msgstr ""
+
+#: billing/views.py:112
+#, python-format
+msgid "Discount approved on %(no)s: %(reason)s"
+msgstr ""
+
+#: billing/views.py:117
+msgid "Discount applied."
+msgstr ""
+
+#: billing/views.py:137
+#, python-format
+msgid "Applied %(a)s from advance credit."
+msgstr ""
+
+#: billing/views.py:140
+msgid "No advance credit available."
+msgstr ""
+
+#: billing/views.py:198
+#, python-format
+msgid "Receipt %(no)s recorded. It is waiting for the owner to approve it."
+msgstr ""
+
+#: billing/views.py:201
+#, python-format
+msgid "Receipt %(no)s recorded."
+msgstr ""
+
+#: billing/views.py:226
+msgid "Payment reversed. The receipt number stays retired."
+msgstr ""
+
+#: billing/views.py:308
+#, python-format
+msgid "Receipt %(no)s sent to %(printer)s: %(note)s"
+msgstr ""
+
+#: billing/views.py:311
+#, python-format
+msgid "Sent to the printer. %(note)s"
+msgstr ""
+
+#: billing/views.py:313
+#, python-format
+msgid "%(note)s Use the PDF fallback instead."
+msgstr ""
+
+#: billing/views.py:342
+#, python-format
+msgid ""
+"Thank you %(guest)s. We received %(currency)s %(amount)s for %(bed)s. "
+"Receipt %(receipt)s: %(link)s"
+msgstr ""
+
+#: billing/views.py:355
+#, python-format
+msgid "Shared receipt %(no)s with %(name)s on WhatsApp"
+msgstr ""
+
+#: billing/views.py:358 guests/views.py:407 guests/views.py:660
+msgid "No WhatsApp number for this guest."
+msgstr ""
+
+#: billing/views.py:410
+#, python-format
+msgid "Printer %(n)s saved"
+msgstr ""
+
+#: billing/views.py:411
+msgid "Printer saved."
+msgstr ""
+
+#: billing/views.py:422
+msgid "ZyDwell test print"
+msgstr ""
+
+#: billing/views.py:461
+#, python-format
+msgid "Cash handover declared: %(a)s"
+msgstr ""
+
+#: billing/views.py:462
+msgid "Handover recorded. The admin will confirm it."
+msgstr ""
+
+#: billing/views.py:484
+#, python-format
+msgid "Confirmed cash handover from %(who)s"
+msgstr ""
+
+#: billing/views.py:486
+msgid "Handover confirmed."
+msgstr ""
+
+#: billing/views.py:521
+#, python-format
+msgid "Receipt %(no)s approved."
+msgstr ""
+
+#: billing/views.py:526 billing/views.py:553
+msgid "Say why it is being rejected."
+msgstr ""
+
+#: billing/views.py:531
+#, python-format
+msgid "Receipt %(no)s rejected and reversed. The guest still owes it."
+msgstr ""
+
+#: billing/views.py:548
+#, python-format
+msgid "Deposit %(no)s approved."
+msgstr ""
+
+#: billing/views.py:557
+#, python-format
+msgid "Deposit %(no)s rejected and removed."
+msgstr ""
+
+#: billing/views.py:569
+msgid "That code is already in use."
+msgstr ""
+
+#: billing/views.py:573
+#, python-format
+msgid "Payment mode %(n)s added"
+msgstr ""
+
+#: billing/views.py:574
+msgid "Payment mode added."
+msgstr ""
+
+#: billing/views.py:591
+#, python-format
+msgid "Payment mode %(n)s updated"
+msgstr ""
+
+#: billing/views.py:593
+msgid "Payment mode saved."
+msgstr ""
+
+#: billing/views.py:606
+msgid ""
+"Money has already been taken this way, so it has been switched off rather "
+"than deleted."
+msgstr ""
+
+#: billing/views.py:610
+#, python-format
+msgid "Payment mode %(n)s deleted"
+msgstr ""
+
+#: billing/views.py:612
+msgid "Payment mode removed."
+msgstr ""
+
+#: billing/views.py:624
+msgid "Late fee rule updated"
+msgstr ""
+
+#: billing/views.py:625
+msgid "Late fee rule saved."
+msgstr ""
+
+#: billing/views.py:637
+#, python-format
+msgid "%(n)d invoice(s) raised, %(f)d late fee(s) updated."
+msgstr ""
+
+#: core/constants.py:15 core/models.py:318
+msgid "Property setup"
+msgstr ""
+
+#: core/constants.py:16 core/models.py:319
+msgid "Guests & tenancy"
+msgstr ""
+
+#: core/constants.py:17 core/models.py:320
+msgid "Rent & invoicing"
+msgstr ""
+
+#: core/constants.py:18 core/models.py:321 core/navigation.py:21
+#: reports/views.py:438 templates/accounting/ledger.html:2
+#: templates/accounting/ledger.html:3 templates/accounting/ledger.html:6
+#: templates/reports/deposits.html:80
+msgid "Income & expense"
+msgstr "الدخل والمصروفات"
+
+#: core/constants.py:19 core/models.py:322 templates/messaging/log.html:3
+msgid "WhatsApp alerts"
+msgstr "تنبيهات واتساب"
+
+#: core/constants.py:20 core/models.py:323
+msgid "Dashboard & reports"
+msgstr ""
+
+#: core/constants.py:21 core/models.py:324
+msgid "POS receipt printing"
+msgstr ""
+
+#: core/constants.py:22
+msgid "Staff accounts"
+msgstr ""
+
+#: core/constants.py:23
+msgid "Settings & statuses"
+msgstr ""
+
+#: core/forms.py:12
+msgid "Admin username"
+msgstr ""
+
+#: core/forms.py:13
+msgid "Admin email"
+msgstr ""
+
+#: core/forms.py:14
+msgid "Admin password"
+msgstr ""
+
+#: core/forms.py:34
+msgid "That slug is taken."
+msgstr ""
+
+#: core/forms.py:41
+msgid "Create the owner account too."
+msgstr ""
+
+#: core/forms.py:43
+msgid "Set a first password for the owner."
+msgstr ""
+
+#: core/forms.py:49
+msgid "That username is taken."
+msgstr ""
+
+#: core/forms.py:121
+#, python-format
+msgid "Stored: %(tail)s — leave blank to keep it, or paste a new one."
+msgstr ""
+
+#: core/forms.py:123
+msgid "Nothing stored yet."
+msgstr "لا يوجد شيء مخزّن بعد."
+
+#: core/forms.py:137
+msgid "Automatic sending needs both a phone number ID and an access token."
+msgstr ""
+
+#: core/forms.py:140
+msgid "Email needs a host and a from address."
+msgstr ""
+
+#: core/forms.py:148 messaging/models.py:147
+msgid "WhatsApp Business API"
+msgstr "واجهة واتساب للأعمال"
+
+#: core/forms.py:149
+msgid ""
+"With this on, reminders and receipts send by themselves. Templates must be "
+"approved by Meta first."
+msgstr ""
+
+#: core/forms.py:153 reports/views.py:472
+#: templates/core/tenant_integrations.html:22
+#: templates/guests/guest_detail.html:145
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
+#: core/forms.py:153
+msgid "Used for statements and anything a guest asks to be emailed."
+msgstr ""
+
+#: core/forms.py:156
+msgid "SMS gateway"
+msgstr "بوابة الرسائل النصية"
+
+#: core/forms.py:156
+msgid "A fallback when a guest has no WhatsApp."
+msgstr ""
+
+#: core/forms.py:158
+msgid "Payment gateway"
+msgstr "بوابة الدفع"
+
+#: core/forms.py:158
+msgid "For collecting rent through a payment link."
+msgstr ""
+
+#: core/forms.py:174
+msgid "Leave blank to have one generated."
+msgstr "اتركه فارغًا لتوليد كلمة مرور."
+
+#: core/forms.py:177
+msgid "Repeat the password"
+msgstr "أعد كتابة كلمة المرور"
+
+#: core/forms.py:191
+msgid "The two passwords do not match."
+msgstr "كلمتا المرور غير متطابقتين."
+
+#: core/middleware.py:70
+msgid ""
+"Choose a new password before carrying on — the one you were given is only "
+"for signing in this once."
+msgstr ""
+
+#: core/middleware.py:107
+#, python-format
+msgid ""
+"Subscription expired on %(date)s. Access continues until the grace period "
+"ends."
+msgstr ""
+
+#: core/models.py:23 reports/views.py:504 templates/accounts/staff_list.html:34
+#: templates/core/tenant_detail.html:15 templates/core/tenant_list.html:28
+msgid "Active"
+msgstr "نشط"
+
+#: core/models.py:24
+msgid "Locked (non-payment)"
+msgstr ""
+
+#: core/models.py:25 templates/core/tenant_detail.html:17
+#: templates/core/tenant_list.html:30
+msgid "Suspended"
+msgstr "موقوف"
+
+#: core/models.py:28
+msgid "company name"
+msgstr ""
+
+#: core/models.py:61 core/navigation.py:14 reports/views.py:452
+#: templates/properties/bed_board.html:7
+#: templates/properties/building_detail.html:5
+#: templates/properties/building_list.html:2
+#: templates/properties/building_list.html:3
+#: templates/properties/building_list.html:6
+#: templates/properties/room_detail.html:6
+msgid "Buildings"
+msgstr "المباني"
+
+#: core/models.py:62 reports/views.py:455 reports/views.py:459
+#: templates/properties/building_list.html:25
+#: templates/properties/room_types.html:10
+msgid "Rooms"
+msgstr "الغرف"
+
+#: core/models.py:63 reports/views.py:466
+#: templates/properties/building_detail.html:20
+#: templates/properties/building_list.html:26
+#: templates/properties/room_detail.html:28 templates/reports/dashboard.html:72
+#: templates/reports/occupancy.html:8 templates/reports/occupancy.html:20
+msgid "Beds"
+msgstr "الأسرّة"
+
+#: core/models.py:64
+msgid "Staff seats"
+msgstr ""
+
+#: core/models.py:75 guests/models.py:207
+msgid "Monthly"
+msgstr ""
+
+#: core/models.py:75
+msgid "Yearly"
+msgstr ""
+
+#: core/models.py:131
+msgid "Bed status"
+msgstr ""
+
+#: core/models.py:132
+msgid "Tenancy status"
+msgstr ""
+
+#: core/models.py:133
+msgid "Invoice status"
+msgstr ""
+
+#: core/models.py:140
+msgid "Stable identifier used by automations, e.g. \"occupied\"."
+msgstr ""
+
+#: core/models.py:142
+msgid "Hex colour, e.g. #16a34a"
+msgstr ""
+
+#: core/models.py:146
+msgid "Invoice statuses only — treat as fully settled."
+msgstr ""
+
+#: core/models.py:148
+msgid "Applied to new records of this kind."
+msgstr ""
+
+#: core/models.py:150
+msgid "Seeded status the system relies on; cannot be deleted."
+msgstr ""
+
+#: core/models.py:159
+msgid "statuses"
+msgstr ""
+
+#: core/models.py:236
+msgid "send WhatsApp automatically"
+msgstr ""
+
+#: core/models.py:237
+msgid "Off means staff still open each message in WhatsApp by hand."
+msgstr ""
+
+#: core/models.py:240
+msgid "API base URL"
+msgstr ""
+
+#: core/models.py:243
+msgid "phone number ID"
+msgstr ""
+
+#: core/models.py:245
+msgid "business account ID"
+msgstr ""
+
+#: core/models.py:246
+msgid "access token"
+msgstr ""
+
+#: core/models.py:249
+msgid "send email"
+msgstr ""
+
+#: core/models.py:250
+msgid "SMTP host"
+msgstr ""
+
+#: core/models.py:251
+msgid "SMTP port"
+msgstr ""
+
+#: core/models.py:252
+msgid "use TLS"
+msgstr ""
+
+#: core/models.py:253
+msgid "SMTP username"
+msgstr ""
+
+#: core/models.py:254
+msgid "SMTP password"
+msgstr ""
+
+#: core/models.py:256
+msgid "from address"
+msgstr ""
+
+#: core/models.py:257
+msgid "What the guest sees the email coming from."
+msgstr ""
+
+#: core/models.py:260
+msgid "send SMS"
+msgstr ""
+
+#: core/models.py:261 core/models.py:266
+msgid "provider"
+msgstr ""
+
+#: core/models.py:262
+msgid "API key"
+msgstr ""
+
+#: core/models.py:263
+msgid "sender ID"
+msgstr ""
+
+#: core/models.py:267
+msgid "public key"
+msgstr ""
+
+#: core/models.py:268
+msgid "secret key"
+msgstr ""
+
+#: core/models.py:275
+msgid "integration settings"
+msgstr ""
+
+#: core/models.py:278
+msgid "Integrations for"
+msgstr ""
+
+#: core/models.py:347
+msgid "Info"
+msgstr ""
+
+#: core/models.py:347
+msgid "Warning"
+msgstr ""
+
+#: core/models.py:347
+msgid "Maintenance"
+msgstr ""
+
+#: core/models.py:353
+msgid "Leave empty to show to every client."
+msgstr ""
+
+#: core/models.py:376
+msgid "Created"
+msgstr ""
+
+#: core/models.py:377
+msgid "Updated"
+msgstr ""
+
+#: core/models.py:378
+msgid "Deleted"
+msgstr ""
+
+#: core/models.py:379
+msgid "Logged in"
+msgstr ""
+
+#: core/models.py:380
+msgid "Logged out"
+msgstr ""
+
+#: core/models.py:381 reports/views.py:407 reports/views.py:488
+#: templates/billing/payment_detail.html:8
+#: templates/billing/payment_list.html:47
+msgid "Reversed"
+msgstr "معكوس"
+
+#: core/models.py:382
+msgid "Impersonated"
+msgstr ""
+
+#: core/models.py:383
+msgid "Exported"
+msgstr ""
+
+#: core/models.py:384
+msgid "Printed"
+msgstr ""
+
+#: core/navigation.py:13 templates/reports/dashboard.html:2
+#: templates/reports/dashboard.html:3 templates/reports/staff_dashboard.html:2
+#: templates/reports/staff_dashboard.html:3
+msgid "Dashboard"
+msgstr "لوحة المعلومات"
+
+#: core/navigation.py:15 templates/properties/bed_board.html:2
+#: templates/properties/bed_board.html:6
+#: templates/properties/building_list.html:8 templates/reports/dashboard.html:9
+#: templates/reports/occupancy.html:6
+msgid "Bed board"
+msgstr "لوحة الأسرّة"
+
+#: core/navigation.py:16 reports/views.py:472
+#: templates/core/system_health.html:32 templates/guests/guest_delete.html:6
+#: templates/guests/guest_detail.html:5 templates/guests/guest_list.html:2
+#: templates/guests/guest_list.html:3 templates/guests/guest_list.html:6
+msgid "Guests"
+msgstr "النزلاء"
+
+#: core/navigation.py:17 reports/views.py:475
+#: templates/guests/guest_delete.html:43 templates/guests/tenancy_detail.html:5
+#: templates/guests/tenancy_list.html:2 templates/guests/tenancy_list.html:3
+#: templates/guests/tenancy_list.html:5
+msgid "Tenancies"
+msgstr "عقود السكن"
+
+#: core/navigation.py:18 reports/views.py:481
+#: templates/billing/invoice_detail.html:5
+#: templates/billing/invoice_list.html:2 templates/billing/invoice_list.html:3
+#: templates/billing/invoice_list.html:6 templates/guests/guest_delete.html:44
+#: templates/guests/statement.html:16 templates/guests/statement.html:19
+#: templates/guests/tenancy_detail.html:37
+msgid "Invoices"
+msgstr "الفواتير"
+
+#: core/navigation.py:19 reports/views.py:487
+#: templates/billing/payment_list.html:2 templates/billing/payment_list.html:3
+#: templates/billing/payment_list.html:6 templates/guests/statement.html:32
+#: templates/guests/tenancy_detail.html:52
+msgid "Payments"
+msgstr "المدفوعات"
+
+#: core/navigation.py:20 templates/billing/invoice_list.html:8
+#: templates/billing/overdue.html:3 templates/billing/overdue.html:5
+#: templates/reports/index.html:16
+msgid "Overdue & aging"
+msgstr "المتأخرات والأعمار"
+
+#: core/navigation.py:22 templates/billing/overdue.html:43
+#: templates/core/tenant_integrations.html:18
+#: templates/guests/expiring_documents.html:30
+#: templates/guests/guest_detail.html:11 templates/guests/guest_detail.html:142
+#: templates/guests/tenancy_detail.html:12 templates/reports/settings.html:15
+#: templates/reports/staff_dashboard.html:55
+msgid "WhatsApp"
+msgstr "واتساب"
+
+#: core/navigation.py:23 templates/reports/dashboard.html:10
+#: templates/reports/index.html:2 templates/reports/index.html:3
+#: templates/reports/index.html:5
+msgid "Reports"
+msgstr "التقارير"
+
+#: core/navigation.py:24 templates/billing/printer_list.html:2
+#: templates/billing/printer_list.html:3 templates/billing/printer_list.html:5
+msgid "POS printers"
+msgstr "طابعات نقاط البيع"
+
+#: core/navigation.py:25 templates/accounts/staff_list.html:3
+#: templates/accounts/staff_list.html:6
+msgid "Staff & access"
+msgstr "الموظفون والصلاحيات"
+
+#: core/navigation.py:26 templates/billing/payment_modes.html:8
+#: templates/reports/audit_log.html:7 templates/reports/settings.html:2
+#: templates/reports/settings.html:3 templates/reports/settings.html:5
+#: templates/reports/statuses.html:7
+msgid "Settings"
+msgstr "الإعدادات"
+
+#: core/permissions.py:15
+msgid "Pick a client account to work inside."
+msgstr ""
+
+#: core/permissions.py:17
+msgid "Your account is not linked to a client."
+msgstr ""
+
+#: core/permissions.py:35
+msgid "This module is switched off for your account."
+msgstr ""
+
+#: core/permissions.py:38
+#, python-format
+msgid "You do not have permission to %(action)s in this module."
+msgstr ""
+
+#: core/permissions.py:68
+msgid "Only the building owner can do this."
+msgstr ""
+
+#: core/permissions.py:83
+msgid "Platform console is restricted."
+msgstr ""
+
+#: core/views.py:64
+#, python-format
+msgid "Client %(n)s saved"
+msgstr ""
+
+#: core/views.py:68
+#, python-format
+msgid ""
+"Client created with owner account \"%(u)s\". They must change the password "
+"on first sign-in."
+msgstr ""
+
+#: core/views.py:71
+msgid "Client saved."
+msgstr ""
+
+#: core/views.py:95
+#, python-format
+msgid "Subscription updated for %(n)s"
+msgstr ""
+
+#: core/views.py:96
+msgid "Subscription saved."
+msgstr ""
+
+#: core/views.py:103
+#, python-format
+msgid "Branding updated for %(n)s"
+msgstr ""
+
+#: core/views.py:104
+msgid "Branding saved."
+msgstr ""
+
+#: core/views.py:113
+#, python-format
+msgid "Feature flags updated for %(n)s"
+msgstr ""
+
+#: core/views.py:114
+msgid "Modules updated."
+msgstr ""
+
+#: core/views.py:119
+#, python-format
+msgid "Master data re-seeded for %(n)s"
+msgstr ""
+
+#: core/views.py:120
+msgid "Missing master data has been added."
+msgstr ""
+
+#: core/views.py:166
+#, python-format
+msgid "Integration settings updated for %(n)s%(keys)s"
+msgstr ""
+
+#: core/views.py:168
+#, python-format
+msgid " (new %(fields)s)"
+msgstr ""
+
+#: core/views.py:171
+msgid "Integration settings saved."
+msgstr ""
+
+#: core/views.py:191
+#, python-format
+msgid "Client %(n)s set to %(s)s"
+msgstr ""
+
+#: core/views.py:194
+msgid "Client status updated."
+msgstr ""
+
+#: core/views.py:214
+#, python-format
+msgid "Password reset for %(who)s by the platform owner"
+msgstr ""
+
+#: core/views.py:223
+#, python-format
+msgid "Password set. %(who)s must choose a new one when they next sign in."
+msgstr ""
+
+#: core/views.py:241
+#, python-format
+msgid "Super admin opened %(n)s"
+msgstr ""
+
+#: core/views.py:242
+#, python-format
+msgid "Now working inside %(n)s."
+msgstr ""
+
+#: core/views.py:255
+#, python-format
+msgid "%(who)s signed in as %(target)s for support"
+msgstr ""
+
+#: core/views.py:260
+#, python-format
+msgid "You are now signed in as %(n)s. Everything you do is logged."
+msgstr ""
+
+#: core/views.py:275
+msgid "Support session ended"
+msgstr ""
+
+#: core/views.py:277
+msgid "Back on the platform console."
+msgstr ""
+
+#: core/views.py:329
+#, python-format
+msgid "Notice published: %(t)s"
+msgstr ""
+
+#: core/views.py:330
+msgid "Notice published."
+msgstr ""
+
+#: core/views.py:351
+msgid "That code already exists in this kind."
+msgstr ""
+
+#: core/views.py:354
+msgid "Default status added."
+msgstr ""
+
+#: guests/forms.py:38
+msgid "Leave empty when the whole room or flat is let."
+msgstr ""
+
+#: guests/forms.py:39
+msgid "Check-in date"
+msgstr ""
+
+#: guests/forms.py:41
+msgid "Expected check-out"
+msgstr ""
+
+#: guests/forms.py:43
+msgid "Agreed monthly rent"
+msgstr ""
+
+#: guests/forms.py:44
+msgid "Billing cycle"
+msgstr ""
+
+#: guests/forms.py:46
+msgid "Invoice day of month"
+msgstr ""
+
+#: guests/forms.py:49
+msgid "Billing arrangement"
+msgstr "طريقة الفوترة"
+
+#: guests/forms.py:53
+msgid "First invoice"
+msgstr "الفاتورة الأولى"
+
+#: guests/forms.py:55
+msgid "Full rent for the period — collect the whole amount now"
+msgstr ""
+
+#: guests/forms.py:56
+msgid "Only the days stayed in this first period"
+msgstr "أيام الإقامة فقط في هذه الفترة الأولى"
+
+#: guests/forms.py:57
+msgid "A set amount we agreed"
+msgstr "مبلغ متفق عليه"
+
+#: guests/forms.py:62
+msgid "Amount agreed for the first invoice"
+msgstr "المبلغ المتفق عليه للفاتورة الأولى"
+
+#: guests/forms.py:63
+msgid "Only used when \"a set amount\" is chosen above."
+msgstr ""
+
+#: guests/forms.py:65
+msgid "Security deposit agreed"
+msgstr ""
+
+#: guests/forms.py:67
+msgid "Deposit received now"
+msgstr ""
+
+#: guests/forms.py:70
+msgid "Raise the first invoice now (pro-rata)"
+msgstr ""
+
+#: guests/forms.py:72
+msgid "Agreement note"
+msgstr ""
+
+#: guests/forms.py:97 guests/forms.py:195 guests/models.py:326
+msgid "That bed is not in the selected room."
+msgstr ""
+
+#: guests/forms.py:99
+msgid "Pick a bed — this room is let per bed."
+msgstr ""
+
+#: guests/forms.py:105
+#, python-format
+msgid "%(name)s is already in this bed."
+msgstr ""
+
+#: guests/forms.py:112
+#, python-format
+msgid "This unit is already let to %(name)s."
+msgstr ""
+
+#: guests/forms.py:115
+msgid "Enter the amount you agreed with the guest."
+msgstr "أدخل المبلغ الذي اتفقت عليه مع النزيل."
+
+#: guests/forms.py:135
+msgid "Check-out date"
+msgstr ""
+
+#: guests/forms.py:137
+msgid "Deduct from deposit"
+msgstr ""
+
+#: guests/forms.py:139
+msgid "Reason for deduction"
+msgstr ""
+
+#: guests/forms.py:141
+msgid "Refund to guest"
+msgstr ""
+
+#: guests/forms.py:158
+#, python-format
+msgid "Deductions plus refund (%(out)s) exceed the deposit held (%(held)s)."
+msgstr ""
+
+#: guests/forms.py:161
+msgid "Give a reason for the deduction."
+msgstr ""
+
+#: guests/forms.py:166
+msgid "Move to room"
+msgstr ""
+
+#: guests/forms.py:167
+msgid "Move to bed"
+msgstr ""
+
+#: guests/forms.py:169
+msgid "Transfer date"
+msgstr ""
+
+#: guests/forms.py:171
+msgid "New monthly rent"
+msgstr ""
+
+#: guests/forms.py:173
+msgid "Leave empty to take the new bed or room price."
+msgstr ""
+
+#: guests/forms.py:197
+msgid "The guest is already in this bed."
+msgstr ""
+
+#: guests/forms.py:203
+#, python-format
+msgid "%(name)s is already in that bed."
+msgstr ""
+
+#: guests/forms.py:206
+msgid "Pick a bed — that room is let per bed."
+msgstr ""
+
+#: guests/forms.py:211
+msgid "Notice given on"
+msgstr ""
+
+#: guests/forms.py:213
+msgid "Leaving on"
+msgstr ""
+
+#: guests/forms.py:232
+msgid "Amount received"
+msgstr ""
+
+#: guests/forms.py:233
+msgid "Received as"
+msgstr "استُلم بواسطة"
+
+#: guests/forms.py:268
+#, python-format
+msgid "Upload a photo or a PDF (%(kinds)s)."
+msgstr ""
+
+#: guests/forms.py:272
+msgid "That file is larger than 5 MB. Try a photo instead."
+msgstr ""
+
+#: guests/forms.py:284
+msgid "Passport number"
+msgstr "رقم جواز السفر"
+
+#: guests/forms.py:285
+msgid "Passport expiry"
+msgstr "انتهاء جواز السفر"
+
+#: guests/forms.py:287
+msgid "Photo of your passport"
+msgstr "صورة جواز سفرك"
+
+#: guests/forms.py:289
+msgid "Emirates ID number"
+msgstr "رقم الهوية الإماراتية"
+
+#: guests/forms.py:291
+msgid "Emirates ID expiry"
+msgstr "انتهاء الهوية الإماراتية"
+
+#: guests/forms.py:293
+msgid "Photo of your Emirates ID"
+msgstr "صورة هويتك الإماراتية"
+
+#: guests/forms.py:295
+msgid "Visa number"
+msgstr "رقم التأشيرة"
+
+#: guests/forms.py:296
+msgid "Visa expiry"
+msgstr "انتهاء التأشيرة"
+
+#: guests/forms.py:298
+msgid "Photo of your visa"
+msgstr "صورة تأشيرتك"
+
+#: guests/forms.py:318
+msgid "So the office can reach you."
+msgstr ""
+
+#: guests/forms.py:320
+msgid "Only if it differs from the number above."
+msgstr ""
+
+#: guests/forms.py:321
+msgid "Your photo"
+msgstr "صورتك"
+
+#: guests/forms.py:346
+msgid "Add the number as well as the expiry date."
+msgstr ""
+
+#: guests/forms.py:377
+msgid "About you"
+msgstr "عنك"
+
+#: guests/forms.py:379
+msgid "How we reach you"
+msgstr "كيف نتواصل معك"
+
+#: guests/forms.py:380
+msgid "In an emergency"
+msgstr "في حالات الطوارئ"
+
+#: guests/forms.py:382
+msgid "Where you work"
+msgstr "مكان عملك"
+
+#: guests/forms.py:383
+msgid "Your documents"
+msgstr "مستنداتك"
+
+#: guests/forms.py:392
+msgid "Link works for"
+msgstr "مدة صلاحية الرابط"
+
+#: guests/forms.py:393
+msgid "1 day"
+msgstr "يوم واحد"
+
+#: guests/forms.py:393
+msgid "7 days"
+msgstr "٧ أيام"
+
+#: guests/forms.py:393
+msgid "30 days"
+msgstr "٣٠ يومًا"
+
+#: guests/models.py:20
+msgid "WhatsApp number"
+msgstr "رقم واتساب"
+
+#: guests/models.py:21
+msgid "Leave empty to send WhatsApp to the mobile number above."
+msgstr "اتركه فارغًا لإرسال رسائل واتساب إلى رقم الجوال أعلاه."
+
+#: guests/models.py:29
+msgid "Male"
+msgstr ""
+
+#: guests/models.py:29
+msgid "Female"
+msgstr ""
+
+#: guests/models.py:29 templates/reports/occupancy.html:21
+msgid "Other"
+msgstr ""
+
+#: guests/models.py:86
+msgid "Passport"
+msgstr ""
+
+#: guests/models.py:87
+msgid "Emirates ID"
+msgstr ""
+
+#: guests/models.py:88
+msgid "Visa"
+msgstr ""
+
+#: guests/models.py:89
+msgid "Other document"
+msgstr ""
+
+#: guests/models.py:100
+msgid "Smallest alert window already sent (30 / 15 / 7)."
+msgstr ""
+
+#: guests/models.py:147
+msgid "Profile link for"
+msgstr ""
+
+#: guests/models.py:199
+msgid "Pay in advance — invoice at the start of the period"
+msgstr ""
+
+#: guests/models.py:200
+msgid "Post-paid — invoice at the end of the period"
+msgstr ""
+
+#: guests/models.py:208
+msgid "Weekly"
+msgstr ""
+
+#: guests/models.py:209
+msgid "Daily"
+msgstr ""
+
+#: guests/models.py:215
+msgid "Empty when the whole room or flat is let."
+msgstr ""
+
+#: guests/models.py:233
+msgid "Day of the month the invoice is raised (1-28)."
+msgstr ""
+
+#: guests/models.py:238
+msgid "billing arrangement"
+msgstr "طريقة الفوترة"
+
+#: guests/models.py:242
+msgid "charge only the days stayed in the first period"
+msgstr "احتساب أيام الإقامة فقط في الفترة الأولى"
+
+#: guests/models.py:243
+msgid ""
+"Switch off to charge the full rent however late in the month they moved in."
+msgstr "أوقفه لاحتساب الإيجار كاملًا مهما تأخر موعد دخولهم في الشهر."
+
+#: guests/models.py:247
+msgid "agreed joining amount"
+msgstr "مبلغ الانضمام المتفق عليه"
+
+#: guests/models.py:248
+msgid "Overrides the calculation for the first invoice only."
+msgstr "يتجاوز الحساب للفاتورة الأولى فقط."
+
+#: guests/models.py:267
+msgid "tenancies"
+msgstr ""
+
+#: guests/models.py:328
+msgid "Check-out cannot be before check-in."
+msgstr ""
+
+#: guests/models.py:330
+msgid "Use a day between 1 and 28."
+msgstr ""
+
+#: guests/models.py:338
+#, python-format
+msgid "%(guest)s is already checked in to this bed."
+msgstr ""
+
+#: guests/models.py:408
+msgid "Deposit received"
+msgstr ""
+
+#: guests/models.py:409
+msgid "Deduction"
+msgstr ""
+
+#: guests/models.py:410
+msgid "Refunded to guest"
+msgstr ""
+
+#: guests/models.py:425
+msgid "How the money came in, or went back out."
+msgstr ""
+
+#: guests/models.py:473
+msgid "DEPOSIT RECEIPT"
+msgstr "إيصال تأمين"
+
+#: guests/models.py:474
+msgid "DEPOSIT DEDUCTION"
+msgstr "خصم من التأمين"
+
+#: guests/models.py:475
+msgid "DEPOSIT REFUND"
+msgstr "إرجاع التأمين"
+
+#: guests/services.py:48
+msgid "Deposit collected at check-in"
+msgstr ""
+
+#: guests/services.py:51
+#, python-format
+msgid "Checked in %(guest)s to %(loc)s at %(rent)s/month"
+msgstr ""
+
+#: guests/services.py:78
+msgid "Deposit refunded on check-out"
+msgstr ""
+
+#: guests/services.py:90
+#, python-format
+msgid "Checked out %(guest)s on %(date)s"
+msgstr ""
+
+#: guests/services.py:104
+#, python-format
+msgid "Notice recorded, leaving on %(date)s"
+msgstr ""
+
+#: guests/services.py:161
+#, python-format
+msgid "Transferred %(guest)s from %(old)s to %(new)s"
+msgstr ""
+
+#: guests/services.py:181
+#, python-format
+msgid "Deposit %(no)s — %(amount)s held for %(guest)s"
+msgstr ""
+
+#: guests/services.py:196
+#, python-format
+msgid "Approved deposit %(no)s taken by %(who)s"
+msgstr ""
+
+#: guests/services.py:213
+#, python-format
+msgid "Rejected deposit %(no)s taken by %(who)s: %(reason)s"
+msgstr ""
+
+#: guests/services.py:244
+#, python-format
+msgid "Deposit kept — %(reason)s"
+msgstr ""
+
+#: guests/services.py:362
+#, python-format
+msgid "Permanently deleted guest %(name)s — %(detail)s"
+msgstr ""
+
+#: guests/services.py:365
+msgid "no linked records"
+msgstr ""
+
+#: guests/views.py:71
+#, python-format
+msgid "Guest %(name)s saved"
+msgstr ""
+
+#: guests/views.py:73
+msgid "Guest saved."
+msgstr ""
+
+#: guests/views.py:90
+#, python-format
+msgid "Document added for %(name)s"
+msgstr ""
+
+#: guests/views.py:91
+msgid "Document saved."
+msgstr ""
+
+#: guests/views.py:127
+msgid "Type the guest’s full name exactly to confirm the deletion."
+msgstr ""
+
+#: guests/views.py:132
+#, python-format
+msgid "%(name)s was deleted permanently. %(detail)s"
+msgstr ""
+
+#: guests/views.py:133
+msgid "There were no linked records."
+msgstr ""
+
+#: guests/views.py:147
+#, python-format
+msgid "Deleted document %(n)s"
+msgstr ""
+
+#: guests/views.py:149
+msgid "Document removed."
+msgstr ""
+
+#: guests/views.py:235
+#, python-format
+msgid "%(name)s checked in."
+msgstr ""
+
+#: guests/views.py:254
+#, python-format
+msgid "Invoice %(no)s raised for %(amount)s."
+msgstr ""
+
+#: guests/views.py:274
+#, python-format
+msgid "%(name)s checked out."
+msgstr ""
+
+#: guests/views.py:295
+#, python-format
+msgid "Transferred. Pro-rata: %(old)s on the old bed, %(new)s on the new one."
+msgstr ""
+
+#: guests/views.py:309
+msgid "Notice recorded."
+msgstr ""
+
+#: guests/views.py:326
+msgid "Only the building owner may change the rent."
+msgstr ""
+
+#: guests/views.py:331
+#, python-format
+msgid "Tenancy updated for %(name)s"
+msgstr ""
+
+#: guests/views.py:333
+msgid "Tenancy updated."
+msgstr ""
+
+#: guests/views.py:350
+msgid "Deposit recorded. It is waiting for the owner to approve it."
+msgstr ""
+
+#: guests/views.py:352
+msgid "Deposit recorded."
+msgstr ""
+
+#: guests/views.py:354
+msgid "Enter a valid amount."
+msgstr ""
+
+#: guests/views.py:367
+#, python-format
+msgid "Profile link issued for %(name)s, valid %(days)s days"
+msgstr ""
+
+#: guests/views.py:371
+msgid "Link created. Copy it, or send it on WhatsApp."
+msgstr ""
+
+#: guests/views.py:391
+#, python-format
+msgid ""
+"Hello %(guest)s, please complete your details for %(building)s here: "
+"%(link)s The link works for %(days)s more day(s)."
+msgstr ""
+
+#: guests/views.py:404
+#, python-format
+msgid "Opened the profile link for %(name)s in WhatsApp"
+msgstr ""
+
+#: guests/views.py:419
+#, python-format
+msgid "Profile link revoked for %(name)s"
+msgstr ""
+
+#: guests/views.py:421
+msgid "That link no longer works."
+msgstr ""
+
+#: guests/views.py:495
+#, python-format
+msgid "%(name)s completed their own profile from a shared link"
+msgstr ""
+
+#: guests/views.py:502
+msgid "self-service link"
+msgstr "رابط ذاتي"
+
+#: guests/views.py:628
+#, python-format
+msgid "Deposit receipt %(no)s sent to the printer: %(note)s"
+msgstr ""
+
+#: guests/views.py:643
+#, python-format
+msgid ""
+"%(title)s — %(currency)s %(amount)s for %(guest)s. Receipt %(no)s: %(link)s"
+msgstr ""
+
+#: guests/views.py:657
+#, python-format
+msgid "Shared deposit receipt %(no)s on WhatsApp"
+msgstr ""
+
+#: guests/views.py:691
+#, python-format
+msgid "Statement viewed for %(name)s"
+msgstr ""
+
+#: messaging/forms.py:31 templates/messaging/log.html:38
+#: templates/messaging/template_form.html:2
+msgid "Template"
+msgstr ""
+
+#: messaging/forms.py:33
+msgid "Reason / subject"
+msgstr ""
+
+#: messaging/forms.py:34
+#, python-brace-format
+msgid "Fills the {reason} placeholder in warning templates."
+msgstr ""
+
+#: messaging/forms.py:35 templates/messaging/log.html:39
+#: templates/messaging/waiting.html:36
+msgid "Message"
+msgstr "الرسالة"
+
+#: messaging/forms.py:37
+msgid "Leave empty to use the rendered template text."
+msgstr ""
+
+#: messaging/forms.py:49
+msgid "Pick a template or write a message."
+msgstr ""
+
+#: messaging/forms.py:54 reports/views.py:332 reports/views.py:382
+#: reports/views.py:427 reports/views.py:455 reports/views.py:459
+#: reports/views.py:466 templates/accounting/ledger.html:36
+#: templates/billing/public_receipt.html:22
+#: templates/guests/public_deposit_receipt.html:25
+#: templates/guests/tenancy_detail.html:110
+#: templates/properties/building_form.html:2
+#: templates/properties/building_form.html:3
+#: templates/properties/room_detail.html:109
+#: templates/reports/collection.html:34 templates/reports/deposits.html:30
+#: templates/reports/rent_roll.html:25
+msgid "Building"
+msgstr "المبنى"
+
+#: messaging/forms.py:55
+msgid "Leave empty to reach every current guest."
+msgstr ""
+
+#: messaging/forms.py:56
+msgid "Notice"
+msgstr ""
+
+#: messaging/models.py:15
+msgid "Rent reminder"
+msgstr ""
+
+#: messaging/models.py:16
+msgid "Rent due today"
+msgstr ""
+
+#: messaging/models.py:17
+msgid "Rent overdue"
+msgstr ""
+
+#: messaging/models.py:18
+msgid "Payment confirmation"
+msgstr ""
+
+#: messaging/models.py:19
+msgid "Warning notice"
+msgstr ""
+
+#: messaging/models.py:20
+msgid "Final notice before eviction"
+msgstr ""
+
+#: messaging/models.py:21
+msgid "Document / visa expiry"
+msgstr ""
+
+#: messaging/models.py:22
+msgid "Check-out & deposit settlement"
+msgstr ""
+
+#: messaging/models.py:23
+msgid "Building notice to all guests"
+msgstr ""
+
+#: messaging/models.py:31
+msgid "Name registered with the WhatsApp Business Cloud API."
+msgstr ""
+
+#: messaging/models.py:34
+#, python-brace-format
+msgid ""
+"Placeholders: {guest}, {building}, {bed}, {amount}, {due_date}, {invoice}, "
+"{receipt}, {balance}, {days}, {document}, {expiry}, {link}"
+msgstr ""
+
+#: messaging/models.py:38
+msgid "Approved by Meta — required before sending."
+msgstr ""
+
+#: messaging/models.py:81
+msgid "Negative is before the due date, 0 is on it, positive is after."
+msgstr ""
+
+#: messaging/models.py:96
+#, python-format
+msgid "%(n)d days before due"
+msgstr ""
+
+#: messaging/models.py:98
+msgid "On the due date"
+msgstr ""
+
+#: messaging/models.py:99
+#, python-format
+msgid "%(n)d days after due"
+msgstr ""
+
+#: messaging/models.py:122 templates/messaging/log.html:9
+#: templates/messaging/waiting.html:2 templates/messaging/waiting.html:3
+#: templates/messaging/waiting.html:6
+msgid "Waiting to send"
+msgstr "بانتظار الإرسال"
+
+#: messaging/models.py:123
+msgid "Opened in WhatsApp"
+msgstr "فُتح في واتساب"
+
+#: messaging/models.py:124 templates/messaging/log.html:67
+msgid "Sent"
+msgstr "أُرسل"
+
+#: messaging/models.py:125
+msgid "Delivered"
+msgstr "تم التسليم"
+
+#: messaging/models.py:126
+msgid "Read"
+msgstr ""
+
+#: messaging/models.py:127 templates/accounts/login_history.html:16
+#: templates/accounts/profile.html:55 templates/billing/printer_list.html:20
+#: templates/messaging/log.html:68
+msgid "Failed"
+msgstr "فاشل"
+
+#: messaging/models.py:128
+msgid "Skipped"
+msgstr "متخطى"
+
+#: messaging/models.py:148
+msgid "Opened in WhatsApp by staff"
+msgstr "فتحه الموظف في واتساب"
+
+#: messaging/services.py:79
+msgid "No mobile or WhatsApp number on file."
+msgstr "لا يوجد رقم جوال أو واتساب مسجّل."
+
+#: messaging/services.py:81
+msgid "Nothing to send — no template and no message text."
+msgstr ""
+
+#: messaging/services.py:84 messaging/services.py:154
+#, python-format
+msgid "Nothing to fill in for %(fields)s — the message would have gaps in it."
+msgstr ""
+
+#: messaging/services.py:149
+msgid "No mobile number on file."
+msgstr ""
+
+#: messaging/services.py:151
+#, python-format
+msgid "No active template for %(code)s."
+msgstr ""
+
+#: messaging/services.py:158
+msgid "Template not yet approved by Meta."
+msgstr ""
+
+#: messaging/services.py:163
+msgid "Automatic sending is off — waiting for someone to open it in WhatsApp."
+msgstr ""
+
+#: messaging/views.py:50 templates/messaging/log.html:22
+msgid "Automatic (nightly job)"
+msgstr "تلقائي (المهمة الليلية)"
+
+#: messaging/views.py:51 templates/billing/invoice_detail.html:47
+msgid "System"
+msgstr ""
+
+#: messaging/views.py:137
+#, python-format
+msgid "Opened a message to %(g)s in WhatsApp"
+msgstr ""
+
+#: messaging/views.py:141 messaging/views.py:229
+msgid "That message could not be prepared."
+msgstr ""
+
+#: messaging/views.py:152
+#, python-format
+msgid "Message to %(g)s: %(status)s"
+msgstr ""
+
+#: messaging/views.py:154
+#, python-format
+msgid "Message %(status)s."
+msgstr ""
+
+#: messaging/views.py:183
+#, python-format
+msgid "Broadcast sent to %(n)d guests"
+msgstr ""
+
+#: messaging/views.py:184
+#, python-format
+msgid "Notice queued for %(n)d guests."
+msgstr ""
+
+#: messaging/views.py:226
+#, python-format
+msgid "Opened a %(code)s message to %(name)s in WhatsApp"
+msgstr ""
+
+#: messaging/views.py:241
+msgid "There is no usable number on that message."
+msgstr ""
+
+#: messaging/views.py:244
+#, python-format
+msgid "Opened a waiting message to %(number)s in WhatsApp"
+msgstr ""
+
+#: messaging/views.py:289
+#, python-format
+msgid "Template %(n)s updated"
+msgstr ""
+
+#: messaging/views.py:292
+msgid "Template saved."
+msgstr ""
+
+#: messaging/views.py:312
+msgid "Reminder schedule updated."
+msgstr ""
+
+#: messaging/views.py:321
+msgid "Reminder removed."
+msgstr ""
+
+#: properties/forms.py:29
+#, python-format
+msgid "Your plan allows %(n)d buildings."
+msgstr ""
+
+#: properties/forms.py:75
+#, python-format
+msgid "Your plan allows %(n)d rooms."
+msgstr ""
+
+#: properties/forms.py:79
+msgid "Set the rent for the whole unit."
+msgstr ""
+
+#: properties/forms.py:103
+#, python-format
+msgid "Your plan allows %(n)d beds."
+msgstr ""
+
+#: properties/forms.py:111
+msgid "How many beds"
+msgstr ""
+
+#: properties/forms.py:112
+msgid "Monthly price each"
+msgstr ""
+
+#: properties/forms.py:113
+msgid "Start label"
+msgstr ""
+
+#: properties/forms.py:123
+#, python-format
+msgid "Only %(n)d more bed(s) fit in this room."
+msgstr ""
+
+#: properties/models.py:13
+msgid "building name"
+msgstr ""
+
+#: properties/models.py:14
+msgid "Short code used on receipts."
+msgstr ""
+
+#: properties/models.py:43
+msgid "floor name or number"
+msgstr ""
+
+#: properties/models.py:68
+msgid "apartment name or number"
+msgstr "اسم أو رقم الشقة"
+
+#: properties/models.py:101
+msgid "A guest is still checked in to this apartment."
+msgstr "لا يزال هناك نزيل مسجّل في هذه الشقة."
+
+#: properties/models.py:103
+msgid "Remove or archive the rooms in this apartment first."
+msgstr "احذف أو أرشف الغرف في هذه الشقة أولًا."
+
+#: properties/models.py:130
+msgid "Per bed (bedspace model)"
+msgstr ""
+
+#: properties/models.py:131
+msgid "Per room (whole room let)"
+msgstr ""
+
+#: properties/models.py:132
+msgid "Per flat (full apartment let)"
+msgstr ""
+
+#: properties/models.py:137
+msgid "room number"
+msgstr ""
+
+#: properties/models.py:141
+msgid "Maximum number of beds."
+msgstr ""
+
+#: properties/models.py:145
+msgid "Used when the rent basis is per room or per flat."
+msgstr ""
+
+#: properties/models.py:185
+msgid "Capacity must be at least one."
+msgstr ""
+
+#: properties/models.py:190
+#, python-format
+msgid "This room already has %(count)d beds; capacity cannot be lower."
+msgstr ""
+
+#: properties/models.py:198
+msgid "A guest is still checked in to this room."
+msgstr ""
+
+#: properties/models.py:200
+msgid "Remove or archive the beds in this room first."
+msgstr ""
+
+#: properties/models.py:206
+msgid "bed label"
+msgstr ""
+
+#: properties/models.py:265
+#, python-format
+msgid "Room %(room)s allows %(cap)d bed(s); it already has %(count)d."
+msgstr ""
+
+#: properties/models.py:279
+msgid "This bed is occupied. Check the guest out or archive the bed instead."
+msgstr ""
+
+#: properties/models.py:281
+msgid "This bed has stay history. Archive it instead of deleting."
+msgstr ""
+
+#: properties/views.py:52
+#, python-format
+msgid "Building %(name)s saved"
+msgstr ""
+
+#: properties/views.py:54
+msgid "Building saved."
+msgstr ""
+
+#: properties/views.py:151
+#, python-format
+msgid "Floor %(name)s saved"
+msgstr ""
+
+#: properties/views.py:152
+msgid "Floor saved."
+msgstr ""
+
+#: properties/views.py:156
+msgid "A floor, or a single flat / apartment unit."
+msgstr ""
+
+#: properties/views.py:175
+#, python-format
+msgid "Apartment %(name)s saved"
+msgstr ""
+
+#: properties/views.py:177
+msgid "Apartment saved."
+msgstr "تم حفظ الشقة."
+
+#: properties/views.py:181
+msgid "A flat on a floor. Rooms go inside it."
+msgstr "شقة في الطابق. الغرف بداخلها."
+
+#: properties/views.py:194
+#, python-format
+msgid "Deleted apartment %(n)s"
+msgstr ""
+
+#: properties/views.py:196
+msgid "Apartment deleted."
+msgstr "تم حذف الشقة."
+
+#: properties/views.py:200
+#, python-format
+msgid "%(why)s It has been archived instead."
+msgstr ""
+
+#: properties/views.py:223
+#, python-format
+msgid "Room %(no)s saved"
+msgstr ""
+
+#: properties/views.py:225
+msgid "Room saved."
+msgstr ""
+
+#: properties/views.py:229
+msgid "Bedspace, partition, studio or family flat."
+msgstr ""
+
+#: properties/views.py:251
+#, python-format
+msgid "%(n)d bed(s) added."
+msgstr ""
+
+#: properties/views.py:291
+#, python-format
+msgid "Added %(n)d bed(s) to room %(no)s"
+msgstr ""
+
+#: properties/views.py:313
+#, python-format
+msgid "Bed %(label)s saved"
+msgstr ""
+
+#: properties/views.py:315
+msgid "Bed saved."
+msgstr ""
+
+#: properties/views.py:319
+msgid "A bed belongs to exactly one room."
+msgstr ""
+
+#: properties/views.py:336
+#, python-format
+msgid "Bed %(label)s status changed"
+msgstr ""
+
+#: properties/views.py:338
+msgid "Bed status updated."
+msgstr ""
+
+#: properties/views.py:353
+#, python-format
+msgid "Deleted bed %(label)s"
+msgstr ""
+
+#: properties/views.py:355
+msgid "Bed deleted."
+msgstr ""
+
+#: properties/views.py:360
+#, python-format
+msgid "Archived bed %(label)s — %(why)s"
+msgstr ""
+
+#: properties/views.py:362
+#, python-format
+msgid "%(why)s The bed has been archived instead."
+msgstr ""
+
+#: properties/views.py:374
+#, python-format
+msgid "Deleted room %(no)s"
+msgstr ""
+
+#: properties/views.py:376
+msgid "Room deleted."
+msgstr ""
+
+#: properties/views.py:381
+#, python-format
+msgid "Archived room %(no)s — %(why)s"
+msgstr ""
+
+#: properties/views.py:382
+#, python-format
+msgid "%(why)s The room has been archived instead."
+msgstr ""
+
+#: properties/views.py:393
+#, python-format
+msgid "Room type %(n)s added"
+msgstr ""
+
+#: properties/views.py:394
+msgid "Room type added."
+msgstr ""
+
+#: reports/forms.py:13
+msgid "Django date format, for example \"d M Y\"."
+msgstr ""
+
+#: reports/forms.py:28
+msgid "A status cannot count as both available and occupied."
+msgstr ""
+
+#: reports/views.py:52
+msgid "Free beds in your area"
+msgstr "الأسرّة الشاغرة في نطاقك"
+
+#: reports/views.py:53
+#, python-format
+msgid "of %(n)s beds"
+msgstr "من أصل %(n)s سرير"
+
+#: reports/views.py:62
+msgid "Guests you look after"
+msgstr "النزلاء الذين ترعاهم"
+
+#: reports/views.py:63
+#, python-format
+msgid "%(n)s leaving within a week"
+msgstr "%(n)s يغادرون خلال أسبوع"
+
+#: reports/views.py:70
+msgid "You collected today"
+msgstr "حصّلت اليوم"
+
+#: reports/views.py:72
+#, python-format
+msgid "%(n)s receipts"
+msgstr "%(n)s إيصال"
+
+#: reports/views.py:81
+msgid "Rent still owed in your area"
+msgstr "الإيجار المستحق في نطاقك"
+
+#: reports/views.py:84
+#, python-format
+msgid "%(n)s invoices"
+msgstr "%(n)s فاتورة"
+
+#: reports/views.py:95
+msgid "Reminders to send"
+msgstr "تذكيرات بانتظار الإرسال"
+
+#: reports/views.py:96
+msgid "open each one in WhatsApp"
+msgstr "افتح كل واحد في واتساب"
+
+#: reports/views.py:281 templates/reports/expense.html:37
+msgid "Untagged"
+msgstr ""
+
+#: reports/views.py:332 reports/views.py:492 templates/reports/deposits.html:46
+msgid "Movement"
+msgstr "الحركة"
+
+#: reports/views.py:333 reports/views.py:492 templates/reports/deposits.html:46
+msgid "In"
+msgstr "وارد"
+
+#: reports/views.py:333 reports/views.py:493 templates/reports/deposits.html:47
+msgid "Out"
+msgstr "صادر"
+
+#: reports/views.py:345
+msgid "Exported the deposit report"
+msgstr ""
+
+#: reports/views.py:347 reports/views.py:349 reports/views.py:492
+#: templates/reports/deposits.html:2 templates/reports/deposits.html:3
+#: templates/reports/deposits.html:6 templates/reports/index.html:14
+msgid "Deposits"
+msgstr "التأمينات"
+
+#: reports/views.py:383 reports/views.py:475
+#: templates/guests/tenancy_detail.html:120
+#: templates/guests/tenancy_list.html:18
+msgid "Check-in"
+msgstr "تاريخ الدخول"
+
+#: reports/views.py:383 reports/views.py:460
+#: templates/guests/guest_detail.html:23
+#: templates/guests/tenancy_detail.html:25
+msgid "Monthly rent"
+msgstr "الإيجار الشهري"
+
+#: reports/views.py:383 templates/guests/check_out.html:25
+#: templates/guests/tenancy_detail.html:29
+msgid "Deposit held"
+msgstr "التأمين المحتفظ به"
+
+#: reports/views.py:384 templates/guests/guest_detail.html:24
+#: templates/guests/statement.html:14 templates/guests/tenancy_detail.html:28
+#: templates/guests/tenancy_list.html:19 templates/reports/rent_roll.html:13
+#: templates/reports/rent_roll.html:27
+msgid "Outstanding"
+msgstr "المتبقي"
+
+#: reports/views.py:388 templates/guests/tenancy_detail.html:114
+msgid "Whole unit"
+msgstr "الوحدة كاملة"
+
+#: reports/views.py:392
+msgid "Exported the rent roll"
+msgstr ""
+
+#: reports/views.py:394 reports/views.py:397 templates/reports/index.html:10
+#: templates/reports/rent_roll.html:2 templates/reports/rent_roll.html:3
+#: templates/reports/rent_roll.html:5
+msgid "Rent roll"
+msgstr "كشف الإيجارات"
+
+#: reports/views.py:407 reports/views.py:428 reports/views.py:487
+#: reports/views.py:499 templates/accounting/ledger.html:48
+#: templates/accounting/recurring.html:11 templates/billing/approvals.html:27
+#: templates/billing/approvals.html:77
+#: templates/billing/daily_collection.html:26
+#: templates/billing/payment_detail.html:15
+#: templates/billing/payment_list.html:37 templates/guests/statement.html:35
+#: templates/guests/tenancy_detail.html:55 templates/reports/collection.html:34
+#: templates/reports/expense.html:18
+msgid "Amount"
+msgstr "المبلغ"
+
+#: reports/views.py:410 templates/billing/payment_list.html:43
+msgid "Advance"
+msgstr "دفعة مقدمة"
+
+#: reports/views.py:411 reports/views.py:490 reports/views.py:505
+#: templates/messaging/templates.html:16
+#: templates/properties/room_detail.html:115
+#: templates/properties/room_detail.html:116
+msgid "Yes"
+msgstr "نعم"
+
+#: reports/views.py:414
+msgid "Exported the collection report"
+msgstr ""
+
+#: reports/views.py:416 templates/reports/collection.html:2
+#: templates/reports/collection.html:3 templates/reports/collection.html:5
+msgid "Collection report"
+msgstr "تقرير التحصيل"
+
+#: reports/views.py:418 templates/reports/index.html:11
+msgid "Collection"
+msgstr "التحصيل"
+
+#: reports/views.py:427 reports/views.py:440 reports/views.py:499
+#: templates/accounting/ledger.html:27
+msgid "Ledger"
+msgstr "السجل"
+
+#: reports/views.py:427 reports/views.py:499
+#: templates/accounting/ledger.html:32 templates/accounting/ledger.html:47
+#: templates/accounting/recurring.html:10 templates/reports/expense.html:17
+msgid "Category"
+msgstr "التصنيف"
+
+#: reports/views.py:427 templates/accounting/ledger.html:47
+#: templates/properties/room_types.html:10 templates/reports/expense.html:17
+msgid "Description"
+msgstr "الوصف"
+
+#: reports/views.py:428
+msgid "Payee"
+msgstr ""
+
+#: reports/views.py:428 templates/accounting/ledger.html:48
+msgid "Source"
+msgstr ""
+
+#: reports/views.py:436
+msgid "Exported the income & expense ledger"
+msgstr ""
+
+#: reports/views.py:452 reports/views.py:472 reports/views.py:504
+#: templates/accounting/recurring.html:10 templates/accounts/staff_list.html:24
+#: templates/billing/payment_modes.html:13
+#: templates/messaging/templates.html:11
+#: templates/properties/room_types.html:10
+msgid "Name"
+msgstr "الاسم"
+
+#: reports/views.py:452
+msgid "City"
+msgstr ""
+
+#: reports/views.py:452
+msgid "Owner"
+msgstr ""
+
+#: reports/views.py:452 templates/properties/building_detail.html:8
+msgid "Licence"
+msgstr ""
+
+#: reports/views.py:452 reports/views.py:504
+msgid "Phone"
+msgstr ""
+
+#: reports/views.py:455
+msgid "Apartments"
+msgstr "الشقق"
+
+#: reports/views.py:459 templates/properties/room_detail.html:112
+msgid "Type"
+msgstr "النوع"
+
+#: reports/views.py:460 templates/properties/room_detail.html:114
+msgid "Capacity"
+msgstr "السعة"
+
+#: reports/views.py:460 templates/properties/room_detail.html:113
+msgid "Rent basis"
+msgstr "أساس الإيجار"
+
+#: reports/views.py:466 templates/properties/room_detail.html:49
+msgid "Price"
+msgstr ""
+
+#: reports/views.py:467 reports/views.py:476 reports/views.py:482
+#: templates/accounts/staff_list.html:25 templates/billing/invoice_list.html:30
+#: templates/core/global_statuses.html:10
+#: templates/guests/expiring_documents.html:19
+#: templates/guests/guest_detail.html:34 templates/guests/guest_detail.html:50
+#: templates/guests/statement.html:22 templates/guests/tenancy_detail.html:41
+#: templates/guests/tenancy_list.html:19 templates/messaging/log.html:25
+#: templates/messaging/log.html:39 templates/properties/room_detail.html:49
+#: templates/properties/room_detail.html:89
+#: templates/reports/status_form.html:2 templates/reports/statuses.html:16
+msgid "Status"
+msgstr "الحالة"
+
+#: reports/views.py:472
+msgid "Nationality"
+msgstr ""
+
+#: reports/views.py:472 templates/guests/guest_detail.html:148
+msgid "Employer"
+msgstr "جهة العمل"
+
+#: reports/views.py:475 templates/billing/invoice_list.html:28
+#: templates/billing/overdue.html:27 templates/guests/guest_detail.html:34
+#: templates/guests/tenancy_list.html:18
+msgid "Location"
+msgstr "الموقع"
+
+#: reports/views.py:475
+msgid "Check-out"
+msgstr "تاريخ الخروج"
+
+#: reports/views.py:481 templates/guests/expiring_documents.html:19
+#: templates/messaging/waiting.html:35
+msgid "Number"
+msgstr "الرقم"
+
+#: reports/views.py:481 templates/billing/invoice_detail.html:45
+#: templates/billing/invoice_list.html:29 templates/billing/overdue.html:28
+#: templates/guests/statement.html:21 templates/guests/tenancy_detail.html:40
+msgid "Due"
+msgstr "الاستحقاق"
+
+#: reports/views.py:481 templates/billing/invoice_list.html:29
+#: templates/guests/guest_detail.html:50 templates/guests/statement.html:22
+#: templates/guests/tenancy_detail.html:41 templates/reports/collection.html:15
+#: templates/reports/expense.html:12
+msgid "Total"
+msgstr "الإجمالي"
+
+#: reports/views.py:481 templates/billing/invoice_detail.html:38
+#: templates/guests/statement.html:22
+msgid "Paid"
+msgstr "مدفوع"
+
+#: reports/views.py:499 templates/core/global_statuses.html:10
+msgid "Kind"
+msgstr ""
+
+#: reports/views.py:499 templates/accounting/ledger.html:48
+#: templates/accounting/recurring.html:10 templates/reports/expense.html:18
+msgid "Tagged to"
+msgstr "مرتبط بـ"
+
+#: reports/views.py:504 templates/accounts/staff_list.html:2
+msgid "Staff"
+msgstr "الموظفون"
+
+#: reports/views.py:505 templates/properties/room_detail.html:115
+#: templates/properties/room_detail.html:116
+msgid "No"
+msgstr "لا"
+
+#: reports/views.py:509
+msgid "Exported every module to Excel"
+msgstr ""
+
+#: reports/views.py:521
+msgid "Account settings updated"
+msgstr ""
+
+#: reports/views.py:523
+msgid "Settings saved."
+msgstr ""
+
+#: reports/views.py:540
+msgid "That code already exists for this kind."
+msgstr ""
+
+#: reports/views.py:544
+#, python-format
+msgid "Status %(n)s added"
+msgstr ""
+
+#: reports/views.py:545
+msgid "Status added."
+msgstr ""
+
+#: reports/views.py:562
+#, python-format
+msgid "Status %(n)s updated"
+msgstr ""
+
+#: reports/views.py:564
+msgid "Status saved."
+msgstr ""
+
+#: reports/views.py:575
+msgid "This status is used by automations and cannot be removed."
+msgstr ""
+
+#: reports/views.py:577
+msgid "Records still use this status. Move them first."
+msgstr ""
+
+#: reports/views.py:580
+#, python-format
+msgid "Status %(n)s deleted"
+msgstr ""
+
+#: reports/views.py:582
+msgid "Status deleted."
+msgstr ""
+
+#: templates/400.html:3
+msgid "Bad request"
+msgstr "طلب غير صالح"
+
+#: templates/400.html:6
+msgid "That request could not be read"
+msgstr "تعذّرت قراءة هذا الطلب"
+
+#: templates/400.html:8
+msgid ""
+"Something in the address or the submitted form was malformed. Try again from "
+"the beginning."
+msgstr "هناك خلل في العنوان أو في النموذج المُرسل. حاول مرة أخرى من البداية."
+
+#: templates/403.html:3
+msgid "No access"
+msgstr "لا توجد صلاحية"
+
+#: templates/403.html:6
+msgid "You do not have access to this"
+msgstr "ليست لديك صلاحية للوصول إلى هذا"
+
+#: templates/403.html:9
+msgid "This screen is outside the permissions set for your account."
+msgstr "هذه الشاشة خارج الصلاحيات المحددة لحسابك."
+
+#: templates/403.html:16
+msgid "What you can open"
+msgstr "ما يمكنك فتحه"
+
+#: templates/403.html:22
+msgid "Your building owner grants access per module on your staff record."
+msgstr "يمنح مالك المبنى الصلاحيات لكل وحدة من سجل الموظف الخاص بك."
+
+#: templates/403.html:24
+msgid ""
+"If this module should be switched on for your account, contact Hostlane "
+"Technolab."
+msgstr "إذا كان يجب تفعيل هذه الوحدة لحسابك، تواصل مع هوستلين تكنولاب."
+
+#: templates/403.html:26
+msgid "You may need to sign in first."
+msgstr "قد تحتاج إلى تسجيل الدخول أولًا."
+
+#: templates/403.html:36 templates/404.html:20
+#: templates/accounts/profile.html:3 templates/accounts/profile.html:11
+msgid "My profile"
+msgstr "ملفي الشخصي"
+
+#: templates/403.html:38 templates/404.html:22
+#: templates/accounts/login_history.html:6
+#: templates/guests/portal_receipts.html:7
+#: templates/guests/public_profile.html:7 templates/guests/statement.html:10
+#: templates/properties/room_types.html:6
+msgid "Back"
+msgstr "رجوع"
+
+#: templates/403.html:40 templates/404.html:24 templates/accounts/login.html:11
+#: templates/accounts/login.html:84 templates/accounts/login.html:134
+msgid "Sign in"
+msgstr "تسجيل الدخول"
+
+#: templates/403_csrf.html:3
+msgid "Session expired"
+msgstr "انتهت الجلسة"
+
+#: templates/403_csrf.html:6
+msgid "Your session expired"
+msgstr "انتهت جلستك"
+
+#: templates/403_csrf.html:8
+msgid ""
+"The page sat open too long, so the form could not be submitted safely. Sign "
+"in again and redo that last step."
+msgstr ""
+"بقيت الصفحة مفتوحة وقتًا طويلًا، لذا تعذّر إرسال النموذج بأمان. سجّل الدخول مرة "
+"أخرى وأعد تلك الخطوة."
+
+#: templates/403_csrf.html:12
+msgid "Sign in again"
+msgstr "تسجيل الدخول مرة أخرى"
+
+#: templates/403_csrf.html:17
+msgid "Cookies must be switched on for sign-in to work."
+msgstr "يجب تفعيل ملفات تعريف الارتباط ليعمل تسجيل الدخول."
+
+#: templates/404.html:3
+msgid "Page not found"
+msgstr "الصفحة غير موجودة"
+
+#: templates/404.html:6
+msgid "We cannot find that page"
+msgstr "لم نتمكن من العثور على هذه الصفحة"
+
+#: templates/404.html:8
+msgid "The link may be out of date, or the record it points at was removed."
+msgstr "قد يكون الرابط قديمًا، أو أن السجل الذي يشير إليه قد حُذف."
+
+#: templates/404.html:31
+msgid "Or jump to"
+msgstr "أو انتقل إلى"
+
+#: templates/500.html:6
+msgid "Server error"
+msgstr "خطأ في الخادم"
+
+#: templates/500.html:9
+msgid "Something broke at our end"
+msgstr "حدث عطل لدينا"
+
+#: templates/500.html:11
+msgid ""
+"Your work was not lost — nothing is saved when a page fails like this. The "
+"fault has been recorded."
+msgstr ""
+"لم يضع عملك — لا يُحفظ شيء عند فشل الصفحة بهذا الشكل. وقد تم تسجيل العطل."
+
+#: templates/500.html:15 templates/error.html:34
+msgid "Go to the dashboard"
+msgstr "الذهاب إلى لوحة المعلومات"
+
+#: templates/500.html:20
+msgid ""
+"If it keeps happening, tell Hostlane Technolab what you were doing when it "
+"failed."
+msgstr "إذا تكرر الأمر، أخبر هوستلين تكنولاب بما كنت تفعله عند حدوث العطل."
+
+#: templates/accounting/categories.html:2
+#: templates/accounting/categories.html:5 templates/accounting/ledger.html:8
+#: templates/reports/settings.html:10
+msgid "Categories"
+msgstr "التصنيفات"
+
+#: templates/accounting/categories.html:3
+msgid "Income & expense categories"
+msgstr ""
+
+#: templates/accounting/categories.html:6
+msgid ""
+"User-created, not fixed in code. Disable one instead of deleting it if it "
+"has history."
+msgstr ""
+
+#: templates/accounting/categories.html:7 templates/accounting/recurring.html:7
+msgid "Back to ledger"
+msgstr ""
+
+#: templates/accounting/categories.html:13
+msgid "system"
+msgstr ""
+
+#: templates/accounting/categories.html:16
+#: templates/accounting/categories.html:27
+#: templates/accounts/staff_list.html:39
+msgid "Disable"
+msgstr "تعطيل"
+
+#: templates/accounting/categories.html:16
+#: templates/accounting/categories.html:27
+#: templates/accounts/staff_list.html:39
+msgid "Enable"
+msgstr "تفعيل"
+
+#: templates/accounting/categories.html:32
+msgid "Add a category"
+msgstr ""
+
+#: templates/accounting/categories.html:35
+#: templates/billing/payment_modes.html:38
+#: templates/core/global_statuses.html:24
+#: templates/properties/room_types.html:19
+msgid "Add"
+msgstr "إضافة"
+
+#: templates/accounting/entry_form.html:2
+#: templates/accounting/entry_form.html:3
+msgid "Ledger entry"
+msgstr ""
+
+#: templates/accounting/entry_form.html:5
+msgid "Edit entry"
+msgstr ""
+
+#: templates/accounting/entry_form.html:5
+msgid "New entry"
+msgstr ""
+
+#: templates/accounting/entry_form.html:6
+msgid ""
+"Tag it to a building, floor or room so the per-room profit stays honest."
+msgstr ""
+
+#: templates/accounting/entry_form.html:11
+msgid "Save entry"
+msgstr ""
+
+#: templates/accounting/entry_form.html:12
+#: templates/accounts/staff_form.html:14 templates/billing/approvals.html:57
+#: templates/billing/approvals.html:103 templates/billing/invoice_form.html:11
+#: templates/billing/payment_form.html:13
+#: templates/billing/payment_mode_form.html:12
+#: templates/billing/payment_reverse.html:13
+#: templates/billing/printer_form.html:12 templates/core/admin_password.html:45
+#: templates/core/tenant_form.html:12
+#: templates/core/tenant_integrations.html:62 templates/guests/check_in.html:14
+#: templates/guests/check_out.html:18 templates/guests/guest_delete.html:76
+#: templates/guests/guest_form.html:12 templates/guests/notice.html:12
+#: templates/guests/tenancy_edit.html:12 templates/guests/transfer.html:12
+#: templates/messaging/broadcast.html:12 templates/messaging/send.html:14
+#: templates/messaging/template_form.html:12
+#: templates/properties/building_form.html:12
+#: templates/properties/simple_form.html:11
+#: templates/reports/status_form.html:11
+msgid "Cancel"
+msgstr "إلغاء"
+
+#: templates/accounting/entry_form.html:14
+msgid "Delete this entry?"
+msgstr ""
+
+#: templates/accounting/ledger.html:6
+msgid "Every entry is tagged to a building, floor or room."
+msgstr ""
+
+#: templates/accounting/ledger.html:9
+msgid "Recurring"
+msgstr "متكرر"
+
+#: templates/accounting/ledger.html:20 templates/reports/dashboard.html:40
+#: templates/reports/index.html:13 templates/reports/profit.html:2
+#: templates/reports/profit.html:3 templates/reports/profit.html:5
+msgid "Net profit"
+msgstr "صافي الربح"
+
+#: templates/accounting/ledger.html:25
+#: templates/billing/daily_collection.html:8
+#: templates/billing/payment_list.html:20 templates/guests/guest_detail.html:34
+#: templates/guests/tenancy_detail.html:72 templates/messaging/log.html:17
+#: templates/properties/room_detail.html:89
+#: templates/reports/collection.html:12 templates/reports/deposits.html:28
+#: templates/reports/expense.html:9 templates/reports/profit.html:8
+msgid "From"
+msgstr "من"
+
+#: templates/accounting/ledger.html:26
+#: templates/billing/daily_collection.html:9
+#: templates/billing/payment_list.html:21 templates/core/system_health.html:12
+#: templates/guests/guest_detail.html:34
+#: templates/guests/tenancy_detail.html:72 templates/messaging/log.html:18
+#: templates/messaging/log.html:38 templates/properties/room_detail.html:89
+#: templates/reports/collection.html:13 templates/reports/deposits.html:29
+#: templates/reports/expense.html:10 templates/reports/profit.html:9
+msgid "To"
+msgstr "إلى"
+
+#: templates/accounting/ledger.html:28
+msgid "Both"
+msgstr "كلاهما"
+
+#: templates/accounting/ledger.html:33 templates/accounting/ledger.html:37
+#: templates/billing/payment_list.html:23 templates/guests/guest_detail.html:47
+#: templates/guests/guest_list.html:17 templates/guests/tenancy_list.html:12
+#: templates/reports/dashboard.html:126 templates/reports/dashboard.html:138
+msgid "All"
+msgstr "الكل"
+
+#: templates/accounting/ledger.html:40
+#: templates/billing/daily_collection.html:15
+#: templates/billing/payment_list.html:31 templates/messaging/log.html:32
+#: templates/reports/collection.html:14 templates/reports/deposits.html:34
+#: templates/reports/expense.html:11 templates/reports/profit.html:10
+msgid "Apply"
+msgstr "تطبيق"
+
+#: templates/accounting/ledger.html:41 templates/reports/collection.html:8
+#: templates/reports/deposits.html:9 templates/reports/expense.html:7
+#: templates/reports/rent_roll.html:8
+msgid "Excel"
+msgstr "إكسل"
+
+#: templates/accounting/ledger.html:54
+msgid "Manual"
+msgstr "يدوي"
+
+#: templates/accounting/ledger.html:59
+msgid "Bill"
+msgstr ""
+
+#: templates/accounting/ledger.html:62
+msgid "No entries in this range."
+msgstr ""
+
+#: templates/accounting/ledger.html:65 templates/reports/expense.html:27
+msgid "By category"
+msgstr "حسب التصنيف"
+
+#: templates/accounting/ledger.html:70
+msgid "Nothing to summarise."
+msgstr ""
+
+#: templates/accounting/recurring.html:2 templates/accounting/recurring.html:3
+#: templates/accounting/recurring.html:5
+msgid "Recurring expenses"
+msgstr "المصروفات المتكررة"
+
+#: templates/accounting/recurring.html:6
+msgid ""
+"DEWA, salaries, internet — raised automatically each month by the nightly "
+"job."
+msgstr ""
+
+#: templates/accounting/recurring.html:11
+msgid "Day"
+msgstr ""
+
+#: templates/accounting/recurring.html:11
+msgid "Last raised"
+msgstr ""
+
+#: templates/accounting/recurring.html:19
+msgid "Raise now"
+msgstr ""
+
+#: templates/accounting/recurring.html:22
+msgid "Add a recurring expense"
+msgstr ""
+
+#: templates/accounting/recurring.html:25 templates/accounts/profile.html:20
+#: templates/billing/payment_mode_form.html:11
+#: templates/properties/simple_form.html:10
+#: templates/reports/status_form.html:10
+msgid "Save"
+msgstr "حفظ"
+
+#: templates/accounts/login.html:10
+msgid "Sign in to ZyDwell rental management."
+msgstr "سجّل الدخول إلى نظام زايدويل لإدارة الإيجارات."
+
+#: templates/accounts/login.html:41 templates/base.html:22
+msgid "Rental management"
+msgstr "إدارة الإيجارات"
+
+#: templates/accounts/login.html:45
+msgid ""
+"Floors, rooms, beds, guests, rent and reports — one system instead of "
+"notebooks and chat threads."
+msgstr ""
+"الطوابق والغرف والأسرّة والنزلاء والإيجار والتقارير — نظام واحد بدل الدفاتر "
+"والمحادثات."
+
+#: templates/accounts/login.html:50
+msgid "See every free bed at a glance"
+msgstr "اطّلع على كل سرير شاغر بنظرة واحدة"
+
+#: templates/accounts/login.html:54
+msgid "Collect rent and print the receipt"
+msgstr "حصّل الإيجار واطبع الإيصال"
+
+#: templates/accounts/login.html:58
+msgid "Know what is collected and what is pending"
+msgstr "اعرف ما تم تحصيله وما زال مستحقًا"
+
+#: templates/accounts/login.html:61
+msgid "Built by Hostlane Technolab"
+msgstr "من تطوير هوستلين تكنولاب"
+
+#: templates/accounts/login.html:71 templates/base.html:63
+msgid "Language"
+msgstr "اللغة"
+
+#: templates/accounts/login.html:85
+msgid "Use the account your building owner set up for you."
+msgstr "استخدم الحساب الذي أنشأه لك مالك المبنى."
+
+#: templates/accounts/login.html:112 templates/accounts/login.html:113
+msgid "Show password"
+msgstr "إظهار كلمة المرور"
+
+#: templates/accounts/login.html:114
+msgid "Hide password"
+msgstr "إخفاء كلمة المرور"
+
+#: templates/accounts/login.html:126
+msgid "Caps Lock is on"
+msgstr "مفتاح الأحرف الكبيرة مُفعّل"
+
+#: templates/accounts/login.html:134
+msgid "Signing in…"
+msgstr ""
+
+#: templates/accounts/login.html:138
+msgid "Forgotten your password? Your building owner can set a new one."
+msgstr "نسيت كلمة المرور؟ يمكن لمالك المبنى تعيين كلمة جديدة."
+
+#: templates/accounts/login.html:139
+msgid "Owners: contact Hostlane Technolab."
+msgstr ""
+
+#: templates/accounts/login.html:143 templates/base.html:47
+#: templates/error.html:38
+msgid "Hostlane Technolab"
+msgstr "هوستلين تكنولاب"
+
+#: templates/accounts/login_history.html:2
+#: templates/accounts/login_history.html:3
+#: templates/accounts/login_history.html:5 templates/accounts/staff_list.html:9
+#: templates/reports/settings.html:17
+msgid "Login history"
+msgstr "سجل الدخول"
+
+#: templates/accounts/login_history.html:5
+msgid "Every sign-in attempt on this account."
+msgstr ""
+
+#: templates/accounts/login_history.html:9 templates/core/global_audit.html:18
+#: templates/core/system_health.html:12 templates/messaging/log.html:38
+#: templates/reports/audit_log.html:18
+msgid "When"
+msgstr "الوقت"
+
+#: templates/accounts/login_history.html:9
+msgid "User"
+msgstr ""
+
+#: templates/accounts/login_history.html:9 templates/core/global_audit.html:19
+#: templates/reports/audit_log.html:19
+msgid "IP"
+msgstr ""
+
+#: templates/accounts/login_history.html:9
+msgid "Device"
+msgstr "الجهاز"
+
+#: templates/accounts/login_history.html:9
+msgid "Result"
+msgstr "النتيجة"
+
+#: templates/accounts/login_history.html:16
+msgid "Success"
+msgstr "ناجح"
+
+#: templates/accounts/profile.html:2 templates/base.html:44
+msgid "Profile"
+msgstr "الملف الشخصي"
+
+#: templates/accounts/profile.html:7 templates/reports/staff_dashboard.html:31
+msgid "You have no screens yet."
+msgstr "لا توجد لديك شاشات بعد."
+
+#: templates/accounts/profile.html:8 templates/reports/staff_dashboard.html:32
+msgid ""
+"Your building owner decides what you can open. Ask them to set your "
+"permissions."
+msgstr "مالك المبنى هو من يحدد ما يمكنك فتحه. اطلب منه ضبط صلاحياتك."
+
+#: templates/accounts/profile.html:15
+msgid "Details"
+msgstr "التفاصيل"
+
+#: templates/accounts/profile.html:25
+msgid "Change password"
+msgstr "تغيير كلمة المرور"
+
+#: templates/accounts/profile.html:30
+msgid "Update password"
+msgstr ""
+
+#: templates/accounts/profile.html:37
+msgid "Appearance"
+msgstr "المظهر"
+
+#: templates/accounts/profile.html:40
+msgid ""
+"Saved on this device, so a shared office tablet and your own phone can "
+"differ."
+msgstr ""
+
+#: templates/accounts/profile.html:42 templates/messaging/log.html:54
+#: templates/messaging/waiting.html:48
+msgid "Automatic"
+msgstr "تلقائي"
+
+#: templates/accounts/profile.html:43
+msgid "Light"
+msgstr "فاتح"
+
+#: templates/accounts/profile.html:44
+msgid "Dark"
+msgstr "داكن"
+
+#: templates/accounts/profile.html:49
+msgid "Recent sign-ins"
+msgstr "آخر عمليات الدخول"
+
+#: templates/accounts/profile.html:55 templates/billing/printer_list.html:20
+#: templates/core/system_health.html:25 templates/guests/guest_list.html:43
+msgid "OK"
+msgstr ""
+
+#: templates/accounts/profile.html:56
+msgid "No sign-ins recorded."
+msgstr ""
+
+#: templates/accounts/staff_form.html:2 templates/accounts/staff_form.html:3
+msgid "Staff account"
+msgstr "حساب موظف"
+
+#: templates/accounts/staff_form.html:5 templates/accounts/staff_list.html:10
+msgid "New staff account"
+msgstr "حساب موظف جديد"
+
+#: templates/accounts/staff_form.html:6
+msgid "Supervisor or rent collector. Grant module access on the next screen."
+msgstr ""
+
+#: templates/accounts/staff_form.html:13
+msgid "Save and set access"
+msgstr ""
+
+#: templates/accounts/staff_list.html:7
+#, python-format
+msgid "%(active_seats)s of %(seat_limit)s seats in use"
+msgstr ""
+
+#: templates/accounts/staff_list.html:16
+msgid "Search name or username"
+msgstr ""
+
+#: templates/accounts/staff_list.html:17 templates/billing/payment_list.html:30
+#: templates/core/tenant_list.html:16 templates/guests/guest_list.html:21
+#: templates/guests/tenancy_list.html:14 templates/messaging/log.html:30
+msgid "Search"
+msgstr "بحث"
+
+#: templates/accounts/staff_list.html:24 templates/guests/guest_detail.html:139
+msgid "Contact"
+msgstr "بيانات الاتصال"
+
+#: templates/accounts/staff_list.html:24
+msgid "Modules granted"
+msgstr ""
+
+#: templates/accounts/staff_list.html:25
+msgid "Assigned to"
+msgstr ""
+
+#: templates/accounts/staff_list.html:32
+msgid "None"
+msgstr "لا شيء"
+
+#: templates/accounts/staff_list.html:33 templates/properties/bed_board.html:19
+#: templates/reports/deposits.html:31 templates/reports/rent_roll.html:18
+msgid "All buildings"
+msgstr ""
+
+#: templates/accounts/staff_list.html:34
+msgid "Disabled"
+msgstr "معطّل"
+
+#: templates/accounts/staff_list.html:37
+#: templates/accounts/staff_permissions.html:2
+msgid "Access"
+msgstr "الصلاحيات"
+
+#: templates/accounts/staff_list.html:44
+msgid "No staff accounts yet."
+msgstr ""
+
+#: templates/accounts/staff_permissions.html:3
+msgid "Module access"
+msgstr "صلاحيات الوحدات"
+
+#: templates/accounts/staff_permissions.html:6
+msgid ""
+"Grant or revoke access per module. Staff can never delete records or edit "
+"rent amounts unless you allow it — and with nothing ticked they land on "
+"their profile with nowhere to go."
+msgstr ""
+
+#: templates/accounts/staff_permissions.html:7
+msgid "Back to staff"
+msgstr ""
+
+#: templates/accounts/staff_permissions.html:11
+msgid "Permissions"
+msgstr "الصلاحيات"
+
+#: templates/accounts/staff_permissions.html:13
+msgid "Select everything"
+msgstr "تحديد الكل"
+
+#: templates/accounts/staff_permissions.html:15
+msgid "Tick every permission"
+msgstr "تحديد كل الصلاحيات"
+
+#: templates/accounts/staff_permissions.html:23
+msgid "Module"
+msgstr "الوحدة"
+
+#: templates/accounts/staff_permissions.html:27
+#, python-format
+msgid "Tick %(column)s for every module"
+msgstr "تحديد %(column)s لكل الوحدات"
+
+#: templates/accounts/staff_permissions.html:29
+msgid "Row"
+msgstr "الصف"
+
+#: templates/accounts/staff_permissions.html:36
+#, python-format
+msgid "Tick everything for %(name)s"
+msgstr "تحديد كل الصلاحيات لـ %(name)s"
+
+#: templates/accounts/staff_permissions.html:42
+msgid "Save permissions"
+msgstr ""
+
+#: templates/accounts/staff_permissions.html:47
+msgid "Restrict to floors"
+msgstr ""
+
+#: templates/accounts/staff_permissions.html:49
+msgid ""
+"With no assignment the staff member sees every building in your account."
+msgstr ""
+
+#: templates/accounts/staff_permissions.html:52
+msgid "Add assignment"
+msgstr ""
+
+#: templates/accounts/staff_permissions.html:59
+msgid "Remove"
+msgstr "إزالة"
+
+#: templates/accounts/staff_permissions.html:62
+msgid "No restrictions."
+msgstr ""
+
+#: templates/base.html:9
+msgid "ZyDwell"
+msgstr "زايدويل"
+
+#: templates/base.html:25
+msgid "Close menu"
+msgstr "إغلاق القائمة"
+
+#: templates/base.html:39 templates/core/tenant_list.html:3
+msgid "Platform console"
+msgstr "لوحة المنصة"
+
+#: templates/base.html:52
+msgid "Menu"
+msgstr "القائمة"
+
+#: templates/base.html:71 templates/core/account_locked.html:24
+msgid "Sign out"
+msgstr "تسجيل الخروج"
+
+#: templates/base.html:79
+msgid "Support session"
+msgstr ""
+
+#: templates/base.html:80
+msgid "You are signed in as this client's admin. Every action is recorded."
+msgstr ""
+
+#: templates/base.html:81
+msgid "Return to platform"
+msgstr ""
+
+#: templates/billing/approvals.html:2 templates/billing/payment_list.html:9
+msgid "Approvals"
+msgstr "الموافقات"
+
+#: templates/billing/approvals.html:3 templates/billing/approvals.html:6
+msgid "Money awaiting approval"
+msgstr "أموال بانتظار الموافقة"
+
+#: templates/billing/approvals.html:7
+msgid "What your collectors have taken in but you have not confirmed yet."
+msgstr ""
+
+#: templates/billing/approvals.html:8 templates/billing/payment_list.html:8
+msgid "Daily cash report"
+msgstr "تقرير النقد اليومي"
+
+#: templates/billing/approvals.html:12
+msgid "Rent awaiting approval"
+msgstr "إيجار بانتظار الموافقة"
+
+#: templates/billing/approvals.html:14 templates/reports/collection.html:19
+msgid "receipts"
+msgstr ""
+
+#: templates/billing/approvals.html:15
+msgid "Deposits awaiting approval"
+msgstr "تأمينات بانتظار الموافقة"
+
+#: templates/billing/approvals.html:17
+msgid "entries"
+msgstr ""
+
+#: templates/billing/approvals.html:18
+msgid "Rejecting"
+msgstr ""
+
+#: templates/billing/approvals.html:19
+msgid "Reverses the receipt and puts the debt back"
+msgstr ""
+
+#: templates/billing/approvals.html:23
+msgid "Rent collected"
+msgstr "الإيجار المحصَّل"
+
+#: templates/billing/approvals.html:27 templates/billing/approvals.html:77
+msgid "Decide"
+msgstr "القرار"
+
+#: templates/billing/approvals.html:40 templates/billing/approvals.html:88
+msgid "Approve"
+msgstr "موافقة"
+
+#: templates/billing/approvals.html:41 templates/billing/approvals.html:44
+#: templates/billing/approvals.html:89 templates/billing/approvals.html:92
+msgid "Reject"
+msgstr "رفض"
+
+#: templates/billing/approvals.html:45 templates/billing/approvals.html:93
+msgid "Close"
+msgstr ""
+
+#: templates/billing/approvals.html:48
+#, python-format
+msgid ""
+"This says %(who)s did not actually receive %(currency)s %(amount)s. The "
+"receipt is reversed and the guest owes it again."
+msgstr ""
+
+#: templates/billing/approvals.html:56
+msgid "Reject and reverse"
+msgstr "رفض وعكس العملية"
+
+#: templates/billing/approvals.html:66
+msgid "Nothing waiting. Every receipt is accounted for."
+msgstr "لا يوجد شيء بالانتظار. كل الإيصالات محسوبة."
+
+#: templates/billing/approvals.html:73
+msgid "Deposits taken"
+msgstr "التأمينات المستلمة"
+
+#: templates/billing/approvals.html:76
+msgid "Taken by"
+msgstr "استلمها"
+
+#: templates/billing/approvals.html:102
+msgid "Reject and remove"
+msgstr "رفض وحذف"
+
+#: templates/billing/daily_collection.html:2
+msgid "Daily collection"
+msgstr ""
+
+#: templates/billing/daily_collection.html:3
+#: templates/billing/daily_collection.html:5
+msgid "Daily cash collection"
+msgstr "التحصيل النقدي اليومي"
+
+#: templates/billing/daily_collection.html:6
+msgid "What each collector took in, and the handover to the owner."
+msgstr ""
+
+#: templates/billing/daily_collection.html:11
+#: templates/billing/daily_collection.html:21
+#: templates/billing/payment_list.html:26
+msgid "Collector"
+msgstr "المحصّل"
+
+#: templates/billing/daily_collection.html:12
+#: templates/billing/daily_collection.html:21
+#: templates/billing/payment_list.html:27 templates/messaging/log.html:21
+msgid "Everyone"
+msgstr "الجميع"
+
+#: templates/billing/daily_collection.html:18
+msgid "Total collected"
+msgstr "إجمالي المحصَّل"
+
+#: templates/billing/daily_collection.html:19
+msgid "Cash in hand"
+msgstr "النقد المتوفر"
+
+#: templates/billing/daily_collection.html:20
+#: templates/billing/payment_list.html:16 templates/guests/guest_delete.html:45
+#: templates/reports/collection.html:31
+msgid "Receipts"
+msgstr "الإيصالات"
+
+#: templates/billing/daily_collection.html:24
+msgid "Receipts in range"
+msgstr ""
+
+#: templates/billing/daily_collection.html:26
+msgid "By"
+msgstr ""
+
+#: templates/billing/daily_collection.html:35
+msgid "Declare cash handover"
+msgstr ""
+
+#: templates/billing/daily_collection.html:37
+msgid "Expected cash"
+msgstr ""
+
+#: templates/billing/daily_collection.html:40
+msgid "Declare handover"
+msgstr ""
+
+#: templates/billing/daily_collection.html:45
+msgid "Awaiting your confirmation"
+msgstr ""
+
+#: templates/billing/daily_collection.html:49
+msgid "expected"
+msgstr ""
+
+#: templates/billing/daily_collection.html:53
+#: templates/guests/guest_delete.html:62
+msgid "Confirm"
+msgstr "تأكيد"
+
+#: templates/billing/daily_collection.html:54
+msgid "Nothing pending."
+msgstr ""
+
+#: templates/billing/invoice_detail.html:11
+msgid "Print"
+msgstr "طباعة"
+
+#: templates/billing/invoice_detail.html:14
+msgid "Use advance credit"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:16
+msgid "Collect payment"
+msgstr "تحصيل دفعة"
+
+#: templates/billing/invoice_detail.html:22
+msgid "Charges"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:26
+#: templates/billing/invoice_list.html:32
+msgid "pro-rata"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:34
+msgid "approved by"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:37
+msgid "Net total"
+msgstr "الصافي"
+
+#: templates/billing/invoice_detail.html:44
+msgid "Issued"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:45
+#: templates/billing/invoice_list.html:36
+msgid "days late"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:46
+msgid "Aging"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:47
+msgid "Raised by"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:55
+msgid "Payments against this invoice"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:60
+msgid "reversed"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:62
+#: templates/guests/tenancy_detail.html:63 templates/reports/dashboard.html:132
+msgid "Nothing collected yet."
+msgstr ""
+
+#: templates/billing/invoice_detail.html:68
+msgid "Discount or waiver"
+msgstr ""
+
+#: templates/billing/invoice_detail.html:70
+msgid ""
+"Only the building owner can approve this. It is written to the audit log."
+msgstr ""
+
+#: templates/billing/invoice_detail.html:73
+msgid "Approve discount"
+msgstr ""
+
+#: templates/billing/invoice_form.html:2 templates/billing/invoice_form.html:3
+#: templates/billing/invoice_form.html:5 templates/billing/invoice_list.html:14
+msgid "New invoice"
+msgstr "فاتورة جديدة"
+
+#: templates/billing/invoice_form.html:5
+msgid "Rent for a period, plus any extra charge."
+msgstr ""
+
+#: templates/billing/invoice_form.html:10
+msgid "Create invoice"
+msgstr ""
+
+#: templates/billing/invoice_list.html:6
+msgid "One invoice per tenancy per billing period."
+msgstr ""
+
+#: templates/billing/invoice_list.html:11
+msgid "Raise every invoice that falls due today?"
+msgstr ""
+
+#: templates/billing/invoice_list.html:12
+msgid "Run billing now"
+msgstr ""
+
+#: templates/billing/invoice_list.html:18
+msgid "Invoice number or guest…"
+msgstr ""
+
+#: templates/billing/invoice_list.html:20 templates/messaging/log.html:27
+msgid "All statuses"
+msgstr ""
+
+#: templates/billing/invoice_list.html:23 templates/core/global_audit.html:14
+#: templates/reports/audit_log.html:14
+msgid "Filter"
+msgstr "تصفية"
+
+#: templates/billing/invoice_list.html:24
+msgid "Billed"
+msgstr ""
+
+#: templates/billing/invoice_list.html:24
+msgid "collected"
+msgstr ""
+
+#: templates/billing/invoice_list.html:40 templates/billing/overdue.html:44
+#: templates/reports/staff_dashboard.html:53
+msgid "Collect"
+msgstr "تحصيل"
+
+#: templates/billing/invoice_list.html:41
+msgid "No invoices match."
+msgstr ""
+
+#: templates/billing/late_fee_rule.html:2
+#: templates/billing/late_fee_rule.html:3
+#: templates/billing/late_fee_rule.html:5
+msgid "Late fee rule"
+msgstr "قاعدة رسوم التأخير"
+
+#: templates/billing/late_fee_rule.html:6
+msgid ""
+"Applied automatically by the nightly job to any invoice past its grace "
+"period."
+msgstr ""
+
+#: templates/billing/late_fee_rule.html:10
+msgid "Save rule"
+msgstr ""
+
+#: templates/billing/overdue.html:2
+msgid "Overdue"
+msgstr "متأخر"
+
+#: templates/billing/overdue.html:6
+msgid ""
+"Ranked by how late and how large. Send a reminder straight from the list."
+msgstr ""
+
+#: templates/billing/overdue.html:8
+msgid "Total pending"
+msgstr "إجمالي المستحق"
+
+#: templates/billing/overdue.html:9 templates/guests/expiring_documents.html:10
+#: templates/guests/expiring_documents.html:11
+#: templates/guests/expiring_documents.html:12
+#: templates/guests/expiring_documents.html:13
+#: templates/guests/expiring_documents.html:26
+#: templates/guests/expiring_documents.html:27
+#: templates/guests/expiring_documents.html:28
+#: templates/reports/dashboard.html:31 templates/reports/settings.html:42
+msgid "days"
+msgstr "يوم"
+
+#: templates/billing/overdue.html:10
+msgid "Cheques due"
+msgstr ""
+
+#: templates/billing/overdue.html:11 templates/billing/overdue.html:59
+msgid "Deposit shortfalls"
+msgstr "نقص التأمين"
+
+#: templates/billing/overdue.html:14 templates/reports/dashboard.html:102
+msgid "Dues aging"
+msgstr "أعمار المتأخرات"
+
+#: templates/billing/overdue.html:24
+msgid "Overdue invoices"
+msgstr "الفواتير المتأخرة"
+
+#: templates/billing/overdue.html:28 templates/reports/staff_dashboard.html:45
+msgid "Days late"
+msgstr "أيام التأخير"
+
+#: templates/billing/overdue.html:28
+msgid "Bucket"
+msgstr ""
+
+#: templates/billing/overdue.html:40 templates/guests/guest_list.html:18
+msgid "Current"
+msgstr "حالي"
+
+#: templates/billing/overdue.html:45
+msgid "Nothing overdue. Everything is settled."
+msgstr ""
+
+#: templates/billing/overdue.html:50
+msgid "Cheques coming due"
+msgstr "شيكات مستحقة قريبًا"
+
+#: templates/billing/overdue.html:56
+msgid "No cheques pending."
+msgstr ""
+
+#: templates/billing/overdue.html:65
+msgid "Every deposit is fully collected."
+msgstr ""
+
+#: templates/billing/overdue.html:68
+msgid "Repeated late payers"
+msgstr "المتأخرون المتكررون"
+
+#: templates/billing/overdue.html:72
+msgid "late invoices"
+msgstr "فاتورة متأخرة"
+
+#: templates/billing/overdue.html:73
+msgid "Nobody is a repeat offender."
+msgstr "لا يوجد متأخرون متكررون."
+
+#: templates/billing/payment_detail.html:3
+msgid "Payment"
+msgstr ""
+
+#: templates/billing/payment_detail.html:11
+#: templates/billing/payment_reverse.html:5
+msgid "Reverse"
+msgstr "عكس العملية"
+
+#: templates/billing/payment_detail.html:17
+msgid "Approval"
+msgstr "الموافقة"
+
+#: templates/billing/payment_detail.html:25
+msgid "Cheque due"
+msgstr ""
+
+#: templates/billing/payment_detail.html:26
+#: templates/guests/guest_detail.html:25 templates/guests/statement.html:15
+msgid "Advance credit"
+msgstr "رصيد مقدم"
+
+#: templates/billing/payment_detail.html:28
+msgid "Recorded"
+msgstr ""
+
+#: templates/billing/payment_detail.html:30
+msgid "Reversed by"
+msgstr ""
+
+#: templates/billing/payment_form.html:2 templates/billing/payment_form.html:3
+#: templates/billing/payment_form.html:5 templates/billing/payment_list.html:10
+msgid "Record payment"
+msgstr "تسجيل دفعة"
+
+#: templates/billing/payment_form.html:6
+msgid ""
+"Full or partial. Leave the invoice empty to hold the money as advance credit."
+msgstr ""
+
+#: templates/billing/payment_form.html:11
+msgid "Save receipt"
+msgstr ""
+
+#: templates/billing/payment_form.html:12
+msgid "Save and print"
+msgstr ""
+
+#: templates/billing/payment_list.html:6
+msgid "Every receipt, who collected it and how."
+msgstr ""
+
+#: templates/billing/payment_list.html:14
+msgid "Collected in range"
+msgstr ""
+
+#: templates/billing/payment_list.html:15
+msgid "Cash"
+msgstr "نقدًا"
+
+#: templates/billing/payment_list.html:17
+msgid "Range"
+msgstr ""
+
+#: templates/billing/payment_list.html:30
+msgid "Receipt or guest"
+msgstr ""
+
+#: templates/billing/payment_list.html:48
+msgid "Awaiting approval"
+msgstr "بانتظار الموافقة"
+
+#: templates/billing/payment_list.html:50
+msgid "No payments in this range."
+msgstr ""
+
+#: templates/billing/payment_mode_form.html:2
+#: templates/billing/payment_mode_form.html:3
+msgid "Payment mode"
+msgstr "طريقة الدفع"
+
+#: templates/billing/payment_mode_form.html:6
+msgid "Change how this mode behaves when money is taken."
+msgstr ""
+
+#: templates/billing/payment_modes.html:2
+#: templates/billing/payment_modes.html:3
+#: templates/billing/payment_modes.html:6 templates/reports/settings.html:12
+msgid "Payment modes"
+msgstr "طرق الدفع"
+
+#: templates/billing/payment_modes.html:7
+msgid "How money can arrive. Add your own — these are data, not fixed in code."
+msgstr ""
+
+#: templates/billing/payment_modes.html:13
+#: templates/core/global_statuses.html:10 templates/messaging/templates.html:11
+#: templates/properties/room_types.html:10 templates/reports/statuses.html:16
+msgid "Code"
+msgstr ""
+
+#: templates/billing/payment_modes.html:13
+#: templates/core/global_statuses.html:10 templates/reports/statuses.html:16
+msgid "Behaviour"
+msgstr ""
+
+#: templates/billing/payment_modes.html:17
+msgid "switched off"
+msgstr "معطّل"
+
+#: templates/billing/payment_modes.html:20
+msgid "cash in hand"
+msgstr "نقد في اليد"
+
+#: templates/billing/payment_modes.html:21
+msgid "needs reference"
+msgstr "يتطلب مرجعًا"
+
+#: templates/billing/payment_modes.html:22
+msgid "needs due date"
+msgstr "يتطلب تاريخ استحقاق"
+
+#: templates/billing/payment_modes.html:23
+msgid "from credit"
+msgstr "من الرصيد"
+
+#: templates/billing/payment_modes.html:28
+msgid "Remove this payment mode?"
+msgstr ""
+
+#: templates/billing/payment_modes.html:35
+msgid "Add a mode"
+msgstr "إضافة طريقة"
+
+#: templates/billing/payment_modes.html:41
+msgid ""
+"“Cash in hand” decides what a collector has to hand over at the end of the "
+"day. “Needs reference” asks for a cheque number, UPI reference or card last "
+"four."
+msgstr ""
+
+#: templates/billing/payment_reverse.html:2
+#: templates/billing/payment_reverse.html:3
+#: templates/billing/payment_reverse.html:12
+msgid "Reverse payment"
+msgstr "عكس الدفعة"
+
+#: templates/billing/payment_reverse.html:6
+msgid ""
+"The receipt number stays retired and never gets reused. The income entry is "
+"unwound."
+msgstr ""
+
+#: templates/billing/payment_reverse.html:7
+#, python-format
+msgid "You are about to reverse %(currency)s %(a)s collected from %(g)s."
+msgstr ""
+
+#: templates/billing/printer_form.html:2 templates/billing/receipt.html:48
+#: templates/core/system_health.html:21
+#: templates/guests/deposit_receipt.html:51
+msgid "Printer"
+msgstr "الطابعة"
+
+#: templates/billing/printer_form.html:3
+msgid "Printer setup"
+msgstr ""
+
+#: templates/billing/printer_form.html:5 templates/billing/printer_list.html:7
+msgid "Add printer"
+msgstr ""
+
+#: templates/billing/printer_form.html:6
+msgid "Network printers use IP:port (for example 192.168.1.50:9100)."
+msgstr ""
+
+#: templates/billing/printer_form.html:11
+msgid "Save printer"
+msgstr ""
+
+#: templates/billing/printer_list.html:6
+msgid ""
+"58 mm and 80 mm thermal printers over USB, network or the local Bluetooth "
+"agent."
+msgstr ""
+
+#: templates/billing/printer_list.html:11 templates/reports/statuses.html:17
+#: templates/reports/statuses.html:27
+msgid "Default"
+msgstr ""
+
+#: templates/billing/printer_list.html:14
+msgid "Paper"
+msgstr ""
+
+#: templates/billing/printer_list.html:14 templates/billing/receipt.html:19
+msgid "columns"
+msgstr ""
+
+#: templates/billing/printer_list.html:15
+msgid "Connection"
+msgstr ""
+
+#: templates/billing/printer_list.html:16 templates/core/system_health.html:21
+msgid "Address"
+msgstr ""
+
+#: templates/billing/printer_list.html:17 templates/billing/receipt.html:54
+msgid "Copies"
+msgstr "عدد النسخ"
+
+#: templates/billing/printer_list.html:18 templates/core/system_health.html:21
+msgid "Last test"
+msgstr ""
+
+#: templates/billing/printer_list.html:22
+msgid "Never"
+msgstr ""
+
+#: templates/billing/printer_list.html:27
+msgid "Test print"
+msgstr "طباعة تجريبية"
+
+#: templates/billing/printer_list.html:33
+msgid "No printers yet. Add one, or rely on the PDF receipt fallback."
+msgstr ""
+
+#: templates/billing/public_receipt.html:3
+#: templates/billing/receipt_link_dead.html:3
+msgid "Rent receipt"
+msgstr "إيصال إيجار"
+
+#: templates/billing/public_receipt.html:7 templates/guests/portal_home.html:33
+#: templates/guests/portal_receipts.html:2
+#: templates/guests/portal_receipts.html:3
+#: templates/guests/portal_receipts.html:8
+#: templates/guests/public_deposit_receipt.html:7
+msgid "Your receipts"
+msgstr "إيصالاتك"
+
+#: templates/billing/public_receipt.html:14
+msgid "Payment received"
+msgstr "تم استلام الدفعة"
+
+#: templates/billing/public_receipt.html:24
+#: templates/guests/public_deposit_receipt.html:27
+msgid "bed"
+msgstr "سرير"
+
+#: templates/billing/public_receipt.html:26
+msgid "For"
+msgstr "عن"
+
+#: templates/billing/public_receipt.html:29
+msgid "Paid by"
+msgstr "طريقة الدفع"
+
+#: templates/billing/public_receipt.html:31
+msgid "Received by"
+msgstr "استلمها"
+
+#: templates/billing/public_receipt.html:36
+msgid "Still to pay on this invoice"
+msgstr "المتبقي على هذه الفاتورة"
+
+#: templates/billing/public_receipt.html:42
+#, python-format
+msgid ""
+"Keep this for your records. Questions about it go to the %(name)s office."
+msgstr "احتفظ بهذا لسجلاتك. أي استفسار يوجّه إلى مكتب %(name)s."
+
+#: templates/billing/receipt.html:9 templates/guests/deposit_receipt.html:14
+msgid "Preview as the guest sees it"
+msgstr "معاينة كما يراها النزيل"
+
+#: templates/billing/receipt.html:11 templates/billing/receipt.html:37
+#: templates/guests/deposit_receipt.html:16
+#: templates/guests/guest_detail.html:114
+msgid "Send on WhatsApp"
+msgstr "إرسال عبر واتساب"
+
+#: templates/billing/receipt.html:12
+msgid "ESC/POS file"
+msgstr ""
+
+#: templates/billing/receipt.html:13 templates/guests/deposit_receipt.html:17
+msgid "Browser print"
+msgstr ""
+
+#: templates/billing/receipt.html:18 templates/guests/deposit_receipt.html:23
+msgid "Preview"
+msgstr "معاينة"
+
+#: templates/billing/receipt.html:24 templates/guests/deposit_receipt.html:30
+msgid "Send it to the guest"
+msgstr "أرسلها للنزيل"
+
+#: templates/billing/receipt.html:27
+msgid ""
+"The guest gets a link to read the receipt on their phone. Nothing to "
+"download, and they cannot change anything. The link stops working after a "
+"month."
+msgstr ""
+
+#: templates/billing/receipt.html:31 templates/guests/deposit_receipt.html:37
+msgid "Receipt link"
+msgstr "رابط الإيصال"
+
+#: templates/billing/receipt.html:33 templates/core/admin_password.html:26
+#: templates/guests/deposit_receipt.html:39
+#: templates/guests/guest_detail.html:109
+msgid "Copied"
+msgstr "تم النسخ"
+
+#: templates/billing/receipt.html:33 templates/core/admin_password.html:26
+#: templates/guests/deposit_receipt.html:39
+#: templates/guests/guest_detail.html:109
+msgid "Copy"
+msgstr "نسخ"
+
+#: templates/billing/receipt.html:43 templates/guests/deposit_receipt.html:45
+msgid "Print on a thermal printer"
+msgstr ""
+
+#: templates/billing/receipt.html:56 templates/guests/deposit_receipt.html:56
+msgid "Send to printer"
+msgstr "إرسال إلى الطابعة"
+
+#: templates/billing/receipt.html:59
+msgid "If the printer cannot be reached, send the receipt on WhatsApp instead."
+msgstr "إذا تعذّر الوصول إلى الطابعة، أرسل الإيصال عبر واتساب بدلًا من ذلك."
+
+#: templates/billing/receipt.html:61 templates/guests/deposit_receipt.html:59
+msgid "No printer is set up yet."
+msgstr ""
+
+#: templates/billing/receipt.html:62 templates/guests/deposit_receipt.html:60
+msgid "Set up a printer"
+msgstr ""
+
+#: templates/billing/receipt_link_dead.html:2
+msgid "Receipt not available"
+msgstr "الإيصال غير متاح"
+
+#: templates/billing/receipt_link_dead.html:11
+msgid "This receipt link has expired"
+msgstr "انتهت صلاحية رابط الإيصال"
+
+#: templates/billing/receipt_link_dead.html:11
+msgid "This receipt link is not valid"
+msgstr "رابط الإيصال غير صالح"
+
+#: templates/billing/receipt_link_dead.html:12
+msgid "Ask the building office to send it again."
+msgstr "اطلب من مكتب المبنى إرساله مرة أخرى."
+
+#: templates/core/account_locked.html:6 templates/core/account_locked.html:12
+msgid "Account locked"
+msgstr "الحساب مقفل"
+
+#: templates/core/account_locked.html:14
+#, python-format
+msgid "Access to <strong>%(name)s</strong> is suspended."
+msgstr ""
+
+#: templates/core/account_locked.html:17 templates/reports/settings.html:38
+msgid "Plan"
+msgstr ""
+
+#: templates/core/account_locked.html:18
+msgid "Expired on"
+msgstr ""
+
+#: templates/core/account_locked.html:19
+msgid "Grace ended"
+msgstr ""
+
+#: templates/core/account_locked.html:22
+msgid "Please contact Hostlane Technolab to restore access."
+msgstr ""
+
+#: templates/core/admin_password.html:2 templates/core/admin_password.html:44
+#: templates/core/tenant_detail.html:78
+msgid "Set password"
+msgstr "تعيين كلمة المرور"
+
+#: templates/core/admin_password.html:3 templates/core/admin_password.html:11
+msgid "Set a password"
+msgstr "تعيين كلمة مرور"
+
+#: templates/core/admin_password.html:6 templates/core/global_audit.html:7
+#: templates/core/global_statuses.html:7 templates/core/system_health.html:7
+#: templates/core/tenant_detail.html:5
+#: templates/core/tenant_integrations.html:6 templates/core/tenant_list.html:2
+#: templates/core/tenant_list.html:6
+msgid "Clients"
+msgstr "العملاء"
+
+#: templates/core/admin_password.html:12
+#, python-format
+msgid "For %(who)s, the building owner. You do not need their old one."
+msgstr ""
+
+#: templates/core/admin_password.html:17
+msgid "Give them this password"
+msgstr "أعطه كلمة المرور هذه"
+
+#: templates/core/admin_password.html:20
+msgid ""
+"Shown once and never again — it is not stored anywhere readable. Copy it now "
+"and pass it on."
+msgstr ""
+
+#: templates/core/admin_password.html:29
+#, python-format
+msgid ""
+"%(who)s must choose their own password the moment they sign in, so this one "
+"stops working straight away."
+msgstr ""
+
+#: templates/core/admin_password.html:32
+msgid "Done"
+msgstr "تم"
+
+#: templates/core/admin_password.html:51
+msgid "What happens"
+msgstr "ماذا يحدث"
+
+#: templates/core/admin_password.html:54
+msgid "Their existing sessions stop working immediately."
+msgstr "تتوقف جلساته الحالية فورًا."
+
+#: templates/core/admin_password.html:55
+msgid ""
+"They must choose their own password at next sign-in, so you are not left "
+"holding a working one."
+msgstr ""
+
+#: templates/core/admin_password.html:56
+msgid "The audit log records that you reset it — never the password itself."
+msgstr ""
+
+#: templates/core/admin_password.html:57
+msgid "Leave the field blank and one will be generated and shown to you once."
+msgstr "اترك الحقل فارغًا وستُولَّد كلمة مرور وتُعرض لك مرة واحدة."
+
+#: templates/core/global_audit.html:2 templates/core/tenant_list.html:9
+msgid "Global audit"
+msgstr "التدقيق الشامل"
+
+#: templates/core/global_audit.html:3 templates/core/global_audit.html:5
+msgid "Global audit log"
+msgstr "سجل التدقيق الشامل"
+
+#: templates/core/global_audit.html:6
+msgid "Every action across every client."
+msgstr ""
+
+#: templates/core/global_audit.html:9
+msgid "Search…"
+msgstr ""
+
+#: templates/core/global_audit.html:11 templates/core/system_health.html:52
+msgid "All clients"
+msgstr ""
+
+#: templates/core/global_audit.html:18 templates/core/system_health.html:12
+#: templates/core/system_health.html:21 templates/core/system_health.html:32
+#: templates/core/tenant_detail.html:3 templates/core/tenant_form.html:2
+msgid "Client"
+msgstr "العميل"
+
+#: templates/core/global_audit.html:18 templates/reports/audit_log.html:18
+msgid "Who"
+msgstr "المستخدم"
+
+#: templates/core/global_audit.html:19 templates/reports/audit_log.html:18
+msgid "Action"
+msgstr "الإجراء"
+
+#: templates/core/global_audit.html:19 templates/reports/audit_log.html:19
+msgid "Summary"
+msgstr "الملخص"
+
+#: templates/core/global_statuses.html:2 templates/core/global_statuses.html:5
+#: templates/core/tenant_list.html:10
+msgid "Default statuses"
+msgstr "الحالات الافتراضية"
+
+#: templates/core/global_statuses.html:3
+msgid "Platform default statuses"
+msgstr ""
+
+#: templates/core/global_statuses.html:6
+msgid "The factory set copied into every new client account."
+msgstr ""
+
+#: templates/core/global_statuses.html:15
+msgid "available"
+msgstr ""
+
+#: templates/core/global_statuses.html:16 templates/partials/_plan_room.html:31
+#: templates/properties/building_list.html:31
+#: templates/properties/room_detail.html:29
+msgid "occupied"
+msgstr "مشغول"
+
+#: templates/core/global_statuses.html:17
+msgid "settled"
+msgstr ""
+
+#: templates/core/global_statuses.html:18
+msgid "default"
+msgstr ""
+
+#: templates/core/global_statuses.html:21
+msgid "Add a default"
+msgstr ""
+
+#: templates/core/system_health.html:2 templates/core/system_health.html:3
+#: templates/core/system_health.html:5 templates/core/tenant_list.html:8
+msgid "System health"
+msgstr "حالة النظام"
+
+#: templates/core/system_health.html:6
+msgid ""
+"Delivery failures, printer status, storage and subscriptions coming due."
+msgstr ""
+
+#: templates/core/system_health.html:10
+msgid "WhatsApp delivery failures"
+msgstr ""
+
+#: templates/core/system_health.html:12
+msgid "Error"
+msgstr ""
+
+#: templates/core/system_health.html:16
+msgid "No failures."
+msgstr ""
+
+#: templates/core/system_health.html:19 templates/reports/settings.html:14
+msgid "Printers"
+msgstr ""
+
+#: templates/core/system_health.html:25
+msgid "Fail"
+msgstr ""
+
+#: templates/core/system_health.html:26
+msgid "Never tested"
+msgstr ""
+
+#: templates/core/system_health.html:27
+msgid "No printers registered."
+msgstr ""
+
+#: templates/core/system_health.html:30
+msgid "Storage per client"
+msgstr ""
+
+#: templates/core/system_health.html:32 templates/guests/guest_detail.html:64
+#: templates/guests/guest_list.html:27
+msgid "Documents"
+msgstr "المستندات"
+
+#: templates/core/system_health.html:40
+msgid "Subscriptions due"
+msgstr ""
+
+#: templates/core/system_health.html:45 templates/core/tenant_list.html:42
+#: templates/guests/expiring_documents.html:25
+#: templates/guests/guest_detail.html:73 templates/reports/dashboard.html:143
+#: templates/reports/settings.html:40
+msgid "Expired"
+msgstr "منتهي"
+
+#: templates/core/system_health.html:46
+msgid "Nothing due in 30 days."
+msgstr ""
+
+#: templates/core/system_health.html:49
+msgid "Notices & maintenance banner"
+msgstr ""
+
+#: templates/core/system_health.html:54
+msgid "Hide"
+msgstr ""
+
+#: templates/core/system_health.html:54
+msgid "Show"
+msgstr ""
+
+#: templates/core/system_health.html:55
+msgid "No notices."
+msgstr ""
+
+#: templates/core/system_health.html:60
+msgid "Publish notice"
+msgstr ""
+
+#: templates/core/tenant_detail.html:10 templates/core/tenant_list.html:46
+msgid "Open account"
+msgstr "فتح الحساب"
+
+#: templates/core/tenant_detail.html:12
+#: templates/core/tenant_integrations.html:2
+#: templates/core/tenant_integrations.html:8
+msgid "Keys"
+msgstr "المفاتيح"
+
+#: templates/core/tenant_detail.html:16 templates/core/tenant_list.html:29
+msgid "Locked"
+msgstr "مقفل"
+
+#: templates/core/tenant_detail.html:24 templates/core/tenant_detail.html:71
+msgid "Owner accounts"
+msgstr ""
+
+#: templates/core/tenant_detail.html:25
+msgid "Staff seats used"
+msgstr ""
+
+#: templates/core/tenant_detail.html:26
+msgid "limit"
+msgstr ""
+
+#: templates/core/tenant_detail.html:27
+msgid "Lifetime collected"
+msgstr ""
+
+#: templates/core/tenant_detail.html:28
+msgid "WhatsApp failures"
+msgstr ""
+
+#: templates/core/tenant_detail.html:33
+msgid "Subscription & billing"
+msgstr ""
+
+#: templates/core/tenant_detail.html:36
+msgid "Save subscription"
+msgstr ""
+
+#: templates/core/tenant_detail.html:38
+msgid ""
+"With auto-lock on, the account is blocked once the grace period after the "
+"expiry date has passed."
+msgstr ""
+
+#: templates/core/tenant_detail.html:41
+msgid "Design & branding"
+msgstr ""
+
+#: templates/core/tenant_detail.html:44
+msgid "Save branding"
+msgstr ""
+
+#: templates/core/tenant_detail.html:50
+msgid "Modules"
+msgstr "الوحدات"
+
+#: templates/core/tenant_detail.html:58
+msgid "Save modules"
+msgstr ""
+
+#: templates/core/tenant_detail.html:62
+msgid "Limits in use"
+msgstr ""
+
+#: templates/core/tenant_detail.html:76
+msgid "must set a new password"
+msgstr "يجب تعيين كلمة مرور جديدة"
+
+#: templates/core/tenant_detail.html:80
+msgid "Sign in as this owner for support? The action is recorded."
+msgstr ""
+
+#: templates/core/tenant_detail.html:81
+msgid "Sign in as"
+msgstr ""
+
+#: templates/core/tenant_detail.html:82
+msgid "No owner account yet."
+msgstr ""
+
+#: templates/core/tenant_detail.html:86
+msgid "Master data"
+msgstr ""
+
+#: templates/core/tenant_detail.html:87
+msgid ""
+"Re-push the default statuses, categories, room types and message templates. "
+"Existing rows are left alone."
+msgstr ""
+
+#: templates/core/tenant_detail.html:89
+msgid "Re-seed master data"
+msgstr ""
+
+#: templates/core/tenant_form.html:3
+msgid "Client account"
+msgstr ""
+
+#: templates/core/tenant_form.html:5 templates/core/tenant_list.html:11
+#: templates/core/tenant_list.html:53
+msgid "New client"
+msgstr "عميل جديد"
+
+#: templates/core/tenant_form.html:6
+msgid ""
+"Limits, currency and the owner account. Master data is seeded automatically."
+msgstr ""
+
+#: templates/core/tenant_form.html:11
+msgid "Save client"
+msgstr ""
+
+#: templates/core/tenant_integrations.html:3
+#: templates/core/tenant_integrations.html:11
+msgid "Integration keys"
+msgstr "مفاتيح التكامل"
+
+#: templates/core/tenant_integrations.html:12
+#, python-format
+msgid ""
+"API credentials held on behalf of %(name)s. Their own admin never sees these."
+msgstr ""
+
+#: templates/core/tenant_integrations.html:13
+msgid "Back to client"
+msgstr ""
+
+#: templates/core/tenant_integrations.html:20
+msgid "Sending automatically"
+msgstr "الإرسال تلقائيًا"
+
+#: templates/core/tenant_integrations.html:20
+msgid "Staff send by hand"
+msgstr "يرسلها الموظفون يدويًا"
+
+#: templates/core/tenant_integrations.html:24
+#: templates/core/tenant_integrations.html:28
+msgid "Not set up"
+msgstr "غير مُعد"
+
+#: templates/core/tenant_integrations.html:26
+msgid "SMS"
+msgstr ""
+
+#: templates/core/tenant_integrations.html:32
+msgid ""
+"Secrets are never shown again once saved — only their last four characters. "
+"Leave a secret blank to keep what is already stored."
+msgstr ""
+
+#: templates/core/tenant_integrations.html:61
+msgid "Save keys"
+msgstr "حفظ المفاتيح"
+
+#: templates/core/tenant_integrations.html:67
+msgid ""
+"These are stored as written, so a database backup carries live credentials — "
+"keep backups where you would keep the keys themselves."
+msgstr ""
+
+#: templates/core/tenant_list.html:6
+msgid "Building owners on the platform, their limits and subscriptions."
+msgstr ""
+
+#: templates/core/tenant_list.html:15
+msgid "Search clients…"
+msgstr ""
+
+#: templates/core/tenant_list.html:41
+msgid "renews"
+msgstr ""
+
+#: templates/core/tenant_list.html:47
+msgid "Manage"
+msgstr "إدارة"
+
+#: templates/core/tenant_list.html:52
+msgid "No clients yet. Create the first building owner account."
+msgstr ""
+
+#: templates/error.html:18
+msgid "Something went wrong"
+msgstr "حدث خطأ ما"
+
+#: templates/guests/check_in.html:2 templates/guests/check_in.html:13
+#: templates/guests/guest_detail.html:13 templates/guests/guest_list.html:9
+#: templates/guests/guest_list.html:46 templates/guests/tenancy_list.html:6
+#: templates/properties/room_detail.html:70
+#: templates/reports/staff_dashboard.html:14
+msgid "Check in"
+msgstr "تسجيل دخول"
+
+#: templates/guests/check_in.html:3 templates/guests/check_in.html:5
+msgid "Check in a guest"
+msgstr "تسجيل دخول نزيل"
+
+#: templates/guests/check_in.html:6
+msgid "Assign a bed or a whole unit, set the agreed rent and the billing day."
+msgstr ""
+
+#: templates/guests/check_in.html:7
+msgid "New guest first"
+msgstr ""
+
+#: templates/guests/check_in.html:21
+msgid "How it works"
+msgstr ""
+
+#: templates/guests/check_in.html:23
+msgid ""
+"Bedspace rooms need a bed. Studios and family flats can be let whole — leave "
+"the bed empty."
+msgstr ""
+
+#: templates/guests/check_in.html:24
+msgid "The bed is marked occupied the moment you save."
+msgstr ""
+
+#: templates/guests/check_in.html:25
+msgid ""
+"Pay in advance raises the invoice when the period opens. Post-paid raises it "
+"when the period closes."
+msgstr "الدفع مقدمًا يُصدر الفاتورة عند بداية الفترة، والدفع لاحقًا عند نهايتها."
+
+#: templates/guests/check_in.html:26
+msgid ""
+"Choose what the first invoice charges: the whole rent, only the days they "
+"actually stay, or an amount you agreed."
+msgstr ""
+"اختر ما تحتسبه الفاتورة الأولى: الإيجار كاملًا، أو أيام الإقامة الفعلية، أو "
+"مبلغًا متفقًا عليه."
+
+#: templates/guests/check_in.html:27
+msgid ""
+"Deposit received now is held against the tenancy and settled at check-out."
+msgstr ""
+
+#: templates/guests/check_out.html:2 templates/guests/check_out.html:3
+#: templates/guests/check_out.html:5 templates/guests/tenancy_detail.html:18
+msgid "Check out"
+msgstr "تسجيل خروج"
+
+#: templates/guests/check_out.html:6
+msgid "in since"
+msgstr ""
+
+#: templates/guests/check_out.html:9
+#, python-format
+msgid ""
+"This guest still owes %(currency)s %(outstanding)s. Settle or write it off "
+"before releasing the deposit."
+msgstr ""
+
+#: templates/guests/check_out.html:17
+msgid "Confirm check-out"
+msgstr ""
+
+#: templates/guests/check_out.html:22
+msgid "Settlement"
+msgstr ""
+
+#: templates/guests/check_out.html:26
+msgid "Rent outstanding"
+msgstr ""
+
+#: templates/guests/check_out.html:28
+msgid ""
+"Deductions need a reason and stay on the record. Whatever is left can be "
+"refunded; the bed is released automatically."
+msgstr ""
+
+#: templates/guests/deposit_receipt.html:3
+#: templates/guests/public_deposit_receipt.html:3
+msgid "Deposit receipt"
+msgstr "إيصال تأمين"
+
+#: templates/guests/deposit_receipt.html:33
+#, python-format
+msgid ""
+"The guest gets a link to read this on their phone — nothing to download, and "
+"read-only. It stops working after %(link_days)s days."
+msgstr ""
+
+#: templates/guests/deposit_receipt.html:66
+msgid "Deposit position"
+msgstr "وضع التأمين"
+
+#: templates/guests/deposit_receipt.html:68
+#: templates/guests/tenancy_detail.html:30
+msgid "Agreed"
+msgstr "المتفق عليه"
+
+#: templates/guests/deposit_receipt.html:69
+msgid "Held now"
+msgstr "المحتفظ به الآن"
+
+#: templates/guests/expiring_documents.html:2
+#: templates/guests/expiring_documents.html:5
+#: templates/guests/guest_list.html:8
+msgid "Expiring documents"
+msgstr "مستندات تنتهي قريبًا"
+
+#: templates/guests/expiring_documents.html:3
+msgid "Document expiry"
+msgstr "انتهاء المستندات"
+
+#: templates/guests/expiring_documents.html:6
+msgid ""
+"Visa, Emirates ID and passport dates coming up — alerts go out at 30, 15 and "
+"7 days."
+msgstr ""
+
+#: templates/guests/expiring_documents.html:15
+#: templates/reports/rent_roll.html:21
+msgid "Filter…"
+msgstr ""
+
+#: templates/guests/expiring_documents.html:19
+msgid "Document"
+msgstr ""
+
+#: templates/guests/expiring_documents.html:19
+#: templates/guests/guest_detail.html:75
+msgid "Expires"
+msgstr ""
+
+#: templates/guests/expiring_documents.html:31
+msgid "Nothing expiring in this window."
+msgstr ""
+
+#: templates/guests/guest_delete.html:2 templates/guests/guest_delete.html:3
+msgid "Delete guest"
+msgstr "حذف النزيل"
+
+#: templates/guests/guest_delete.html:12
+msgid ""
+"This erases the guest and everything attached to them. It cannot be undone."
+msgstr ""
+
+#: templates/guests/guest_delete.html:18
+msgid "This is permanent."
+msgstr "هذا الإجراء نهائي."
+
+#: templates/guests/guest_delete.html:19
+msgid ""
+"There is no undo and no archive. Restoring would mean restoring a database "
+"backup."
+msgstr ""
+
+#: templates/guests/guest_delete.html:24
+#, python-format
+msgid ""
+"This guest is still checked in at %(where)s. Deleting them releases that bed."
+msgstr ""
+
+#: templates/guests/guest_delete.html:29
+#, python-format
+msgid ""
+"They still owe %(currency)s %(amount)s. Deleting them writes that debt off "
+"the books."
+msgstr ""
+
+#: templates/guests/guest_delete.html:34
+#, python-format
+msgid ""
+"You are still holding %(currency)s %(amount)s of their deposit. Settle it "
+"before deleting."
+msgstr ""
+
+#: templates/guests/guest_delete.html:39
+msgid "What will be destroyed"
+msgstr "ما الذي سيُحذف"
+
+#: templates/guests/guest_delete.html:46
+msgid "Rent already collected from them"
+msgstr ""
+
+#: templates/guests/guest_delete.html:47
+msgid "Removed from the income ledger too"
+msgstr ""
+
+#: templates/guests/guest_delete.html:49
+msgid "Documents and scans"
+msgstr ""
+
+#: templates/guests/guest_delete.html:50
+msgid "WhatsApp messages"
+msgstr ""
+
+#: templates/guests/guest_delete.html:56
+msgid ""
+"Receipt numbers already issued stay retired — they are never handed out "
+"again. One audit entry records this deletion and its totals."
+msgstr ""
+
+#: templates/guests/guest_delete.html:68
+#, python-format
+msgid "Type <strong>%(name)s</strong> to confirm"
+msgstr ""
+
+#: templates/guests/guest_delete.html:75
+msgid "Delete permanently"
+msgstr "حذف نهائي"
+
+#: templates/guests/guest_delete.html:84
+msgid "Consider instead"
+msgstr "بدائل أفضل"
+
+#: templates/guests/guest_delete.html:87
+msgid ""
+"If you only want them out of the active lists, check them out and leave the "
+"record in place. The history stays, the bed is freed, and the money still "
+"reconciles."
+msgstr ""
+
+#: templates/guests/guest_delete.html:90
+msgid "Check out instead"
+msgstr "سجّل الخروج بدلًا من ذلك"
+
+#: templates/guests/guest_delete.html:94
+msgid ""
+"If they should not be let a bed again, mark them blacklisted on their "
+"profile rather than deleting them."
+msgstr ""
+
+#: templates/guests/guest_delete.html:96
+msgid "Edit profile"
+msgstr "تعديل الملف"
+
+#: templates/guests/guest_detail.html:10 templates/guests/statement.html:2
+#: templates/guests/statement.html:6
+msgid "Statement"
+msgstr "كشف حساب"
+
+#: templates/guests/guest_detail.html:21 templates/guests/guest_list.html:26
+msgid "Staying at"
+msgstr "يقيم في"
+
+#: templates/guests/guest_detail.html:22 templates/guests/guest_list.html:41
+msgid "Not staying"
+msgstr "غير مقيم"
+
+#: templates/guests/guest_detail.html:31
+#: templates/properties/room_detail.html:86
+msgid "Stay history"
+msgstr "سجل الإقامة"
+
+#: templates/guests/guest_detail.html:41
+msgid "No stays recorded."
+msgstr ""
+
+#: templates/guests/guest_detail.html:47
+msgid "Recent invoices"
+msgstr ""
+
+#: templates/guests/guest_detail.html:74 templates/reports/settings.html:41
+msgid "days left"
+msgstr "يوم متبقٍ"
+
+#: templates/guests/guest_detail.html:80
+msgid "Remove this document?"
+msgstr ""
+
+#: templates/guests/guest_detail.html:83
+msgid "No documents on file."
+msgstr ""
+
+#: templates/guests/guest_detail.html:88
+msgid "Add document"
+msgstr ""
+
+#: templates/guests/guest_detail.html:96
+msgid "Ask the guest to complete their profile"
+msgstr "اطلب من النزيل إكمال ملفه"
+
+#: templates/guests/guest_detail.html:100
+#, python-format
+msgid "Link works for another %(days)s day(s)."
+msgstr ""
+
+#: templates/guests/guest_detail.html:101
+msgid "Completed on"
+msgstr "اكتمل في"
+
+#: templates/guests/guest_detail.html:102
+msgid "Opened"
+msgstr "فُتح"
+
+#: templates/guests/guest_detail.html:102
+msgid "not submitted yet"
+msgstr "لم يُرسل بعد"
+
+#: templates/guests/guest_detail.html:103
+msgid "Not opened yet."
+msgstr "لم يُفتح بعد."
+
+#: templates/guests/guest_detail.html:107
+msgid "Profile link"
+msgstr "رابط الملف"
+
+#: templates/guests/guest_detail.html:116
+msgid "Stop this link working?"
+msgstr ""
+
+#: templates/guests/guest_detail.html:117
+msgid "Revoke"
+msgstr "إلغاء الرابط"
+
+#: templates/guests/guest_detail.html:122
+msgid ""
+"Send the guest a link so they can fill in their own details and upload their "
+"documents. No account needed."
+msgstr ""
+
+#: templates/guests/guest_detail.html:128
+msgid "Create link"
+msgstr "إنشاء رابط"
+
+#: templates/guests/guest_detail.html:130
+msgid "Create and send"
+msgstr "إنشاء وإرسال"
+
+#: templates/guests/guest_detail.html:144
+msgid "same as mobile"
+msgstr "نفس رقم الجوال"
+
+#: templates/guests/guest_detail.html:146
+msgid "Date of birth"
+msgstr "تاريخ الميلاد"
+
+#: templates/guests/guest_detail.html:147
+msgid "Emergency"
+msgstr "جهة الطوارئ"
+
+#: templates/guests/guest_form.html:3
+msgid "Guest profile"
+msgstr "ملف النزيل"
+
+#: templates/guests/guest_form.html:5 templates/guests/guest_list.html:10
+msgid "New guest"
+msgstr "نزيل جديد"
+
+#: templates/guests/guest_form.html:6
+msgid "Identity, contact, emergency contact and employer."
+msgstr ""
+
+#: templates/guests/guest_form.html:11
+msgid "Save guest"
+msgstr ""
+
+#: templates/guests/guest_list.html:6
+msgid "Who lives where, and since when."
+msgstr ""
+
+#: templates/guests/guest_list.html:15
+msgid "Search name, mobile, employer or document number…"
+msgstr ""
+
+#: templates/guests/guest_list.html:19
+msgid "Past"
+msgstr "سابق"
+
+#: templates/guests/guest_list.html:43
+msgid "expiring"
+msgstr ""
+
+#: templates/guests/guest_list.html:45 templates/guests/tenancy_list.html:28
+#: templates/messaging/log.html:58 templates/properties/bed_board.html:31
+msgid "Open"
+msgstr "فتح"
+
+#: templates/guests/guest_list.html:49
+msgid "No guests match."
+msgstr ""
+
+#: templates/guests/notice.html:2 templates/guests/notice.html:3
+#: templates/guests/notice.html:5 templates/guests/notice.html:11
+#: templates/guests/tenancy_detail.html:17
+msgid "Record notice"
+msgstr "تسجيل إشعار المغادرة"
+
+#: templates/guests/notice.html:5
+msgid "Mark the tenancy as being in its notice period."
+msgstr ""
+
+#: templates/guests/portal_home.html:2 templates/guests/portal_home.html:3
+#: templates/guests/portal_home.html:22 templates/guests/public_base.html:10
+#: templates/guests/public_profile.html:8
+msgid "Your details"
+msgstr "بياناتك"
+
+#: templates/guests/portal_home.html:7
+#, python-format
+msgid "Hello %(name)s"
+msgstr ""
+
+#: templates/guests/portal_home.html:10
+#, python-format
+msgid "You are staying at %(where)s, since %(since)s."
+msgstr ""
+
+#: templates/guests/portal_home.html:13
+msgid "Here you can keep your details up to date and pick up your receipts."
+msgstr "هنا يمكنك تحديث بياناتك والحصول على إيصالاتك."
+
+#: templates/guests/portal_home.html:23
+msgid "Name, contact, employer and your documents — you can change these"
+msgstr ""
+
+#: templates/guests/portal_home.html:34
+#, python-format
+msgid "%(counter)s receipt to view or download"
+msgid_plural "%(counter)s receipts to view or download"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: templates/guests/portal_home.html:41
+#, python-format
+msgid ""
+"This link is yours alone and works for another %(days)s day(s). Do not pass "
+"it on."
+msgstr ""
+
+#: templates/guests/portal_receipts.html:10
+msgid ""
+"Every payment and deposit recorded against your stay. Tap one to read it."
+msgstr "كل دفعة وتأمين مسجّل على إقامتك. اضغط على أي منها لقراءته."
+
+#: templates/guests/portal_receipts.html:26
+msgid "Nothing recorded yet."
+msgstr "لا يوجد شيء مسجّل بعد."
+
+#: templates/guests/public_base.html:20
+#: templates/guests/public_link_dead.html:3
+msgid "Guest details"
+msgstr "بيانات النزيل"
+
+#: templates/guests/public_base.html:25
+msgid "Powered by ZyDwell"
+msgstr "مدعوم بواسطة زايدويل"
+
+#: templates/guests/public_deposit_receipt.html:33
+msgid "Deposit held for you now"
+msgstr "التأمين المحتفظ به لك الآن"
+
+#: templates/guests/public_deposit_receipt.html:38
+msgid ""
+"A deposit is held, not rent. It is returned when you leave, less anything "
+"agreed."
+msgstr ""
+"التأمين محتفظ به وليس إيجارًا. يُعاد عند مغادرتك، ناقصًا ما تم الاتفاق عليه."
+
+#: templates/guests/public_done.html:2 templates/guests/public_done.html:11
+msgid "Thank you"
+msgstr "شكرًا لك"
+
+#: templates/guests/public_done.html:3
+msgid "Details received"
+msgstr "تم استلام البيانات"
+
+#: templates/guests/public_done.html:13
+#, python-format
+msgid ""
+"We have your details, %(name)s. The office will be in touch if anything else "
+"is needed."
+msgstr ""
+
+#: templates/guests/public_done.html:17
+#, python-format
+msgid ""
+"This link still works for another %(days)s day(s) if you need to add "
+"something."
+msgstr ""
+
+#: templates/guests/public_done.html:19
+msgid "Add more details"
+msgstr "إضافة المزيد من البيانات"
+
+#: templates/guests/public_link_dead.html:2
+msgid "Link no longer works"
+msgstr ""
+
+#: templates/guests/public_link_dead.html:11
+msgid "This link has expired"
+msgstr "انتهت صلاحية هذا الرابط"
+
+#: templates/guests/public_link_dead.html:11
+msgid "This link is not valid"
+msgstr "هذا الرابط غير صالح"
+
+#: templates/guests/public_link_dead.html:13
+msgid "Ask the building office to send you a new one."
+msgstr "اطلب من مكتب المبنى إرسال رابط جديد لك."
+
+#: templates/guests/public_profile.html:2
+#: templates/guests/public_profile.html:3
+msgid "Complete your details"
+msgstr "أكمل بياناتك"
+
+#: templates/guests/public_profile.html:10
+msgid ""
+"Please fill in what you can. Every field except your name is optional — "
+"leave anything you are unsure about, and you can come back to this link "
+"later."
+msgstr ""
+
+#: templates/guests/public_profile.html:15
+msgid "Please check the highlighted fields below."
+msgstr ""
+
+#: templates/guests/public_profile.html:40
+msgid "Saving…"
+msgstr ""
+
+#: templates/guests/public_profile.html:40
+msgid "Save my details"
+msgstr "حفظ بياناتي"
+
+#: templates/guests/public_profile.html:42
+msgid ""
+"Your details go only to the building office. Photos are used for your file "
+"and your documents."
+msgstr ""
+
+#: templates/guests/statement.html:3
+msgid "Guest statement"
+msgstr ""
+
+#: templates/guests/statement.html:7
+msgid "generated"
+msgstr ""
+
+#: templates/guests/statement.html:9
+msgid "Print / save as PDF"
+msgstr ""
+
+#: templates/guests/statement.html:44
+msgid "Dues aging (whole account)"
+msgstr "أعمار المتأخرات (الحساب بالكامل)"
+
+#: templates/guests/tenancy_detail.html:9
+#: templates/properties/room_detail.html:66
+msgid "since"
+msgstr "منذ"
+
+#: templates/guests/tenancy_detail.html:13
+#: templates/reports/staff_dashboard.html:15
+msgid "Collect rent"
+msgstr "تحصيل الإيجار"
+
+#: templates/guests/tenancy_detail.html:14
+msgid "Raise invoice"
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:16 templates/guests/transfer.html:2
+#: templates/guests/transfer.html:3 templates/guests/transfer.html:5
+#: templates/guests/transfer.html:11
+msgid "Transfer bed"
+msgstr "نقل السرير"
+
+#: templates/guests/tenancy_detail.html:26
+msgid "Paid in advance"
+msgstr "مدفوع مقدمًا"
+
+#: templates/guests/tenancy_detail.html:26
+#: templates/guests/tenancy_detail.html:116
+msgid "Post-paid"
+msgstr "الدفع لاحقًا"
+
+#: templates/guests/tenancy_detail.html:27
+msgid "day"
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:31
+msgid "Deposit shortfall"
+msgstr "نقص التأمين"
+
+#: templates/guests/tenancy_detail.html:47
+msgid "No invoices yet."
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:69
+msgid "Bed transfers"
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:73
+msgid "Old pro-rata"
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:73
+msgid "New pro-rata"
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:87 templates/reports/rent_roll.html:27
+msgid "Deposit"
+msgstr "التأمين"
+
+#: templates/guests/tenancy_detail.html:96
+msgid "No deposit movements."
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:101
+msgid "Record deposit"
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:115
+msgid "Billing"
+msgstr "الفوترة"
+
+#: templates/guests/tenancy_detail.html:116
+msgid "Pay in advance"
+msgstr "الدفع مقدمًا"
+
+#: templates/guests/tenancy_detail.html:118
+msgid "Part periods charged by the day"
+msgstr "الفترات الجزئية تُحتسب بالأيام"
+
+#: templates/guests/tenancy_detail.html:119
+msgid "Full rent for a part period"
+msgstr "الإيجار كامل للفترة الجزئية"
+
+#: templates/guests/tenancy_detail.html:121
+msgid "Expected out"
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:122
+msgid "Notice given"
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:123
+msgid "Checked out"
+msgstr ""
+
+#: templates/guests/tenancy_detail.html:124
+msgid "Opened by"
+msgstr ""
+
+#: templates/guests/tenancy_edit.html:2 templates/guests/tenancy_edit.html:3
+#: templates/guests/tenancy_edit.html:5 templates/guests/tenancy_edit.html:11
+msgid "Edit tenancy"
+msgstr ""
+
+#: templates/guests/tenancy_edit.html:5
+msgid "Rent changes are recorded in the audit log."
+msgstr ""
+
+#: templates/guests/tenancy_list.html:5
+msgid "Active stays, notice periods and past guests."
+msgstr ""
+
+#: templates/guests/tenancy_list.html:8
+msgid "Search guest or room…"
+msgstr ""
+
+#: templates/guests/tenancy_list.html:10
+msgid "Live"
+msgstr "نشط"
+
+#: templates/guests/tenancy_list.html:11
+msgid "Vacated"
+msgstr "غادر"
+
+#: templates/guests/transfer.html:5
+msgid "Move the guest mid-month; the rent is split pro-rata."
+msgstr ""
+
+#: templates/messaging/broadcast.html:2 templates/messaging/broadcast.html:3
+#: templates/messaging/broadcast.html:5 templates/messaging/log.html:11
+msgid "Building notice"
+msgstr "إشعار عام للمبنى"
+
+#: templates/messaging/broadcast.html:6
+msgid "Reaches every guest currently checked in."
+msgstr ""
+
+#: templates/messaging/broadcast.html:8
+msgid "Send this notice to every current guest?"
+msgstr ""
+
+#: templates/messaging/broadcast.html:11
+msgid "Send notice"
+msgstr ""
+
+#: templates/messaging/log.html:2 templates/messaging/log.html:6
+msgid "WhatsApp log"
+msgstr "سجل واتساب"
+
+#: templates/messaging/log.html:7
+msgid ""
+"Every message, who sent it and what happened to it — proof a reminder was "
+"issued."
+msgstr ""
+
+#: templates/messaging/log.html:10 templates/messaging/templates.html:5
+msgid "Templates & schedule"
+msgstr ""
+
+#: templates/messaging/log.html:12 templates/messaging/send.html:2
+#: templates/messaging/send.html:3 templates/messaging/send.html:5
+msgid "Send a message"
+msgstr "إرسال رسالة"
+
+#: templates/messaging/log.html:19 templates/messaging/log.html:39
+msgid "Sent by"
+msgstr ""
+
+#: templates/messaging/log.html:31
+msgid "Guest, number or text"
+msgstr ""
+
+#: templates/messaging/log.html:59
+msgid "No messages in this range."
+msgstr "لا توجد رسائل في هذه الفترة."
+
+#: templates/messaging/log.html:64
+msgid "Who sent them"
+msgstr "من أرسلها"
+
+#: templates/messaging/log.html:67
+msgid "Person"
+msgstr "الشخص"
+
+#: templates/messaging/log.html:68
+msgid "Waiting"
+msgstr "بالانتظار"
+
+#: templates/messaging/log.html:76
+msgid "Nothing sent in this range."
+msgstr "لم يُرسل شيء في هذه الفترة."
+
+#: templates/messaging/log.html:81
+msgid ""
+"“Automatic” is the nightly job preparing reminders. Everything else was sent "
+"by a person, and their name stays on it."
+msgstr ""
+
+#: templates/messaging/send.html:6
+msgid "Pick an approved template, or write the text yourself."
+msgstr ""
+
+#: templates/messaging/send.html:12 templates/messaging/waiting.html:52
+msgid "Open in WhatsApp"
+msgstr "فتح في واتساب"
+
+#: templates/messaging/send.html:13
+msgid "Send automatically"
+msgstr "إرسال تلقائي"
+
+#: templates/messaging/send.html:17
+msgid ""
+"Opening in WhatsApp loads the message on your phone or WhatsApp Web so you "
+"can read it and press send. Sending automatically needs the Business API "
+"switched on and the template approved."
+msgstr ""
+
+#: templates/messaging/template_form.html:3
+msgid "Message template"
+msgstr ""
+
+#: templates/messaging/template_form.html:6
+#, python-brace-format
+msgid ""
+"Placeholders: {guest} {building} {bed} {amount} {due_date} {invoice} "
+"{receipt} {balance} {days} {document} {expiry} {reason} {message}"
+msgstr ""
+
+#: templates/messaging/template_form.html:11
+msgid "Save template"
+msgstr ""
+
+#: templates/messaging/templates.html:2 templates/messaging/templates.html:9
+msgid "Templates"
+msgstr "القوالب"
+
+#: templates/messaging/templates.html:3
+msgid "Message templates & schedule"
+msgstr "قوالب الرسائل والجدولة"
+
+#: templates/messaging/templates.html:6
+msgid ""
+"WhatsApp Business templates must be approved by Meta before they can be sent."
+msgstr ""
+
+#: templates/messaging/templates.html:7
+msgid "Back to log"
+msgstr ""
+
+#: templates/messaging/templates.html:11
+msgid "Meta template"
+msgstr ""
+
+#: templates/messaging/templates.html:16
+msgid "Pending"
+msgstr ""
+
+#: templates/messaging/templates.html:22
+msgid "Rent reminder schedule"
+msgstr ""
+
+#: templates/messaging/templates.html:26
+msgid "On"
+msgstr ""
+
+#: templates/messaging/templates.html:26
+msgid "Off"
+msgstr ""
+
+#: templates/messaging/templates.html:29
+msgid "No reminders scheduled."
+msgstr ""
+
+#: templates/messaging/templates.html:34
+msgid "Save reminder"
+msgstr ""
+
+#: templates/messaging/waiting.html:7
+msgid ""
+"Reminders the system prepared. Tap one to open it in WhatsApp, check it, and "
+"press send."
+msgstr ""
+"تذكيرات جهّزها النظام. اضغط على واحدة لفتحها في واتساب، راجعها ثم أرسلها."
+
+#: templates/messaging/waiting.html:9
+msgid "Full log"
+msgstr "السجل الكامل"
+
+#: templates/messaging/waiting.html:10
+msgid "Write a message"
+msgstr "كتابة رسالة"
+
+#: templates/messaging/waiting.html:16
+msgid ""
+"Nothing leaves the system by itself. The nightly job writes the reminders; "
+"an admin or a staff member sends them from here, and their name goes on each "
+"one."
+msgstr ""
+
+#: templates/messaging/waiting.html:21
+msgid "Waiting for someone"
+msgstr "بانتظار من يرسلها"
+
+#: templates/messaging/waiting.html:23
+msgid "You sent today"
+msgstr "أرسلت اليوم"
+
+#: templates/messaging/waiting.html:26
+msgid "Who can send"
+msgstr "من يمكنه الإرسال"
+
+#: templates/messaging/waiting.html:28
+msgid "You can"
+msgstr "يمكنك"
+
+#: templates/messaging/waiting.html:28
+msgid "View only"
+msgstr "عرض فقط"
+
+#: templates/messaging/waiting.html:35
+#: templates/reports/staff_dashboard.html:44
+msgid "Where"
+msgstr "الموقع"
+
+#: templates/messaging/waiting.html:36
+msgid "Prepared"
+msgstr "جُهّزت"
+
+#: templates/messaging/waiting.html:54
+msgid "No number"
+msgstr "لا يوجد رقم"
+
+#: templates/messaging/waiting.html:59
+msgid "Nothing waiting. Everything prepared has been sent."
+msgstr "لا يوجد شيء بالانتظار. تم إرسال كل ما جُهّز."
+
+#: templates/partials/_bed_tile.html:5
+msgid "No status"
+msgstr ""
+
+#: templates/partials/_empty.html:4
+msgid "Nothing here yet."
+msgstr "لا يوجد شيء هنا بعد."
+
+#: templates/partials/_pager.html:5
+msgid "Previous"
+msgstr "السابق"
+
+#: templates/partials/_pager.html:7
+#, python-format
+msgid "Page %(n)s of %(total)s"
+msgstr ""
+
+#: templates/partials/_pager.html:7
+msgid "records"
+msgstr "سجل"
+
+#: templates/partials/_pager.html:9
+msgid "Next"
+msgstr "التالي"
+
+#: templates/partials/_plan_room.html:10
+msgid "per bed"
+msgstr "لكل سرير"
+
+#: templates/partials/_plan_room.html:10
+msgid "per room"
+msgstr "لكل غرفة"
+
+#: templates/partials/_plan_room.html:10
+msgid "per flat"
+msgstr "لكل شقة"
+
+#: templates/partials/_plan_room.html:15 templates/partials/_plan_room.html:17
+msgid "mo"
+msgstr "شهر"
+
+#: templates/partials/_plan_room.html:17
+msgid "Whole unit vacant"
+msgstr "الوحدة كاملة شاغرة"
+
+#: templates/partials/_plan_room.html:24
+msgid "Add bed"
+msgstr "إضافة سرير"
+
+#: templates/partials/_plan_room.html:27
+msgid "No beds yet."
+msgstr ""
+
+#: templates/partials/_plan_room.html:32
+msgid "Cap"
+msgstr "السعة"
+
+#: templates/partials/_theme_toggle.html:3
+msgid "Appearance: follows the device. Tap for light."
+msgstr "المظهر: يتبع الجهاز. اضغط للوضع الفاتح."
+
+#: templates/partials/_theme_toggle.html:4
+msgid "Appearance: light. Tap for dark."
+msgstr "المظهر: فاتح. اضغط للوضع الداكن."
+
+#: templates/partials/_theme_toggle.html:5
+msgid "Appearance: dark. Tap to follow the device."
+msgstr "المظهر: داكن. اضغط ليتبع الجهاز."
+
+#: templates/partials/_theme_toggle.html:6
+msgid "Change appearance"
+msgstr "تغيير المظهر"
+
+#: templates/properties/bed_board.html:3
+msgid "Floor-wise bed occupancy map"
+msgstr ""
+
+#: templates/properties/bed_board.html:6
+msgid "Live occupancy across every floor you look after."
+msgstr ""
+
+#: templates/properties/bed_board.html:11
+msgid "Total beds"
+msgstr "إجمالي الأسرّة"
+
+#: templates/properties/bed_board.html:12
+msgid "Available now"
+msgstr "متاح الآن"
+
+#: templates/properties/bed_board.html:13 templates/reports/dashboard.html:25
+#: templates/reports/dashboard.html:73 templates/reports/index.html:15
+#: templates/reports/occupancy.html:2 templates/reports/occupancy.html:3
+#: templates/reports/occupancy.html:5 templates/reports/occupancy.html:11
+#: templates/reports/occupancy.html:21
+msgid "Occupancy"
+msgstr "نسبة الإشغال"
+
+#: templates/properties/bed_board.html:14
+msgid "Out of service"
+msgstr "خارج الخدمة"
+
+#: templates/properties/bed_board.html:22
+msgid "Filter by room or guest…"
+msgstr ""
+
+#: templates/properties/bed_board.html:30
+#: templates/properties/building_list.html:20
+msgid "full"
+msgstr "ممتلئ"
+
+#: templates/properties/bed_board.html:49
+msgid "No apartments."
+msgstr "لا توجد شقق."
+
+#: templates/properties/bed_board.html:51
+msgid "No floors set up."
+msgstr ""
+
+#: templates/properties/bed_board.html:55
+msgid "Nothing to show — no buildings are assigned to you."
+msgstr ""
+
+#: templates/properties/building_detail.html:11
+msgid "Edit building"
+msgstr ""
+
+#: templates/properties/building_detail.html:21
+#: templates/reports/dashboard.html:72 templates/reports/occupancy.html:9
+#: templates/reports/occupancy.html:20
+msgid "Occupied"
+msgstr "مشغول"
+
+#: templates/properties/building_detail.html:21
+msgid "occupancy"
+msgstr ""
+
+#: templates/properties/building_detail.html:22
+#: templates/reports/occupancy.html:10 templates/reports/occupancy.html:21
+msgid "Available"
+msgstr "متاح"
+
+#: templates/properties/building_detail.html:23
+msgid "Blocked / maintenance"
+msgstr ""
+
+#: templates/properties/building_detail.html:27
+msgid "Filter rooms or guests…"
+msgstr ""
+
+#: templates/properties/building_detail.html:37
+#: templates/properties/building_detail.html:51
+#: templates/reports/dashboard.html:24
+msgid "beds"
+msgstr ""
+
+#: templates/properties/building_detail.html:38
+#: templates/properties/building_detail.html:52
+msgid "free"
+msgstr ""
+
+#: templates/properties/building_detail.html:41
+msgid "Edit floor"
+msgstr ""
+
+#: templates/properties/building_detail.html:65
+msgid "No rooms in this apartment yet."
+msgstr "لا توجد غرف في هذه الشقة بعد."
+
+#: templates/properties/building_detail.html:66
+#: templates/properties/building_detail.html:71
+msgid "Add one"
+msgstr ""
+
+#: templates/properties/building_detail.html:70
+msgid "No apartments on this floor yet."
+msgstr "لا توجد شقق في هذا الطابق بعد."
+
+#: templates/properties/building_detail.html:75
+msgid "No floors yet. Add a floor, then rooms and beds."
+msgstr ""
+
+#: templates/properties/building_form.html:5
+#: templates/properties/building_list.html:10
+#: templates/properties/building_list.html:42
+msgid "New building"
+msgstr "مبنى جديد"
+
+#: templates/properties/building_form.html:6
+msgid "Name, address, owner, licence and the details printed on receipts."
+msgstr ""
+
+#: templates/properties/building_form.html:11
+msgid "Save building"
+msgstr ""
+
+#: templates/properties/building_list.html:6
+msgid "Building → floor → room → bed. Open a building to see its floor plan."
+msgstr ""
+
+#: templates/properties/building_list.html:9
+#: templates/properties/room_types.html:2
+#: templates/properties/room_types.html:3
+#: templates/properties/room_types.html:5 templates/reports/settings.html:11
+msgid "Room types"
+msgstr "أنواع الغرف"
+
+#: templates/properties/building_list.html:24
+msgid "Floors"
+msgstr "الطوابق"
+
+#: templates/properties/building_list.html:27
+#: templates/reports/dashboard.html:73
+msgid "Free"
+msgstr "شاغر"
+
+#: templates/properties/building_list.html:31
+msgid "blocked / maintenance"
+msgstr ""
+
+#: templates/properties/building_list.html:34
+msgid "Floor plan"
+msgstr "مخطط الطابق"
+
+#: templates/properties/building_list.html:41
+msgid ""
+"No buildings yet. Add your first building to start setting up floors, rooms "
+"and beds."
+msgstr ""
+
+#: templates/properties/room_detail.html:14
+msgid "capacity"
+msgstr ""
+
+#: templates/properties/room_detail.html:16
+msgid "Edit room"
+msgstr ""
+
+#: templates/properties/room_detail.html:18
+msgid "Delete this room? If it is in use it will be archived instead."
+msgstr ""
+
+#: templates/properties/room_detail.html:19
+msgid "Delete / archive"
+msgstr ""
+
+#: templates/properties/room_detail.html:35
+msgid "Let as a whole unit to"
+msgstr ""
+
+#: templates/properties/room_detail.html:36
+#: templates/properties/room_detail.html:37
+msgid "month"
+msgstr ""
+
+#: templates/properties/room_detail.html:37
+msgid "Whole unit is vacant"
+msgstr ""
+
+#: templates/properties/room_detail.html:42
+msgid "No beds in this room yet."
+msgstr ""
+
+#: templates/properties/room_detail.html:73
+msgid "Delete this bed?"
+msgstr ""
+
+#: templates/properties/room_detail.html:97
+msgid "Nobody has stayed here yet."
+msgstr ""
+
+#: templates/properties/room_detail.html:115
+msgid "AC"
+msgstr ""
+
+#: templates/properties/room_detail.html:116
+msgid "Attached bath"
+msgstr ""
+
+#: templates/properties/room_detail.html:124
+msgid "Add beds quickly"
+msgstr ""
+
+#: templates/properties/room_detail.html:128
+msgid "Create beds"
+msgstr ""
+
+#: templates/properties/room_types.html:5
+msgid ""
+"Bedspace, partition, studio, family flat — edit these without a code change."
+msgstr ""
+
+#: templates/properties/room_types.html:16
+msgid "Add a type"
+msgstr ""
+
+#: templates/reports/audit_log.html:2 templates/reports/audit_log.html:3
+#: templates/reports/audit_log.html:5 templates/reports/settings.html:16
+msgid "Audit log"
+msgstr "سجل التدقيق"
+
+#: templates/reports/audit_log.html:6
+msgid ""
+"Who changed a rent amount and when, deleted payments and guests, and every "
+"sign-in."
+msgstr ""
+
+#: templates/reports/audit_log.html:9
+msgid "Search summary, record or user…"
+msgstr ""
+
+#: templates/reports/audit_log.html:11
+msgid "All actions"
+msgstr ""
+
+#: templates/reports/audit_log.html:19
+msgid "Record"
+msgstr ""
+
+#: templates/reports/audit_log.html:19
+msgid "Changes"
+msgstr "التغييرات"
+
+#: templates/reports/collection.html:9 templates/reports/deposits.html:10
+#: templates/reports/rent_roll.html:9
+msgid "PDF"
+msgstr "PDF"
+
+#: templates/reports/collection.html:18
+msgid "By collector"
+msgstr "حسب المحصّل"
+
+#: templates/reports/collection.html:22
+msgid "By mode"
+msgstr "حسب طريقة الدفع"
+
+#: templates/reports/collection.html:26 templates/reports/expense.html:36
+msgid "By building"
+msgstr "حسب المبنى"
+
+#: templates/reports/dashboard.html:6 templates/reports/staff_dashboard.html:6
+msgid "Good day"
+msgstr "طاب يومك"
+
+#: templates/reports/dashboard.html:7
+msgid "The numbers for"
+msgstr ""
+
+#: templates/reports/dashboard.html:16
+#, python-format
+msgid "%(counter)s collection waiting on you"
+msgid_plural "%(counter)s collections waiting on you"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: templates/reports/dashboard.html:17
+#, python-format
+msgid ""
+"%(currency)s %(amount)s your staff have taken in and you have not confirmed."
+msgstr ""
+
+#: templates/reports/dashboard.html:18
+msgid "Review"
+msgstr ""
+
+#: templates/reports/dashboard.html:23
+msgid "Available beds"
+msgstr "الأسرّة المتاحة"
+
+#: templates/reports/dashboard.html:24
+msgid "of"
+msgstr ""
+
+#: templates/reports/dashboard.html:26
+msgid "live tenancies"
+msgstr ""
+
+#: templates/reports/dashboard.html:27
+msgid "Collected this month"
+msgstr "المحصَّل هذا الشهر"
+
+#: templates/reports/dashboard.html:29
+msgid "Pending rent"
+msgstr "الإيجار المستحق"
+
+#: templates/reports/dashboard.html:32
+msgid "Deposits held"
+msgstr "التأمينات المحتفظ بها"
+
+#: templates/reports/dashboard.html:34
+msgid "Guests' money, not profit"
+msgstr "أموال النزلاء، ليست أرباحًا"
+
+#: templates/reports/dashboard.html:38
+msgid "Monthly expense"
+msgstr "المصروف الشهري"
+
+#: templates/reports/dashboard.html:42
+msgid "expense"
+msgstr ""
+
+#: templates/reports/dashboard.html:48
+msgid "Income vs expense — 12 months"
+msgstr ""
+
+#: templates/reports/dashboard.html:68
+msgid "Floor-wise occupancy"
+msgstr ""
+
+#: templates/reports/dashboard.html:69
+msgid "Full report"
+msgstr ""
+
+#: templates/reports/dashboard.html:80
+msgid "No beds set up yet."
+msgstr ""
+
+#: templates/reports/dashboard.html:85
+msgid "Most overdue"
+msgstr ""
+
+#: templates/reports/dashboard.html:86
+#: templates/reports/staff_dashboard.html:40
+msgid "All overdue"
+msgstr "كل المتأخرات"
+
+#: templates/reports/dashboard.html:89
+msgid "Days"
+msgstr "الأيام"
+
+#: templates/reports/dashboard.html:95
+msgid "Nothing overdue."
+msgstr ""
+
+#: templates/reports/dashboard.html:112
+msgid "Expense by category"
+msgstr ""
+
+#: templates/reports/dashboard.html:120
+msgid "No expenses recorded this month."
+msgstr ""
+
+#: templates/reports/dashboard.html:125
+msgid "Recent receipts"
+msgstr ""
+
+#: templates/reports/dashboard.html:137
+msgid "Documents expiring"
+msgstr ""
+
+#: templates/reports/dashboard.html:145
+msgid "Nothing expiring soon."
+msgstr ""
+
+#: templates/reports/deposits.html:7
+msgid ""
+"Money in and out of guest deposits. Held money is not profit — it is the "
+"guest's, until you keep it."
+msgstr ""
+
+#: templates/reports/deposits.html:15
+msgid "Held right now"
+msgstr "المحتفظ به الآن"
+
+#: templates/reports/deposits.html:17
+msgid "Across every tenancy"
+msgstr "عبر كل عقود السكن"
+
+#: templates/reports/deposits.html:18
+msgid "Received in range"
+msgstr "المستلم في الفترة"
+
+#: templates/reports/deposits.html:20
+msgid "Kept (deductions)"
+msgstr "المُحتفظ به (خصومات)"
+
+#: templates/reports/deposits.html:22
+msgid "Posted to income"
+msgstr "مسجّل كدخل"
+
+#: templates/reports/deposits.html:23
+msgid "Refunded"
+msgstr "المُعاد"
+
+#: templates/reports/deposits.html:36
+msgid "Net movement"
+msgstr "صافي الحركة"
+
+#: templates/reports/deposits.html:41
+msgid "Movements"
+msgstr "الحركات"
+
+#: templates/reports/deposits.html:63
+msgid "No deposit movements in this range."
+msgstr "لا توجد حركات تأمين في هذه الفترة."
+
+#: templates/reports/deposits.html:68
+msgid "Held by building"
+msgstr "المحتفظ به حسب المبنى"
+
+#: templates/reports/deposits.html:72
+msgid "Nothing held."
+msgstr "لا يوجد مبلغ محتفظ به."
+
+#: templates/reports/deposits.html:75
+msgid "How this is counted"
+msgstr "كيف يُحتسب هذا"
+
+#: templates/reports/deposits.html:78
+msgid ""
+"Taking a deposit and giving it back never touches profit — it is the guest's "
+"money, held. Only a deduction is yours to keep, so only that posts to the "
+"income ledger under Security deposit."
+msgstr ""
+
+#: templates/reports/expense.html:2 templates/reports/expense.html:3
+#: templates/reports/expense.html:5
+msgid "Expense report"
+msgstr "تقرير المصروفات"
+
+#: templates/reports/expense.html:15
+msgid "Entries"
+msgstr "القيود"
+
+#: templates/reports/expense.html:34
+msgid "No expenses."
+msgstr ""
+
+#: templates/reports/index.html:6
+msgid "Date-range and floor filters, with Excel and PDF export."
+msgstr ""
+
+#: templates/reports/index.html:8
+msgid "Export every module (Excel)"
+msgstr ""
+
+#: templates/reports/index.html:10
+msgid "Who is in which bed, at what rent, and what they owe."
+msgstr ""
+
+#: templates/reports/index.html:11
+msgid "Receipts by collector, mode and building for any date range."
+msgstr ""
+
+#: templates/reports/index.html:12
+msgid "Spending split by category and building."
+msgstr ""
+
+#: templates/reports/index.html:13
+msgid "Income minus expense, per month and per room."
+msgstr ""
+
+#: templates/reports/index.html:14
+msgid "Deposit money in and out, and what you are holding right now."
+msgstr ""
+
+#: templates/reports/index.html:15
+msgid "Building and floor level occupancy with a live bed count."
+msgstr ""
+
+#: templates/reports/index.html:16
+msgid "Dues aged 0-30, 31-60 and 60+ days, ranked."
+msgstr ""
+
+#: templates/reports/occupancy.html:5
+msgid "Building and floor level."
+msgstr ""
+
+#: templates/reports/occupancy.html:34
+msgid "No floors."
+msgstr ""
+
+#: templates/reports/profit.html:6
+msgid "income minus expense, per room"
+msgstr ""
+
+#: templates/reports/profit.html:15 templates/reports/profit.html:20
+msgid "Net"
+msgstr "الصافي"
+
+#: templates/reports/profit.html:19
+msgid "Room / floor / building"
+msgstr ""
+
+#: templates/reports/rent_roll.html:6
+msgid "Every live tenancy with its rent, deposit and outstanding balance."
+msgstr ""
+
+#: templates/reports/rent_roll.html:12
+msgid "Monthly rent roll"
+msgstr ""
+
+#: templates/reports/rent_roll.html:14
+msgid "Live tenancies"
+msgstr ""
+
+#: templates/reports/rent_roll.html:26
+msgid "Room / bed"
+msgstr ""
+
+#: templates/reports/rent_roll.html:26
+msgid "Since"
+msgstr "منذ"
+
+#: templates/reports/settings.html:6
+msgid "Account details, currency, statuses and the audit trail."
+msgstr ""
+
+#: templates/reports/settings.html:8 templates/reports/settings.html:20
+msgid "Account"
+msgstr "الحساب"
+
+#: templates/reports/settings.html:9 templates/reports/statuses.html:2
+#: templates/reports/statuses.html:5
+msgid "Statuses"
+msgstr "الحالات"
+
+#: templates/reports/settings.html:23
+msgid "Save settings"
+msgstr ""
+
+#: templates/reports/settings.html:27
+msgid "Plan limits"
+msgstr "حدود الباقة"
+
+#: templates/reports/settings.html:37
+msgid "Subscription"
+msgstr "الاشتراك"
+
+#: templates/reports/settings.html:39
+msgid "Renews"
+msgstr ""
+
+#: templates/reports/settings.html:42
+msgid "Grace"
+msgstr ""
+
+#: templates/reports/settings.html:45
+msgid "Data"
+msgstr "البيانات"
+
+#: templates/reports/settings.html:46
+msgid ""
+"Export every module to one Excel workbook. Backups run on the server; see "
+"the runbook for the restore procedure."
+msgstr ""
+
+#: templates/reports/settings.html:47
+msgid "Export all modules"
+msgstr ""
+
+#: templates/reports/staff_dashboard.html:8
+msgid "You look after"
+msgstr "أنت مسؤول عن"
+
+#: templates/reports/staff_dashboard.html:10
+msgid "Every building in this account"
+msgstr "كل المباني في هذا الحساب"
+
+#: templates/reports/staff_dashboard.html:39
+msgid "Chase these next"
+msgstr "تابع هذه أولًا"
+
+#: templates/reports/staff_dashboard.html:45
+msgid "Owed"
+msgstr "المستحق"
+
+#: templates/reports/staff_dashboard.html:58
+msgid "Nothing owed in your area. Good."
+msgstr "لا مستحقات في نطاقك. أحسنت."
+
+#: templates/reports/staff_dashboard.html:67
+msgid "Your recent receipts"
+msgstr "أحدث إيصالاتك"
+
+#: templates/reports/staff_dashboard.html:72
+msgid "awaiting approval"
+msgstr "بانتظار الموافقة"
+
+#: templates/reports/staff_dashboard.html:74
+msgid "You have not taken any money yet."
+msgstr "لم تُحصّل أي مبلغ بعد."
+
+#: templates/reports/staff_dashboard.html:81
+msgid "Your area"
+msgstr "نطاقك"
+
+#: templates/reports/staff_dashboard.html:87
+msgid "Guests, rooms and money outside this are not yours to see."
+msgstr "النزلاء والغرف والمبالغ خارج هذا النطاق ليست ضمن صلاحيتك."
+
+#: templates/reports/status_form.html:3
+msgid "Edit status"
+msgstr ""
+
+#: templates/reports/statuses.html:3
+msgid "Status management"
+msgstr ""
+
+#: templates/reports/statuses.html:6
+msgid ""
+"Add a status, set its colour and its behaviour flag — no code change needed."
+msgstr ""
+
+#: templates/reports/statuses.html:22
+msgid "counts as available"
+msgstr ""
+
+#: templates/reports/statuses.html:23
+msgid "counts as occupied"
+msgstr ""
+
+#: templates/reports/statuses.html:24
+msgid "counts as settled"
+msgstr ""
+
+#: templates/reports/statuses.html:25
+msgid "protected"
+msgstr ""
+
+#: templates/reports/statuses.html:29
+msgid "Delete this status?"
+msgstr ""
+
+#: templates/reports/statuses.html:33
+msgid "Add a status"
+msgstr ""
+
+#: templates/reports/statuses.html:36
+msgid "Add status"
+msgstr ""

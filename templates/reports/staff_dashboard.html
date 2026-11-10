@@ -1,0 +1,93 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% trans "Dashboard" %}{% endblock %}
+{% block topbar_title %}{% trans "Dashboard" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Good day" %}, {{ user.display_name }}</h1>
+    <div class="sub">
+      {% if assignments %}{% trans "You look after" %}
+        {% for a in assignments %}<strong>{{ a.scope_label }}</strong>{% if not forloop.last %}, {% endif %}{% endfor %}
+      {% else %}{% trans "Every building in this account" %}{% endif %}
+      · {{ month_label }}
+    </div></div>
+  <div class="actions">
+    {% if can_check_in %}<a class="btn accent" href="{% url 'guests:check_in' %}?{% return_here %}">{% trans "Check in" %}</a>{% endif %}
+    {% if can_collect %}<a class="btn primary" href="{% url 'billing:payment_create' %}?{% return_here %}">{% trans "Collect rent" %}</a>{% endif %}
+  </div>
+</div>
+
+{% if tiles %}
+  <div class="grid k4" style="margin-bottom:18px">
+    {% for tile in tiles %}
+      <a class="kpi {{ tile.tone }}" href="{{ tile.url }}" style="text-decoration:none;display:block">
+        <div class="label">{{ tile.label }}</div>
+        <div class="value">{{ tile.value }}</div>
+        <div class="hint">{{ tile.hint }}</div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="banner">
+    <strong>{% trans "You have no screens yet." %}</strong>
+    {% trans "Your building owner decides what you can open. Ask them to set your permissions." %}
+  </div>
+{% endif %}
+
+<div class="{% if can_see_money %}grid split{% endif %}">
+  {% if can_see_money %}
+  <div class="card">
+    <header><h2>{% trans "Chase these next" %}</h2>
+      {% if jobs %}<div class="actions"><a class="btn sm" href="{% url 'billing:overdue' %}">{% trans "All overdue" %}</a></div>{% endif %}
+    </header>
+    <div class="body tight"><div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>{% trans "Guest" %}</th><th>{% trans "Where" %}</th>
+      <th class="num">{% trans "Days late" %}</th><th class="num">{% trans "Owed" %}</th><th></th></tr></thead>
+      <tbody>{% for i in jobs %}
+        <tr><td><strong>{{ i.tenancy.guest.full_name }}</strong>
+            <div class="muted mono" style="font-size:11px">{{ i.tenancy.guest.mobile }}</div></td>
+          <td class="muted" style="font-size:12px">{{ i.tenancy.location_label }}</td>
+          <td class="num">{{ i.days_overdue }}</td>
+          <td class="num"><strong>{{ currency }} {{ i.balance|floatformat:2 }}</strong></td>
+          <td class="right nowrap">
+            {% if can_collect %}<a class="btn sm accent" href="{% url 'billing:payment_create' %}?invoice={{ i.pk }}&amp;{% return_here %}">{% trans "Collect" %}</a>{% endif %}
+            <a class="btn sm"{% if chat_new_tab %} target="_blank" rel="noopener"{% endif %}
+               href="{% url 'messaging:quick_send' %}?guest={{ i.tenancy.guest_id }}&invoice={{ i.pk }}&template=rent_overdue">{% trans "WhatsApp" %}</a>
+          </td></tr>
+      {% empty %}
+        <tr><td colspan="5">{% include "partials/_empty.html" with message=_("Nothing owed in your area. Good.") %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div></div>
+  </div>
+  {% endif %}
+
+  <div>
+    {% if can_see_money %}
+    <div class="card">
+      <header><h3>{% trans "Your recent receipts" %}</h3></header>
+      <div class="body tight"><table class="data"><tbody>
+        {% for p in recent %}
+          <tr><td><a class="mono" href="{% url 'billing:receipt' p.pk %}">{{ p.receipt_number }}</a>
+              <div class="muted" style="font-size:11px">{{ p.tenancy.guest.full_name }} · {{ p.paid_on|date:"d M" }}
+                {% if p.awaits_approval %}· <span class="badge soft-amber">{% trans "awaiting approval" %}</span>{% endif %}</div></td>
+            <td class="num">{{ currency }} {{ p.amount|floatformat:2 }}</td></tr>
+        {% empty %}<tr><td class="muted" style="padding:16px">{% trans "You have not taken any money yet." %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endif %}
+
+    {% if assignments %}
+      <div class="card">
+        <header><h3>{% trans "Your area" %}</h3></header>
+        <div class="body">
+          {% for a in assignments %}
+            <div style="margin-bottom:7px"><span class="badge soft-teal">{{ a.scope_label }}</span></div>
+          {% endfor %}
+          <p class="muted" style="font-size:12.5px;margin:12px 0 0">
+            {% trans "Guests, rooms and money outside this are not yours to see." %}</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

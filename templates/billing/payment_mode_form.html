@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Payment mode" %}{% endblock %}
+{% block topbar_title %}{% trans "Payment mode" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ mode.name }}</h1>
+<div class="sub">{% trans "Change how this mode behaves when money is taken." %}</div></div></div>
+<div class="card" style="max-width:640px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save" %}</button>
+      <a class="btn" href="{% url 'billing:payment_mode_list' %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

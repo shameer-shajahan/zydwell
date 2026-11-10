@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% load i18n listing %}
+{% block title %}{% trans "Collection report" %}{% endblock %}
+{% block topbar_title %}{% trans "Collection report" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Collection report" %}</h1>
+<div class="sub">{{ start|date:"d M Y" }} – {{ end|date:"d M Y" }}</div></div>
+<div class="actions">
+  <a class="btn" href="{% url 'reports:export_collection' %}{% query from=start|date:'Y-m-d' to=end|date:'Y-m-d' %}">{% trans "Excel" %}</a>
+  <a class="btn" href="{% url 'reports:export_collection' %}{% query format='pdf' from=start|date:'Y-m-d' to=end|date:'Y-m-d' %}">{% trans "PDF" %}</a>
+</div></div>
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <label class="fchip" for="f-from"><span>{% trans "From" %}</span><input id="f-from" type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
+      <label class="fchip" for="f-to"><span>{% trans "To" %}</span><input id="f-to" type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Apply" %}</button>
+    </div>
+  </div>
+  <div class="fb-note">{% trans "Total" %}: <strong>{{ currency }} {{ total|floatformat:2 }}</strong></div>
+</form>
+<div class="grid k3" style="margin-bottom:16px">
+  <div class="card"><header><h3>{% trans "By collector" %}</h3></header><div class="body tight"><table class="data"><tbody>
+    {% for r in by_collector %}<tr><td>{{ r.collected_by_name|default:"—" }}<div class="muted" style="font-size:11px">{{ r.n }} {% trans "receipts" %}</div></td>
+      <td class="num">{{ currency }} {{ r.total|floatformat:2 }}</td></tr>{% endfor %}
+  </tbody></table></div></div>
+  <div class="card"><header><h3>{% trans "By mode" %}</h3></header><div class="body tight"><table class="data"><tbody>
+    {% for r in by_mode %}<tr><td>{{ r.mode__name|default:_("Unspecified") }}<div class="muted" style="font-size:11px">{{ r.n }} {% trans "receipts" %}</div></td>
+      <td class="num">{{ currency }} {{ r.total|floatformat:2 }}</td></tr>{% endfor %}
+  </tbody></table></div></div>
+  <div class="card"><header><h3>{% trans "By building" %}</h3></header><div class="body tight"><table class="data"><tbody>
+    {% for r in by_building %}<tr><td>{{ r.tenancy__building__name }}</td>
+      <td class="num">{{ currency }} {{ r.total|floatformat:2 }}</td></tr>{% endfor %}
+  </tbody></table></div></div>
+</div>
+<div class="card"><header><h2>{% trans "Receipts" %}</h2></header><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "Receipt" %}</th><th>{% trans "Date" %}</th><th>{% trans "Guest" %}</th>
+  <th>{% trans "Building" %}</th><th>{% trans "Mode" %}</th><th>{% trans "Collected by" %}</th><th class="num">{% trans "Amount" %}</th></tr></thead>
+  <tbody>{% for p in rows %}
+    <tr><td class="mono"><a href="{% url 'billing:receipt' p.pk %}">{{ p.receipt_number }}</a></td>
+      <td class="nowrap">{{ p.paid_on|date:"d M Y" }}</td><td>{{ p.tenancy.guest.full_name }}</td>
+      <td>{{ p.tenancy.building.name }}</td><td>{{ p.mode|default:"—" }}</td>
+      <td>{{ p.collected_by_name|default:"—" }}</td>
+      <td class="num">{{ currency }} {{ p.amount|floatformat:2 }}</td></tr>
+  {% empty %}<tr><td colspan="7">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% include "partials/_pager.html" with page=rows %}
+{% endblock %}

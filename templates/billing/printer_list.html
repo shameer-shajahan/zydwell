@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "POS printers" %}{% endblock %}
+{% block topbar_title %}{% trans "POS printers" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "POS printers" %}</h1>
+<div class="sub">{% trans "58 mm and 80 mm thermal printers over USB, network or the local Bluetooth agent." %}</div></div>
+<div class="actions">{% if user.is_admin or user.is_super_admin %}<a class="btn primary" href="{% url 'billing:printer_create' %}">+ {% trans "Add printer" %}</a>{% endif %}</div></div>
+<div class="prop-grid">
+  {% for p in printers %}
+    <div class="card">
+      <header><h3>{{ p.name }}</h3>{% if p.is_default %}<span class="badge soft-teal">{% trans "Default" %}</span>{% endif %}</header>
+      <div class="body">
+        <dl class="kv">
+          <dt>{% trans "Paper" %}</dt><dd>{{ p.get_paper_width_display }} · {{ p.columns }} {% trans "columns" %}</dd>
+          <dt>{% trans "Connection" %}</dt><dd>{{ p.get_connection_display }}</dd>
+          <dt>{% trans "Address" %}</dt><dd class="mono">{{ p.address|default:"—" }}</dd>
+          <dt>{% trans "Copies" %}</dt><dd>{{ p.copies }}</dd>
+          <dt>{% trans "Last test" %}</dt>
+          <dd>{% if p.last_test_at %}{{ p.last_test_at|date:"d M H:i" }}
+              {% if p.last_test_ok %}<span class="badge soft-green">{% trans "OK" %}</span>{% else %}<span class="badge soft-red">{% trans "Failed" %}</span>{% endif %}
+              <div class="muted" style="font-size:11px">{{ p.last_test_message }}</div>
+            {% else %}{% trans "Never" %}{% endif %}</dd>
+        </dl>
+      </div>
+      <div class="foot" style="padding:10px 16px;border-top:1px solid var(--line);display:flex;gap:8px">
+        <form method="post" action="{% url 'billing:printer_test' p.pk %}">{% csrf_token %}
+          <button class="btn sm primary" type="submit">{% trans "Test print" %}</button></form>
+        {% if can_edit %}<a class="btn sm" href="{% url 'billing:printer_edit' p.pk %}">{% trans "Edit" %}</a>{% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="card" style="grid-column:1/-1"><div class="body">
+      {% include "partials/_empty.html" with message=_("No printers yet. Add one, or rely on the PDF receipt fallback.") %}</div></div>
+  {% endfor %}
+</div>
+{% include "partials/_pager.html" with page=printers %}
+{% endblock %}

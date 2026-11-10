@@ -1,0 +1,15 @@
+{% load i18n listing %}
+{# Building › Floor › Apartment › Room › Bed as compact pills inside a filter row. A change clears the levels below and reloads. #}
+<div class="loc-chips" role="group" aria-label="{% trans 'Location' %}">
+  {% for f in location.fields %}
+    {% if not forloop.first %}<span class="loc-sep" aria-hidden="true">›</span>{% endif %}
+    <label class="visually-hidden" for="loc-{{ f.name }}">{{ f.label }}</label>
+    <select id="loc-{{ f.name }}" name="{{ f.name }}" data-loc-level="{{ forloop.counter0 }}"
+            data-placeholder="{{ f.label }}"{% if not forloop.first %} data-prefix="{{ f.label }}"{% endif %}{% if f.disabled %} disabled title="{{ f.placeholder }}"{% endif %}>
+      <option value="">{{ f.placeholder }}</option>
+      {% for value, text in f.options %}<option value="{{ value }}"{% if value == f.value %} selected{% endif %}>{{ text }}</option>{% endfor %}
+    </select>
+  {% endfor %}
+  {% if location.active %}<a class="loc-clear" href="{% query 'location' %}" aria-label="{% trans 'Clear location' %}" title="{% trans 'Clear location' %}">×</a>{% endif %}
+  <noscript><button class="btn sm" type="submit">{% trans "Apply" %}</button></noscript>
+</div>

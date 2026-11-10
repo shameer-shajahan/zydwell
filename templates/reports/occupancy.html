@@ -1,0 +1,45 @@
+{% extends "base.html" %}{% load i18n listing %}
+{% block title %}{% trans "Occupancy" %}{% endblock %}
+{% block topbar_title %}{% trans "Occupancy" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Occupancy" %}</h1><div class="sub">{% trans "Building and floor level." %}</div></div>
+<div class="actions"><a class="btn" href="{% url 'properties:bed_board' %}">{% trans "Bed board" %}</a></div></div>
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      {% include "partials/_location_filter.html" %}
+    </div>
+  </div>
+</form>
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi navy"><div class="label">{% trans "Beds" %}</div><div class="value">{{ overall.total }}</div></div>
+  <div class="kpi teal"><div class="label">{% trans "Occupied" %}</div><div class="value">{{ overall.occupied }}</div></div>
+  <div class="kpi green"><div class="label">{% trans "Available" %}</div><div class="value">{{ overall.available }}</div></div>
+  <div class="kpi amber"><div class="label">{% trans "Occupancy" %}</div><div class="value">{{ overall.percent }}%</div></div>
+</div>
+{% for block in blocks %}
+  <div class="card" style="margin-bottom:14px">
+    <header><h2>{{ block.building.name }}</h2>
+      <span class="badge soft-teal">{{ block.stats.percent }}%</span>
+      <div style="flex:1;max-width:220px;margin-inline-start:auto"><div class="meter"><i style="width:{{ block.stats.percent }}%"></i></div></div>
+    </header>
+    <div class="body tight"><table class="data">
+      <thead><tr><th>{% trans "Floor" %}</th><th class="num">{% trans "Beds" %}</th><th class="num">{% trans "Occupied" %}</th>
+      <th class="num">{% trans "Available" %}</th><th class="num">{% trans "Other" %}</th><th style="width:30%">{% trans "Occupancy" %}</th></tr></thead>
+      <tbody>{% for f in block.floors %}
+        <tr><td>{{ f.floor.name }}</td>
+          <td class="num">{{ f.stats.total }}</td><td class="num">{{ f.stats.occupied }}</td>
+          <td class="num">{{ f.stats.available }}</td><td class="num">{{ f.stats.other }}</td>
+          <td><div class="meter"><i style="width:{{ f.stats.percent }}%"></i></div></td></tr>
+        {% for a in f.apartments %}
+          <tr><td style="padding-inline-start:34px">
+              <span class="muted">{% trans "Apartment" %}</span> {{ a.apartment.name }}</td>
+            <td class="num">{{ a.stats.total }}</td><td class="num">{{ a.stats.occupied }}</td>
+            <td class="num">{{ a.stats.available }}</td><td class="num">{{ a.stats.other }}</td>
+            <td><div class="meter" style="height:6px"><i style="width:{{ a.stats.percent }}%"></i></div></td></tr>
+        {% endfor %}
+      {% empty %}<tr><td colspan="6" class="muted" style="padding:16px">{% trans "No floors." %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+{% empty %}<div class="card"><div class="body">{% include "partials/_empty.html" %}</div></div>{% endfor %}
+{% endblock %}

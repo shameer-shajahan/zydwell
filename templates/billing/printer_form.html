@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Printer" %}{% endblock %}
+{% block topbar_title %}{% trans "Printer setup" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% if printer %}{{ printer.name }}{% else %}{% trans "Add printer" %}{% endif %}</h1>
+<div class="sub">{% trans "Network printers use IP:port (for example 192.168.1.50:9100)." %}</div></div></div>
+<div class="card" style="max-width:760px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form wide_fields="header_text,footer_text" %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save printer" %}</button>
+      <a class="btn" href="{% url 'billing:printer_list' %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

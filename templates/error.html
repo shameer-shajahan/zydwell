@@ -1,0 +1,42 @@
+{% load static i18n %}{% get_current_language as LANG %}{% get_current_language_bidi as LANG_BIDI %}<!doctype html>
+{% comment %}
+  Shared shell for every error page.
+
+  Django renders 500.html WITHOUT a request and WITHOUT context processors, so
+  nothing here may depend on `request`, `user` or the branding context. Child
+  templates guard those with {% if request %} / {% if user.is_authenticated %},
+  which are simply falsy on a 500.
+{% endcomment %}
+<html lang="{{ LANG }}" dir="{% if LANG_BIDI %}rtl{% else %}ltr{% endif %}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f9f9f9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1c1e" media="(prefers-color-scheme: dark)">
+  <meta name="robots" content="noindex">
+  <title>{% block title %}{% trans "Something went wrong" %}{% endblock %} · ZyDwell</title>
+  {% include "partials/_theme_head.html" %}
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<main class="errpage">
+  <div class="errcard">
+    <div class="errmark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+           stroke-linecap="round" stroke-linejoin="round">{% block glyph %}<path d="M3 21h18M5 21V7l7-4 7 4v14"/>{% endblock %}</svg>
+    </div>
+    <p class="errcode">{% block code %}{% endblock %}</p>
+    <h1>{% block heading %}{% endblock %}</h1>
+    <p class="errmsg">{% block message %}{% endblock %}</p>
+    {% block detail %}{% endblock %}
+    <div class="erractions">{% block actions %}
+      <a class="btn primary" href="/">{% trans "Go to the dashboard" %}</a>
+    {% endblock %}</div>
+    {% block extra %}{% endblock %}
+  </div>
+  <p class="errfoot">ZyDwell · {% trans "Hostlane Technolab" %}</p>
+</main>
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

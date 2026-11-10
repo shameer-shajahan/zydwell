@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Check out" %}{% endblock %}
+{% block topbar_title %}{% trans "Check out" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Check out" %} — {{ tenancy.guest.full_name }}</h1>
+<div class="sub">{{ tenancy.location_label }} · {% trans "in since" %} {{ tenancy.check_in_date|date:"d M Y" }}</div></div></div>
+
+{% if outstanding > 0 %}
+  <div class="banner danger">{% blocktrans %}This guest still owes {{ currency }} {{ outstanding }}. Settle or write it off before releasing the deposit.{% endblocktrans %}</div>
+{% endif %}
+
+<div class="grid split">
+  <div class="card"><div class="body">
+    <form method="post">{% csrf_token %}
+      {% include "partials/_form.html" with form=form wide_fields="note" %}
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn danger" type="submit">{% trans "Confirm check-out" %}</button>
+        <a class="btn" href="{% url 'guests:tenancy_detail' tenancy.pk %}">{% trans "Cancel" %}</a>
+      </div>
+    </form>
+  </div></div>
+  <div class="card"><header><h3>{% trans "Settlement" %}</h3></header><div class="body">
+    <dl class="kv">
+      <dt>{% trans "Deposit agreed" %}</dt><dd>{{ currency }} {{ tenancy.deposit_amount|floatformat:2 }}</dd>
+      <dt>{% trans "Deposit held" %}</dt><dd><strong>{{ currency }} {{ deposit_held|floatformat:2 }}</strong></dd>
+      <dt>{% trans "Rent outstanding" %}</dt><dd>{{ currency }} {{ outstanding|floatformat:2 }}</dd>
+    </dl>
+    <p class="muted" style="margin-top:14px;font-size:12.5px">{% trans "Deductions need a reason and stay on the record. Whatever is left can be refunded; the bed is released automatically." %}</p>
+  </div></div>
+</div>
+{% endblock %}

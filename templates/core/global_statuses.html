@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Default statuses" %}{% endblock %}
+{% block topbar_title %}{% trans "Platform default statuses" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Default statuses" %}</h1>
+<div class="sub">{% trans "The factory set copied into every new client account." %}</div></div>
+<div class="actions"><a class="btn" href="{% url 'platform:tenant_list' %}">{% trans "Clients" %}</a></div></div>
+<div class="grid split">
+  <div class="card"><div class="body tight"><div class="table-wrap"><table class="data">
+    <thead><tr><th>{% trans "Kind" %}</th><th>{% trans "Status" %}</th><th>{% trans "Code" %}</th><th>{% trans "Behaviour" %}</th></tr></thead>
+    <tbody>{% for s in rows %}
+      <tr><td>{{ s.get_kind_display }}</td>
+        <td><span class="badge" style="background:{{ s.color }}1f;color:{{ s.color }}"><i class="dot"></i>{{ s.name }}</span></td>
+        <td class="mono">{{ s.code }}</td>
+        <td>{% if s.counts_as_available %}<span class="badge soft-green">{% trans "available" %}</span>{% endif %}
+          {% if s.counts_as_occupied %}<span class="badge soft-red">{% trans "occupied" %}</span>{% endif %}
+          {% if s.counts_as_settled %}<span class="badge soft-teal">{% trans "settled" %}</span>{% endif %}
+          {% if s.is_default %}<span class="badge soft-amber">{% trans "default" %}</span>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="4">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+  </table></div></div></div>
+{% include "partials/_pager.html" with page=rows %}
+  <div class="card"><header><h3>{% trans "Add a default" %}</h3></header><div class="body">
+    <form method="post">{% csrf_token %}
+      {% include "partials/_form.html" with form=form one_column=1 %}
+      <button class="btn primary" type="submit" style="margin-top:12px">{% trans "Add" %}</button>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

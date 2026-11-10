@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% trans "Ledger entry" %}{% endblock %}
+{% block topbar_title %}{% trans "Ledger entry" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% if entry %}{% trans "Edit entry" %}{% else %}{% trans "New entry" %}{% endif %}</h1>
+<div class="sub">{% trans "Tag it to a building, floor or room so the per-room profit stays honest." %}</div></div></div>
+<div class="card" style="max-width:860px"><div class="body">
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% include "partials/_form.html" with form=form wide_fields="description,attachment" %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save entry" %}</button>
+      <a class="btn" href="{% back_or 'accounting:ledger' %}">{% trans "Cancel" %}</a>
+      {% if entry %}
+        <form method="post" action="{% url 'accounting:entry_delete' entry.pk %}" data-confirm="{% trans 'Delete this entry?' %}" style="display:inline">{% csrf_token %}
+          <button class="btn danger" type="submit">{% trans "Delete" %}</button></form>
+      {% endif %}
+    </div>
+  </form>
+</div></div>
+{% endblock %}

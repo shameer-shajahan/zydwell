@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% trans "Buildings" %}{% endblock %}
+{% block topbar_title %}{% trans "Buildings" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Buildings" %}</h1><div class="sub">{% trans "Building → floor → room → bed. Open a building to see its floor plan." %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'properties:bed_board' %}">{% trans "Bed board" %}</a>
+    {% if user.is_admin or user.is_super_admin %}<a class="btn" href="{% url 'properties:room_type_list' %}">{% trans "Room types" %}</a>{% endif %}
+    {% if can_edit %}<a class="btn primary" href="{% url 'properties:building_create' %}?{% return_here %}">+ {% trans "New building" %}</a>{% endif %}
+  </div>
+</div>
+
+<div class="prop-grid">
+  {% for card in cards %}
+    <article class="prop-card">
+      <div class="cover">
+        {% if card.obj.logo %}<img src="{{ card.obj.logo.url }}" alt="">
+        {% else %}{% include "partials/_art_building.html" with seed=forloop.counter0 %}{% endif %}
+        <span class="tag">{{ card.occupancy.percent }}% {% trans "full" %}</span>
+        <div class="title"><b>{{ card.obj.name }}</b><span>{{ card.obj.city|default:card.obj.address|truncatechars:42 }}</span></div>
+      </div>
+      <div class="meta">
+        <div class="m"><div class="n">{{ card.obj.floor_count }}</div><div class="l">{% trans "Floors" %}</div></div>
+        <div class="m"><div class="n">{{ card.rooms }}</div><div class="l">{% trans "Rooms" %}</div></div>
+        <div class="m"><div class="n">{{ card.occupancy.total }}</div><div class="l">{% trans "Beds" %}</div></div>
+        <div class="m"><div class="n" style="color:var(--green)">{{ card.occupancy.available }}</div><div class="l">{% trans "Free" %}</div></div>
+      </div>
+      <div class="occ">
+        <div class="meter"><i style="width:{{ card.occupancy.percent }}%"></i></div>
+        <div class="muted" style="font-size:11.5px;margin-top:5px">{{ card.occupancy.occupied }} {% trans "occupied" %} · {{ card.occupancy.other }} {% trans "blocked / maintenance" %}</div>
+      </div>
+      <div class="foot">
+        <a class="btn sm primary" href="{% url 'properties:building_detail' card.obj.pk %}">{% trans "Floor plan" %}</a>
+        {% if can_edit %}<a class="btn sm" href="{% url 'properties:building_edit' card.obj.pk %}">{% trans "Edit" %}</a>
+        <a class="btn sm" href="{% url 'properties:floor_create' %}?building={{ card.obj.pk }}&amp;{% return_here %}">+ {% trans "Floor" %}</a>{% endif %}
+      </div>
+    </article>
+  {% empty %}
+    <div class="card" style="grid-column:1/-1"><div class="body">
+      {% include "partials/_empty.html" with message=_("No buildings yet. Add your first building to start setting up floors, rooms and beds.") %}
+      {% if can_edit %}<div class="center"><a class="btn primary" href="{% url 'properties:building_create' %}?{% return_here %}">+ {% trans "New building" %}</a></div>{% endif %}
+    </div></div>
+  {% endfor %}
+</div>
+{% include "partials/_pager.html" %}
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Receipt" %} {{ payment.receipt_number }}{% endblock %}
+{% block topbar_title %}{% trans "Receipt" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Receipt" %} {{ payment.receipt_number }}</h1>
+    <div class="sub">{{ payment.tenancy.guest.full_name }} · {{ currency }} {{ payment.amount|floatformat:2 }}</div></div>
+  <div class="actions no-print">
+    <a class="btn" href="{{ public_url }}" target="_blank" rel="noopener">{% trans "Preview as the guest sees it" %}</a>
+    <a class="btn primary"{% if chat_new_tab %} target="_blank" rel="noopener"{% endif %}
+       href="{% url 'billing:receipt_whatsapp' payment.pk %}">{% trans "Send on WhatsApp" %}</a>
+    <a class="btn" href="{% url 'billing:receipt_escpos' payment.pk %}">{% trans "ESC/POS file" %}</a>
+    <a class="btn" data-print href="#">{% trans "Browser print" %}</a>
+  </div>
+</div>
+<div class="grid split">
+  <div class="card">
+    <header><h2>{% trans "Preview" %}</h2>
+      <span class="badge soft-slate">{{ printer.paper_width|default:"80" }} mm · {{ printer.columns|default:48 }} {% trans "columns" %}</span></header>
+    <div class="body"><pre class="receipt">{{ text }}</pre></div>
+  </div>
+  <div>
+  <div class="card no-print">
+    <header><h3>{% trans "Send it to the guest" %}</h3></header>
+    <div class="body">
+      <p class="muted" style="font-size:12.5px">
+        {% trans "The guest gets a link to read the receipt on their phone. Nothing to download, and they cannot change anything. The link stops working after a month." %}
+      </p>
+      <div class="linkbox">
+        <input type="text" readonly id="receipt-url" value="{{ public_url }}"
+               aria-label="{% trans 'Receipt link' %}" onfocus="this.select()">
+        <button class="btn sm" type="button" data-copy="#receipt-url"
+                data-copied="{% trans 'Copied' %}">{% trans "Copy" %}</button>
+      </div>
+      <div class="btn-row" style="margin-top:12px">
+        <a class="btn primary"{% if chat_new_tab %} target="_blank" rel="noopener"{% endif %}
+           href="{% url 'billing:receipt_whatsapp' payment.pk %}">{% trans "Send on WhatsApp" %}</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card no-print">
+    <header><h3>{% trans "Print on a thermal printer" %}</h3></header>
+    <div class="body">
+      {% if printers %}
+        <form method="post" action="{% url 'billing:receipt_print' payment.pk %}">{% csrf_token %}
+          <div class="field" style="margin-bottom:12px">
+            <label>{% trans "Printer" %}</label>
+            <select name="printer">
+              {% for p in printers %}<option value="{{ p.pk }}" {% if p.is_default %}selected{% endif %}>{{ p.name }} — {{ p.get_connection_display }} {{ p.address }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:14px">
+            <label>{% trans "Copies" %}</label><input type="number" name="copies" min="1" max="5" value="{{ printer.copies|default:1 }}">
+          </div>
+          <button class="btn primary" type="submit" {% if not can_print %}disabled{% endif %}>{% trans "Send to printer" %}</button>
+        </form>
+        <p class="muted" style="font-size:12px;margin-top:14px">
+          {% trans "If the printer cannot be reached, send the receipt on WhatsApp instead." %}</p>
+      {% else %}
+        <p class="muted">{% trans "No printer is set up yet." %}</p>
+        <a class="btn" href="{% url 'billing:printer_list' %}">{% trans "Set up a printer" %}</a>
+      {% endif %}
+    </div>
+  </div>
+  </div>
+</div>
+{% endblock %}

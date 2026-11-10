@@ -1,0 +1,11 @@
+{% load i18n %}
+{% with c=item.obj.status.color|default:"#64748b" %}
+<a class="bed-tile" href="{% if item.tenancy %}{% url 'guests:tenancy_detail' item.tenancy.pk %}{% else %}{% url 'properties:room_detail' item.obj.room_id %}{% endif %}"
+   style="border-color:{{ c }}59;background:{{ c }}14;color:{{ c }}"
+   title="{{ item.obj.full_label }} — {{ item.obj.status.name|default:_('No status') }}{% if item.tenancy %} · {{ item.tenancy.guest.full_name }}{% endif %}">
+  {% include "partials/_icon_bed.html" %}
+  <b>{{ item.obj.label }}</b>
+  {% if item.tenancy %}<span class="who">{{ item.tenancy.guest.full_name }}</span>
+  {% else %}<span class="who">{{ item.obj.status.name|default:"—"|truncatechars:9 }}</span>{% endif %}
+</a>
+{% endwith %}

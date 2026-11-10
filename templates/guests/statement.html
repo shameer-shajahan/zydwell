@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Statement" %}{% endblock %}
+{% block topbar_title %}{% trans "Guest statement" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Statement" %} — {{ guest.full_name }}</h1>
+    <div class="sub">{{ guest.mobile }} · {% trans "generated" %} {{ generated_at|date:"d M Y H:i" }}</div></div>
+  <div class="actions">
+    <a class="btn" data-print href="#">{% trans "Print / save as PDF" %}</a>
+    <a class="btn" href="{% url 'guests:guest_detail' guest.pk %}">{% trans "Back" %}</a>
+  </div>
+</div>
+<div class="grid k3" style="margin-bottom:16px">
+  <div class="kpi {% if outstanding > 0 %}red{% else %}green{% endif %}"><div class="label">{% trans "Outstanding" %}</div><div class="value">{{ currency }} {{ outstanding|floatformat:2 }}</div></div>
+  <div class="kpi teal"><div class="label">{% trans "Advance credit" %}</div><div class="value">{{ currency }} {{ credit|floatformat:2 }}</div></div>
+  <div class="kpi navy"><div class="label">{% trans "Invoices" %}</div><div class="value">{{ invoices|length }}</div></div>
+</div>
+<div class="card">
+  <header><h2>{% trans "Invoices" %}</h2></header>
+  <div class="body tight"><div class="table-wrap"><table class="data">
+    <thead><tr><th>{% trans "Invoice" %}</th><th>{% trans "Period" %}</th><th>{% trans "Due" %}</th>
+    <th class="num">{% trans "Total" %}</th><th class="num">{% trans "Paid" %}</th><th class="num">{% trans "Balance" %}</th><th>{% trans "Status" %}</th></tr></thead>
+    <tbody>{% for i in invoices %}
+      <tr><td class="mono">{{ i.number }}</td><td class="nowrap">{{ i.period_label }}</td><td class="nowrap">{{ i.due_date|date:"d M Y" }}</td>
+        <td class="num">{{ i.total|floatformat:2 }}</td><td class="num">{{ i.paid_amount|floatformat:2 }}</td>
+        <td class="num">{{ i.balance|floatformat:2 }}</td>
+        <td>{% include "partials/_status.html" with status=i.status %}</td></tr>
+    {% empty %}<tr><td colspan="7">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+</div>
+<div class="card">
+  <header><h2>{% trans "Payments" %}</h2></header>
+  <div class="body tight"><div class="table-wrap"><table class="data">
+    <thead><tr><th>{% trans "Receipt" %}</th><th>{% trans "Date" %}</th><th>{% trans "Mode" %}</th>
+    <th>{% trans "Collected by" %}</th><th class="num">{% trans "Amount" %}</th></tr></thead>
+    <tbody>{% for p in payments %}
+      <tr><td class="mono">{{ p.receipt_number }}</td><td class="nowrap">{{ p.paid_on|date:"d M Y" }}</td>
+        <td>{{ p.mode|default:"—" }}</td><td>{{ p.collected_by_name|default:"—" }}</td>
+        <td class="num">{{ currency }} {{ p.amount|floatformat:2 }}</td></tr>
+    {% empty %}<tr><td colspan="5">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+</div>
+<div class="card">
+  <header><h3>{% trans "Dues aging (whole account)" %}</h3></header>
+  <div class="body"><div class="stat-row">
+    {% for label, value in aging_rows %}
+      <div class="stat"><div class="label">{{ label }}</div>
+        <div class="value">{{ currency }} {{ value|floatformat:2 }}</div></div>
+    {% endfor %}
+  </div></div>
+</div>
+{% endblock %}

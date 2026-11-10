@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% trans "Check in" %}{% endblock %}
+{% block topbar_title %}{% trans "Check in a guest" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Check in a guest" %}</h1>
+<div class="sub">{% trans "Assign a bed or a whole unit, set the agreed rent and the billing day." %}</div></div>
+<div class="actions"><a class="btn" href="{% url 'guests:guest_create' %}?{% return_here 'guest' %}">+ {% trans "New guest first" %}</a></div></div>
+<div class="grid split">
+  <div class="card"><div class="body">
+    <form method="post">{% csrf_token %}
+      {% include "partials/_form.html" with form=form wide_fields="agreement_note,raise_first_invoice,rent_mode,first_charge" %}
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn primary" type="submit">{% trans "Check in" %}</button>
+        <a class="btn" href="{% back_or 'guests:tenancy_list' %}">{% trans "Cancel" %}</a>
+      </div>
+    </form>
+  </div></div>
+  <div class="card">
+    <div style="height:92px;position:relative;overflow:hidden;border-bottom:1px solid var(--line)">{% include "partials/_art_home.html" %}</div>
+    <div class="body">
+      <h3 style="margin-bottom:8px">{% trans "How it works" %}</h3>
+      <ul class="muted" style="font-size:12.5px;padding-inline-start:18px;margin:0;line-height:1.7">
+        <li>{% trans "Bedspace rooms need a bed. Studios and family flats can be let whole — leave the bed empty." %}</li>
+        <li>{% trans "The bed is marked occupied the moment you save." %}</li>
+        <li>{% trans "Pay in advance raises the invoice when the period opens. Post-paid raises it when the period closes." %}</li>
+        <li>{% trans "Choose what the first invoice charges: the whole rent, only the days they actually stay, or an amount you agreed." %}</li>
+        <li>{% trans "Deposit received now is held against the tenancy and settled at check-out." %}</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

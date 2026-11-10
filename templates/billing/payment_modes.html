@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Payment modes" %}{% endblock %}
+{% block topbar_title %}{% trans "Payment modes" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Payment modes" %}</h1>
+    <div class="sub">{% trans "How money can arrive. Add your own — these are data, not fixed in code." %}</div></div>
+  <div class="actions"><a class="btn" href="{% url 'reports:settings_home' %}">{% trans "Settings" %}</a></div>
+</div>
+<div class="grid split">
+  <div class="card"><div class="body tight"><div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>{% trans "Name" %}</th><th>{% trans "Code" %}</th><th>{% trans "Behaviour" %}</th><th></th></tr></thead>
+      <tbody>{% for row in rows %}
+        <tr {% if not row.obj.is_active %}style="opacity:.5"{% endif %}>
+          <td><strong>{{ row.obj.name }}</strong>{% if not row.obj.is_active %}
+            <div class="muted" style="font-size:11px">{% trans "switched off" %}</div>{% endif %}</td>
+          <td class="mono">{{ row.obj.code }}</td>
+          <td>
+            {% if row.obj.counts_as_cash %}<span class="badge soft-green">{% trans "cash in hand" %}</span>{% endif %}
+            {% if row.obj.needs_reference %}<span class="badge soft-teal">{% trans "needs reference" %}</span>{% endif %}
+            {% if row.obj.needs_due_date %}<span class="badge soft-amber">{% trans "needs due date" %}</span>{% endif %}
+            {% if row.obj.settles_from_credit %}<span class="badge soft-slate">{% trans "from credit" %}</span>{% endif %}
+          </td>
+          <td class="right nowrap">
+            <a class="btn sm" href="{% url 'billing:payment_mode_edit' row.obj.pk %}">{% trans "Edit" %}</a>
+            <form method="post" action="{% url 'billing:payment_mode_delete' row.obj.pk %}"
+                  style="display:inline" data-confirm="{% trans 'Remove this payment mode?' %}">
+              {% csrf_token %}<button class="btn sm danger" type="submit">×</button></form>
+          </td>
+        </tr>
+      {% empty %}<tr><td colspan="4">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+    </table></div></div>
+{% include "partials/_pager.html" with page=page %}
+  </div>
+  <div class="card"><header><h3>{% trans "Add a mode" %}</h3></header><div class="body">
+    <form method="post">{% csrf_token %}
+      {% include "partials/_form.html" with form=form one_column=1 %}
+      <button class="btn primary" type="submit" style="margin-top:12px">{% trans "Add" %}</button>
+    </form>
+    <p class="muted" style="font-size:12.5px;margin-top:14px">
+      {% trans "“Cash in hand” decides what a collector has to hand over at the end of the day. “Needs reference” asks for a cheque number, UPI reference or card last four." %}
+    </p>
+  </div></div>
+</div>
+{% endblock %}

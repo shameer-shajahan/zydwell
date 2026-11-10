@@ -1,0 +1,35 @@
+{% load i18n return_links %}
+{% with r=row.obj %}
+<div class="plan-room {% if row.occupancy.available == 0 and row.occupancy.total > 0 %}full{% elif row.occupancy.available > 0 %}free{% endif %}" data-search="{{ r.number }} {{ r.room_type.name|default:'' }} {% for b in row.beds %}{{ b.tenancy.guest.full_name|default:'' }} {% endfor %}">
+  <div class="pr-head">
+    <span class="rno">{{ r.number|truncatechars:5 }}</span>
+    <span class="rt">
+      <b><a href="{% url 'properties:room_detail' r.pk %}">{% trans "Room" %} {{ r.number }}</a></b>
+      <span>{{ r.room_type.name|default:_("Room") }}</span>
+    </span>
+    <span class="basis">{% if r.rent_basis == 'per_bed' %}{% trans "per bed" %}{% elif r.rent_basis == 'per_room' %}{% trans "per room" %}{% else %}{% trans "per flat" %}{% endif %}</span>
+  </div>
+  {% if r.lets_whole_unit %}
+    <div class="unit-let {% if not row.unit_tenancy %}vacant{% endif %}">
+      {% if row.unit_tenancy %}
+        <strong>{{ row.unit_tenancy.guest.full_name }}</strong> · {{ currency }} {{ row.unit_tenancy.monthly_rent|floatformat:0 }}/{% trans "mo" %}
+      {% else %}
+        {% trans "Whole unit vacant" %} · {{ currency }} {{ r.monthly_rent|floatformat:0 }}/{% trans "mo" %}
+      {% endif %}
+    </div>
+  {% endif %}
+  <div class="pr-beds">
+    {% for item in row.beds %}{% include "partials/_bed_tile.html" %}{% endfor %}
+    {% if can_edit and row.beds|length < r.capacity %}
+      <a class="bed-tile add" href="{% url 'properties:bed_create' %}?room={{ r.pk }}&amp;{% return_here %}" title="{% trans 'Add bed' %}">+</a>
+    {% endif %}
+    {% if not row.beds and not r.lets_whole_unit and not can_edit %}
+      <span class="muted" style="font-size:11.5px">{% trans "No beds yet." %}</span>
+    {% endif %}
+  </div>
+  <div class="pr-foot">
+    <span>{{ row.occupancy.occupied }}/{{ row.occupancy.total }} {% trans "occupied" %}</span>
+    <span style="margin-inline-start:auto">{% trans "Cap" %} {{ r.capacity }}</span>
+  </div>
+</div>
+{% endwith %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}{% load i18n listing %}
+{% block title %}{% trans "Expense report" %}{% endblock %}
+{% block topbar_title %}{% trans "Expense report" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Expense report" %}</h1>
+<div class="sub">{{ start|date:"d M Y" }} – {{ end|date:"d M Y" }}</div></div>
+<div class="actions"><a class="btn" href="{% url 'reports:export_ledger' %}{% query kind='expense' from=start|date:'Y-m-d' to=end|date:'Y-m-d' %}">{% trans "Excel" %}</a></div></div>
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <label class="fchip" for="f-from"><span>{% trans "From" %}</span><input id="f-from" type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
+      <label class="fchip" for="f-to"><span>{% trans "To" %}</span><input id="f-to" type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Apply" %}</button>
+    </div>
+  </div>
+  <div class="fb-note">{% trans "Total" %}: <strong>{{ currency }} {{ total|floatformat:2 }}</strong></div>
+</form>
+<div class="grid split">
+  <div class="card"><header><h2>{% trans "Entries" %}</h2></header><div class="body tight"><div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>{% trans "Date" %}</th><th>{% trans "Category" %}</th><th>{% trans "Description" %}</th>
+      <th>{% trans "Tagged to" %}</th><th class="num">{% trans "Amount" %}</th></tr></thead>
+      <tbody>{% for e in rows %}
+        <tr><td class="nowrap">{{ e.entry_date|date:"d M Y" }}</td><td>{{ e.category.name }}</td>
+          <td>{{ e.description }}{% if e.payee %}<div class="muted" style="font-size:11px">{{ e.payee }}</div>{% endif %}</td>
+          <td class="muted" style="font-size:12px">{{ e.room|default:e.apartment|default:e.building|default:"—" }}</td>
+          <td class="num">{{ currency }} {{ e.amount|floatformat:2 }}</td></tr>
+      {% empty %}<tr><td colspan="5">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+{% include "partials/_pager.html" with page=rows %}
+  <div>
+    <div class="card"><header><h3>{% trans "By category" %}</h3></header><div class="body">
+      {% for r in by_category %}
+        <div style="margin-bottom:10px">
+          <div style="display:flex;font-size:12.5px"><span>{{ r.category__name }}</span>
+            <span style="margin-inline-start:auto" class="mono">{{ currency }} {{ r.total|floatformat:0 }}</span></div>
+          <div class="meter" style="margin-top:4px"><i style="width:{{ r.pct }}%;background:var(--amber)"></i></div>
+        </div>
+      {% empty %}<div class="muted">{% trans "No expenses." %}</div>{% endfor %}
+    </div></div>
+    <div class="card"><header><h3>{% trans "By building" %}</h3></header><div class="body tight"><table class="data"><tbody>
+      {% for r in by_building %}<tr><td>{{ r.building__name|default:_("Untagged") }}</td>
+        <td class="num">{{ currency }} {{ r.total|floatformat:2 }}</td></tr>{% endfor %}
+    </tbody></table></div></div>
+  </div>
+</div>
+{% endblock %}

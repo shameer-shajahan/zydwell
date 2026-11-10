@@ -1,0 +1,8 @@
+{% load i18n %}
+<div class="page-head">
+  <div>
+    <h1>{{ heading }}</h1>
+    {% if subheading %}<div class="sub">{{ subheading }}</div>{% endif %}
+  </div>
+  <div class="actions">{% block head_actions %}{% endblock %}</div>
+</div>

@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% load i18n listing return_links %}
+{% block title %}{% trans "Guests" %}{% endblock %}
+{% block topbar_title %}{% trans "Guests" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Guests" %}</h1><div class="sub">{% trans "Who lives where, and since when." %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'guests:expiring_documents' %}">{% trans "Expiring documents" %}</a>
+    {% if can_edit %}<a class="btn accent" href="{% url 'guests:check_in' %}?{% return_here %}">{% trans "Check in" %}</a>
+    <a class="btn primary" href="{% url 'guests:guest_create' %}?{% return_here %}">+ {% trans "New guest" %}</a>{% endif %}
+  </div>
+</div>
+
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <input class="fb-search" type="search" name="q" value="{{ query }}" enterkeyhint="search"
+             aria-label="{% trans 'Search' %}" placeholder="{% trans 'Search' %}"
+             data-hint="{% trans 'Search name, mobile, employer or document number…' %}" title="{% trans 'Search name, mobile, employer or document number…' %}">
+      {% if state %}<input type="hidden" name="state" value="{{ state }}">{% endif %}
+      <div class="seg">
+        <a class="{% if not state %}on{% endif %}" href="{% query state='' %}">{% trans "All" %}</a>
+        <a class="{% if state == 'current' %}on{% endif %}" href="{% query state='current' %}">{% trans "Current" %}</a>
+        <a class="{% if state == 'past' %}on{% endif %}" href="{% query state='past' %}">{% trans "Past" %}</a>
+      </div>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Search" %}</button>
+    </div>
+  </div>
+</form>
+
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "Guest" %}</th><th>{% trans "Mobile" %}</th><th>{% trans "Staying at" %}</th>
+  <th>{% trans "Rent" %}</th><th>{% trans "Documents" %}</th><th></th></tr></thead>
+  <tbody>
+  {% for card in cards %}
+    <tr>
+      <td>
+        <div style="display:flex;gap:9px;align-items:center">
+          <span style="width:32px;height:32px;border-radius:8px;background:var(--teal-soft);color:var(--navy);display:grid;place-items:center;font-weight:700;font-size:12px;overflow:hidden;flex:0 0 32px">
+            {% if card.obj.photo %}<img src="{{ card.obj.photo.url }}" alt="" style="width:100%;height:100%;object-fit:cover">{% else %}{{ card.obj.full_name|slice:":1"|upper }}{% endif %}
+          </span>
+          <span><a href="{% url 'guests:guest_detail' card.obj.pk %}"><strong>{{ card.obj.full_name }}</strong></a>
+            <div class="muted" style="font-size:11px">{{ card.obj.nationality|default:"" }}{% if card.obj.employer %} · {{ card.obj.employer }}{% endif %}</div></span>
+        </div>
+      </td>
+      <td class="mono">{{ card.obj.mobile }}</td>
+      <td>{% if card.tenancy %}<a href="{% url 'guests:tenancy_detail' card.tenancy.pk %}">{{ card.tenancy.location_label }}</a>{% else %}<span class="muted">{% trans "Not staying" %}</span>{% endif %}</td>
+      <td class="num">{% if card.tenancy %}{{ currency }} {{ card.tenancy.monthly_rent|floatformat:0 }}{% else %}—{% endif %}</td>
+      <td>{% if card.expiring %}<span class="badge soft-amber">{{ card.expiring }} {% trans "expiring" %}</span>{% else %}<span class="badge soft-green">{% trans "OK" %}</span>{% endif %}</td>
+      <td class="right nowrap">
+        <a class="btn sm" href="{% url 'guests:guest_detail' card.obj.pk %}">{% trans "Open" %}</a>
+        {% if not card.tenancy and can_edit %}<a class="btn sm accent" href="{% url 'guests:check_in' %}?guest={{ card.obj.pk }}&amp;{% return_here %}">{% trans "Check in" %}</a>{% endif %}
+      </td>
+    </tr>
+  {% empty %}<tr><td colspan="6">{% include "partials/_empty.html" with message=_("No guests match.") %}</td></tr>{% endfor %}
+  </tbody>
+</table></div>{% include "partials/_pager.html" %}</div></div>
+{% endblock %}

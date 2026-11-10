@@ -1,0 +1,43 @@
+{% extends "base.html" %}{% load i18n listing %}
+{% block title %}{% trans "Expiring documents" %}{% endblock %}
+{% block topbar_title %}{% trans "Document expiry" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Expiring documents" %}</h1>
+<div class="sub">{% trans "Visa, Emirates ID and passport dates coming up — alerts go out at 30, 15 and 7 days." %}</div></div></div>
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <input class="fb-search" type="search" name="q" value="{{ query }}" enterkeyhint="search"
+             aria-label="{% trans 'Search' %}" placeholder="{% trans 'Search' %}"
+             data-hint="{% trans 'Search guest, mobile or document number…' %}" title="{% trans 'Search guest, mobile or document number…' %}">
+      <input type="hidden" name="days" value="{{ days }}">
+      <div class="seg">
+        <a class="{% if days == '7' %}on{% endif %}" href="{% query days=7 %}">7 {% trans "days" %}</a>
+        <a class="{% if days == '15' %}on{% endif %}" href="{% query days=15 %}">15 {% trans "days" %}</a>
+        <a class="{% if days == '30' %}on{% endif %}" href="{% query days=30 %}">30 {% trans "days" %}</a>
+        <a class="{% if days == '90' %}on{% endif %}" href="{% query days=90 %}">90 {% trans "days" %}</a>
+      </div>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Search" %}</button>
+    </div>
+  </div>
+</form>
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "Guest" %}</th><th>{% trans "Document" %}</th><th>{% trans "Number" %}</th><th>{% trans "Expires" %}</th><th>{% trans "Status" %}</th><th></th></tr></thead>
+  <tbody>{% for d in page %}
+    <tr><td><a href="{% url 'guests:guest_detail' d.guest_id %}">{{ d.guest.full_name }}</a>
+        <div class="muted mono" style="font-size:11px">{{ d.guest.mobile }}</div></td>
+      <td>{{ d.get_doc_type_display }}</td><td class="mono">{{ d.number }}</td>
+      <td class="nowrap">{{ d.expiry_date|date:"d M Y" }}</td>
+      <td>{% if d.is_expired %}<span class="badge soft-red">{% trans "Expired" %}</span>
+        {% elif d.days_to_expiry <= 7 %}<span class="badge soft-red">{{ d.days_to_expiry }} {% trans "days" %}</span>
+        {% elif d.days_to_expiry <= 15 %}<span class="badge soft-amber">{{ d.days_to_expiry }} {% trans "days" %}</span>
+        {% else %}<span class="badge soft-teal">{{ d.days_to_expiry }} {% trans "days" %}</span>{% endif %}</td>
+      <td class="right"><a class="btn sm"{% if chat_new_tab %} target="_blank" rel="noopener"{% endif %}
+          href="{% url 'messaging:quick_send' %}?guest={{ d.guest_id }}&template=document_expiry">{% trans "WhatsApp" %}</a></td></tr>
+  {% empty %}<tr><td colspan="6">{% include "partials/_empty.html" with message=_("Nothing expiring in this window.") %}</td></tr>{% endfor %}</tbody>
+</table></div>{% include "partials/_pager.html" %}</div></div>
+{% endblock %}

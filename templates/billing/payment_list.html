@@ -1,0 +1,63 @@
+{% extends "base.html" %}{% load i18n listing return_links %}
+{% block title %}{% trans "Payments" %}{% endblock %}
+{% block topbar_title %}{% trans "Payments" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Payments" %}</h1><div class="sub">{% trans "Every receipt, who collected it and how." %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'billing:daily_collection' %}">{% trans "Daily cash report" %}</a>
+    {% if user.is_admin or user.is_super_admin %}<a class="btn" href="{% url 'billing:approvals' %}">{% trans "Approvals" %}</a>{% endif %}
+    {% if can_create %}<a class="btn primary" href="{% url 'billing:payment_create' %}?{% return_here %}">+ {% trans "Record payment" %}</a>{% endif %}
+  </div>
+</div>
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi teal"><div class="label">{% trans "Collected in range" %}</div><div class="value">{{ currency }} {{ summary.total|floatformat:2 }}</div></div>
+  <div class="kpi navy"><div class="label">{% trans "Cash" %}</div><div class="value">{{ currency }} {{ summary.cash|floatformat:2 }}</div></div>
+  <div class="kpi slate"><div class="label">{% trans "Receipts" %}</div><div class="value">{{ summary.count }}</div></div>
+  <div class="kpi amber"><div class="label">{% trans "Range" %}</div><div class="value" style="font-size:15px;line-height:1.4">{{ start|date:"d M" }} – {{ end|date:"d M Y" }}</div></div>
+</div>
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <input class="fb-search" type="search" name="q" value="{{ query }}" enterkeyhint="search"
+             aria-label="{% trans 'Search' %}" placeholder="{% trans 'Search' %}"
+             data-hint="{% trans 'Receipt number or guest…' %}" title="{% trans 'Receipt number or guest…' %}">
+      <label class="fchip" for="f-from"><span>{% trans "From" %}</span><input id="f-from" type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
+      <label class="fchip" for="f-to"><span>{% trans "To" %}</span><input id="f-to" type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+      <label class="visually-hidden" for="f-mode">{% trans "Mode" %}</label>
+      <select id="f-mode" name="mode" data-autosubmit data-placeholder="{% trans 'Mode' %}" data-prefix="{% trans 'Mode' %}">
+        <option value="">{% trans "All modes" %}</option>
+        {% for m in modes %}<option value="{{ m.pk }}" {% if mode == m.pk|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+      </select>
+      <label class="visually-hidden" for="f-collector">{% trans "Collector" %}</label>
+      <select id="f-collector" name="collector" data-autosubmit data-placeholder="{% trans 'Collector' %}" data-prefix="{% trans 'Collector' %}">
+        <option value="">{% trans "Everyone" %}</option>
+        {% for u in collectors %}<option value="{{ u.pk }}" {% if collector == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.display_name }}</option>{% endfor %}
+      </select>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Apply" %}</button>
+    </div>
+  </div>
+</form>
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "Receipt" %}</th><th>{% trans "Date" %}</th><th>{% trans "Guest" %}</th>
+  <th>{% trans "Invoice" %}</th><th>{% trans "Mode" %}</th><th>{% trans "Collected by" %}</th>
+  <th class="num">{% trans "Amount" %}</th><th></th></tr></thead>
+  <tbody>{% for p in page %}
+    <tr {% if p.is_reversed %}style="opacity:.5"{% endif %}>
+      <td class="mono"><a href="{% url 'billing:payment_detail' p.pk %}">{{ p.receipt_number }}</a></td>
+      <td class="nowrap">{{ p.paid_on|date:"d M Y" }}</td>
+      <td>{{ p.tenancy.guest.full_name }}</td>
+      <td class="mono">{% if p.invoice %}<a href="{% url 'billing:invoice_detail' p.invoice_id %}">{{ p.invoice.number }}</a>{% else %}<span class="badge soft-teal">{% trans "Advance" %}</span>{% endif %}</td>
+      <td>{{ p.mode|default:"—" }}{% if p.reference %}<div class="muted mono" style="font-size:11px">{{ p.reference }}</div>{% endif %}</td>
+      <td>{{ p.collected_by_name|default:"—" }}</td>
+      <td class="num"><strong>{{ currency }} {{ p.amount|floatformat:2 }}</strong>
+        {% if p.is_reversed %}<div class="badge soft-red">{% trans "Reversed" %}</div>
+        {% elif p.awaits_approval %}<div class="badge soft-amber">{% trans "Awaiting approval" %}</div>{% endif %}</td>
+      <td class="right"><a class="btn sm" href="{% url 'billing:receipt' p.pk %}">{% trans "Receipt" %}</a></td></tr>
+  {% empty %}<tr><td colspan="8">{% include "partials/_empty.html" with message=_("No payments in this range.") %}</td></tr>{% endfor %}</tbody>
+</table></div>{% include "partials/_pager.html" %}</div></div>
+{% endblock %}

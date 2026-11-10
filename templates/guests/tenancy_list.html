@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% load i18n listing return_links %}
+{% block title %}{% trans "Tenancies" %}{% endblock %}
+{% block topbar_title %}{% trans "Tenancies" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Tenancies" %}</h1><div class="sub">{% trans "Active stays, notice periods and past guests." %}</div></div>
+<div class="actions"><a class="btn accent" href="{% url 'guests:check_in' %}?{% return_here %}">{% trans "Check in" %}</a></div></div>
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <input class="fb-search" type="search" name="q" value="{{ query }}" enterkeyhint="search"
+             aria-label="{% trans 'Search' %}" placeholder="{% trans 'Search' %}"
+             data-hint="{% trans 'Search guest, mobile or room…' %}" title="{% trans 'Search guest, mobile or room…' %}">
+      <input type="hidden" name="state" value="{{ state }}">
+      <div class="seg">
+        <a class="{% if state == 'live' %}on{% endif %}" href="{% query state='live' %}">{% trans "Live" %}</a>
+        <a class="{% if state == 'vacated' %}on{% endif %}" href="{% query state='vacated' %}">{% trans "Vacated" %}</a>
+        <a class="{% if state == 'all' %}on{% endif %}" href="{% query state='all' %}">{% trans "All" %}</a>
+      </div>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Search" %}</button>
+    </div>
+  </div>
+</form>
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "Guest" %}</th><th>{% trans "Location" %}</th><th>{% trans "Check-in" %}</th>
+  <th class="num">{% trans "Rent" %}</th><th class="num">{% trans "Outstanding" %}</th><th>{% trans "Status" %}</th><th></th></tr></thead>
+  <tbody>{% for t in page %}
+    <tr><td><a href="{% url 'guests:guest_detail' t.guest_id %}"><strong>{{ t.guest.full_name }}</strong></a>
+        <div class="muted mono" style="font-size:11px">{{ t.guest.mobile }}</div></td>
+      <td>{{ t.location_label }}</td>
+      <td class="nowrap">{{ t.check_in_date|date:"d M Y" }}</td>
+      <td class="num">{{ currency }} {{ t.monthly_rent|floatformat:0 }}</td>
+      <td class="num">{{ t.outstanding_total|floatformat:2 }}</td>
+      <td>{% include "partials/_status.html" with status=t.status %}</td>
+      <td class="right"><a class="btn sm" href="{% url 'guests:tenancy_detail' t.pk %}">{% trans "Open" %}</a></td></tr>
+  {% empty %}<tr><td colspan="7">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+</table></div>{% include "partials/_pager.html" %}</div></div>
+{% endblock %}

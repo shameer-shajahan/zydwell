@@ -1,0 +1,22 @@
+{% extends "error.html" %}{% load i18n %}
+{% comment %}
+  Rendered with no request and no context processors — keep it self-contained.
+{% endcomment %}
+
+{% block title %}{% trans "Server error" %}{% endblock %}
+{% block glyph %}<path d="M10.3 3.9l-8 13.9A2 2 0 004 21h16a2 2 0 001.7-3.2l-8-13.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/>{% endblock %}
+{% block code %}500{% endblock %}
+{% block heading %}{% trans "Something broke at our end" %}{% endblock %}
+{% block message %}
+  {% trans "Your work was not lost — nothing is saved when a page fails like this. The fault has been recorded." %}
+{% endblock %}
+
+{% block actions %}
+  <a class="btn primary" href="/">{% trans "Go to the dashboard" %}</a>
+{% endblock %}
+
+{% block extra %}
+  <p class="errnote">
+    {% trans "If it keeps happening, tell Hostlane Technolab what you were doing when it failed." %}
+  </p>
+{% endblock %}

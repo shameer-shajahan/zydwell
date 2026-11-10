@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Categories" %}{% endblock %}
+{% block topbar_title %}{% trans "Income & expense categories" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Categories" %}</h1>
+<div class="sub">{% trans "User-created, not fixed in code. Disable one instead of deleting it if it has history." %}</div></div>
+<div class="actions"><a class="btn" href="{% url 'accounting:ledger' %}">{% trans "Back to ledger" %}</a></div></div>
+<div class="grid k3">
+  <div class="card"><header><h3 style="color:var(--teal)">{% trans "Income" %}</h3></header>
+    <div class="body tight"><table class="data"><tbody>
+      {% for c in income %}
+        <tr {% if not c.is_active %}style="opacity:.5"{% endif %}>
+          <td>{{ c.name }}<div class="muted mono" style="font-size:11px">{{ c.code }}{% if c.is_system %} · {% trans "system" %}{% endif %}</div></td>
+          <td class="right">{% if user.is_admin or user.is_super_admin %}
+            <form method="post" action="{% url 'accounting:category_toggle' c.pk %}">{% csrf_token %}
+              <button class="btn sm" type="submit">{% if c.is_active %}{% trans "Disable" %}{% else %}{% trans "Enable" %}{% endif %}</button></form>{% endif %}</td></tr>
+      {% endfor %}
+    </tbody></table></div>
+{% include "partials/_pager.html" with page=income %}
+  </div>
+  <div class="card"><header><h3 style="color:var(--amber)">{% trans "Expense" %}</h3></header>
+    <div class="body tight"><table class="data"><tbody>
+      {% for c in expense %}
+        <tr {% if not c.is_active %}style="opacity:.5"{% endif %}>
+          <td>{{ c.name }}<div class="muted mono" style="font-size:11px">{{ c.code }}</div></td>
+          <td class="right">{% if user.is_admin or user.is_super_admin %}
+            <form method="post" action="{% url 'accounting:category_toggle' c.pk %}">{% csrf_token %}
+              <button class="btn sm" type="submit">{% if c.is_active %}{% trans "Disable" %}{% else %}{% trans "Enable" %}{% endif %}</button></form>{% endif %}</td></tr>
+      {% endfor %}
+    </tbody></table></div>
+{% include "partials/_pager.html" with page=expense %}
+  </div>
+  {% if can_create %}
+  <div class="card"><header><h3>{% trans "Add a category" %}</h3></header><div class="body">
+    <form method="post">{% csrf_token %}
+      {% include "partials/_form.html" with form=form one_column=1 %}
+      <button class="btn primary" type="submit" style="margin-top:12px">{% trans "Add" %}</button>
+    </form>
+  </div></div>
+  {% endif %}
+</div>
+{% endblock %}

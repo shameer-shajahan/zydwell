@@ -1,0 +1,69 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Keys" %}{% endblock %}
+{% block topbar_title %}{% trans "Integration keys" %}{% endblock %}
+{% block content %}
+<div class="crumbs">
+  <a href="{% url 'platform:tenant_list' %}">{% trans "Clients" %}</a> <span>/</span>
+  <a href="{% url 'platform:tenant_detail' tenant_obj.pk %}">{{ tenant_obj.name }}</a>
+  <span>/</span><span>{% trans "Keys" %}</span>
+</div>
+<div class="page-head">
+  <div><h1>{% trans "Integration keys" %}</h1>
+    <div class="sub">{% blocktrans with name=tenant_obj.name %}API credentials held on behalf of {{ name }}. Their own admin never sees these.{% endblocktrans %}</div></div>
+  <div class="actions"><a class="btn" href="{% url 'platform:tenant_detail' tenant_obj.pk %}">{% trans "Back to client" %}</a></div>
+</div>
+
+<div class="grid k3" style="margin-bottom:16px">
+  <div class="kpi {% if row.whatsapp_ready %}green{% else %}slate{% endif %}">
+    <div class="label">{% trans "WhatsApp" %}</div>
+    <div class="value" style="font-size:17px;line-height:1.4">
+      {% if row.whatsapp_ready %}{% trans "Sending automatically" %}{% else %}{% trans "Staff send by hand" %}{% endif %}</div></div>
+  <div class="kpi {% if row.email_ready %}green{% else %}slate{% endif %}">
+    <div class="label">{% trans "Email" %}</div>
+    <div class="value" style="font-size:17px;line-height:1.4">
+      {% if row.email_ready %}{{ row.email_from }}{% else %}{% trans "Not set up" %}{% endif %}</div></div>
+  <div class="kpi {% if row.sms_enabled %}green{% else %}slate{% endif %}">
+    <div class="label">{% trans "SMS" %}</div>
+    <div class="value" style="font-size:17px;line-height:1.4">
+      {% if row.sms_enabled %}{{ row.sms_provider|default:"—" }}{% else %}{% trans "Not set up" %}{% endif %}</div></div>
+</div>
+
+<div class="banner">
+  {% trans "Secrets are never shown again once saved — only their last four characters. Leave a secret blank to keep what is already stored." %}
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="flash error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+  {% for heading, blurb, fields in form.sections %}
+    <div class="card" style="margin-bottom:16px">
+      <header><h2>{{ heading }}</h2></header>
+      <div class="body">
+        <p class="muted" style="font-size:12.5px;margin-bottom:16px">{{ blurb }}</p>
+        <div class="form-grid">
+          {% for field in fields %}
+            <div class="field{% if field.name == 'whatsapp_access_token' %} wide{% endif %}">
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <label class="checkline">{{ field }} <span>{{ field.label }}</span></label>
+              {% else %}
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+              {% endif %}
+              {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="err" role="alert">{{ error }}</div>{% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  <div class="btn-row">
+    <button class="btn primary" type="submit">{% trans "Save keys" %}</button>
+    <a class="btn" href="{% url 'platform:tenant_detail' tenant_obj.pk %}">{% trans "Cancel" %}</a>
+  </div>
+</form>
+
+<p class="muted" style="font-size:12.5px;margin-top:18px;max-width:60ch">
+  {% trans "These are stored as written, so a database backup carries live credentials — keep backups where you would keep the keys themselves." %}
+</p>
+{% endblock %}

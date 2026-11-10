@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Global audit" %}{% endblock %}
+{% block topbar_title %}{% trans "Global audit log" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Global audit log" %}</h1>
+<div class="sub">{% trans "Every action across every client." %}</div></div>
+<div class="actions"><a class="btn" href="{% url 'platform:tenant_list' %}">{% trans "Clients" %}</a></div></div>
+<form method="get" class="toolbar">
+  <input class="grow" type="text" name="q" value="{{ query }}" placeholder="{% trans 'Search…' %}">
+  <select name="tenant" data-autosubmit style="max-width:230px">
+    <option value="">{% trans "All clients" %}</option>
+    {% for t in tenants %}<option value="{{ t.pk }}" {% if tenant_id == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+  </select>
+  <button class="btn" type="submit">{% trans "Filter" %}</button>
+</form>
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "When" %}</th><th>{% trans "Client" %}</th><th>{% trans "Who" %}</th>
+  <th>{% trans "Action" %}</th><th>{% trans "Summary" %}</th><th>{% trans "IP" %}</th></tr></thead>
+  <tbody>{% for row in page %}
+    <tr><td class="nowrap">{{ row.created_at|date:"d M Y H:i" }}</td>
+      <td>{{ row.tenant.name|default:"—" }}</td><td>{{ row.actor_label }}</td>
+      <td><span class="badge soft-slate">{{ row.get_action_display }}</span></td>
+      <td>{{ row.summary }}</td><td class="mono" style="font-size:11px">{{ row.ip_address|default:"—" }}</td></tr>
+  {% empty %}<tr><td colspan="6">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+</table></div>{% include "partials/_pager.html" %}</div></div>
+{% endblock %}

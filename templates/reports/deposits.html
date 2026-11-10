@@ -1,0 +1,88 @@
+{% extends "base.html" %}{% load i18n listing %}
+{% block title %}{% trans "Deposits" %}{% endblock %}
+{% block topbar_title %}{% trans "Deposits" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Deposits" %}</h1>
+    <div class="sub">{% trans "Money in and out of guest deposits. Held money is not profit — it is the guest's, until you keep it." %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'reports:export_deposits' %}{% query from=start|date:'Y-m-d' to=end|date:'Y-m-d' %}">{% trans "Excel" %}</a>
+    <a class="btn" href="{% url 'reports:export_deposits' %}{% query format='pdf' from=start|date:'Y-m-d' to=end|date:'Y-m-d' %}">{% trans "PDF" %}</a>
+  </div>
+</div>
+
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi navy"><div class="label">{% trans "Held right now" %}</div>
+    <div class="value">{{ currency }} {{ overall.net|floatformat:2 }}</div>
+    <div class="hint">{% trans "Across every tenancy" %}</div></div>
+  <div class="kpi green"><div class="label">{% trans "Received in range" %}</div>
+    <div class="value">{{ currency }} {{ period.received|floatformat:2 }}</div></div>
+  <div class="kpi amber"><div class="label">{% trans "Kept (deductions)" %}</div>
+    <div class="value">{{ currency }} {{ period.deducted|floatformat:2 }}</div>
+    <div class="hint">{% trans "Posted to income" %}</div></div>
+  <div class="kpi slate"><div class="label">{% trans "Refunded" %}</div>
+    <div class="value">{{ currency }} {{ period.refunded|floatformat:2 }}</div></div>
+</div>
+
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <label class="fchip" for="f-from"><span>{% trans "From" %}</span><input id="f-from" type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
+      <label class="fchip" for="f-to"><span>{% trans "To" %}</span><input id="f-to" type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Apply" %}</button>
+    </div>
+  </div>
+  <div class="fb-note">{% trans "Net movement" %}: <strong>{{ currency }} {{ period.net|floatformat:2 }}</strong></div>
+</form>
+
+<div class="grid split">
+  <div class="card">
+    <header><h2>{% trans "Movements" %}</h2></header>
+    <div class="body tight"><div class="table-wrap">
+    <table class="data">
+      <thead><tr>
+        <th>{% trans "Receipt" %}</th><th>{% trans "Date" %}</th><th>{% trans "Guest" %}</th>
+        <th>{% trans "Movement" %}</th><th class="num">{% trans "In" %}</th>
+        <th class="num">{% trans "Out" %}</th><th></th>
+      </tr></thead>
+      <tbody>{% for d in rows %}
+        <tr>
+          <td class="mono">{{ d.receipt_number }}</td>
+          <td class="nowrap">{{ d.happened_on|date:"d M Y" }}</td>
+          <td><a href="{% url 'guests:tenancy_detail' d.tenancy_id %}">{{ d.tenancy.guest.full_name }}</a>
+            <div class="muted" style="font-size:11px">{{ d.tenancy.building.name }} · {{ d.tenancy.room.number }}</div></td>
+          <td>{% if d.kind == 'hold' %}<span class="badge soft-green">{{ d.get_kind_display }}</span>
+            {% elif d.kind == 'deduct' %}<span class="badge soft-amber">{{ d.get_kind_display }}</span>
+            {% else %}<span class="badge soft-slate">{{ d.get_kind_display }}</span>{% endif %}
+            {% if d.reason %}<div class="muted" style="font-size:11px">{{ d.reason|truncatechars:44 }}</div>{% endif %}</td>
+          <td class="num" style="color:var(--green)">{% if d.is_money_in %}{{ d.amount|floatformat:2 }}{% endif %}</td>
+          <td class="num" style="color:var(--red)">{% if not d.is_money_in %}{{ d.amount|floatformat:2 }}{% endif %}</td>
+          <td class="right"><a class="btn sm" href="{% url 'guests:deposit_receipt' d.pk %}">{% trans "Receipt" %}</a></td>
+        </tr>
+      {% empty %}<tr><td colspan="7">{% include "partials/_empty.html" with message=_("No deposit movements in this range.") %}</td></tr>{% endfor %}</tbody>
+    </table></div></div>
+{% include "partials/_pager.html" with page=rows %}
+  </div>
+
+  <div>
+    <div class="card"><header><h3>{% trans "Held by building" %}</h3></header>
+      <div class="body tight"><table class="data"><tbody>
+        {% for name, amount in by_building %}
+          <tr><td>{{ name }}</td><td class="num">{{ currency }} {{ amount|floatformat:2 }}</td></tr>
+        {% empty %}<tr><td class="muted" style="padding:16px">{% trans "Nothing held." %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    <div class="card"><header><h3>{% trans "How this is counted" %}</h3></header>
+      <div class="body">
+        <p class="muted" style="font-size:13px;line-height:1.6">
+          {% trans "Taking a deposit and giving it back never touches profit — it is the guest's money, held. Only a deduction is yours to keep, so only that posts to the income ledger under Security deposit." %}
+        </p>
+        <a class="btn" href="{% url 'accounting:ledger' %}">{% trans "Income & expense" %}</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

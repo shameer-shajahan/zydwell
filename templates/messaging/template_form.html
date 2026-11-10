@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Template" %}{% endblock %}
+{% block topbar_title %}{% trans "Message template" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ template.name }}</h1>
+<div class="sub">{% trans "Placeholders: {guest} {building} {bed} {amount} {due_date} {invoice} {receipt} {balance} {days} {document} {expiry} {reason} {message}" %}</div></div></div>
+<div class="card" style="max-width:760px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form wide_fields="body" %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save template" %}</button>
+      <a class="btn" href="{% url 'messaging:template_list' %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

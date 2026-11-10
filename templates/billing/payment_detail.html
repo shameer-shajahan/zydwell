@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{{ payment.receipt_number }}{% endblock %}
+{% block topbar_title %}{% trans "Payment" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ payment.receipt_number }}</h1>
+    <div class="sub">{{ payment.tenancy.guest.full_name }} · {{ payment.paid_on|date:"d M Y" }}
+      {% if payment.is_reversed %}<span class="badge soft-red">{% trans "Reversed" %}</span>{% endif %}</div></div>
+  <div class="actions">
+    <a class="btn primary" href="{% url 'billing:receipt' payment.pk %}">{% trans "Receipt" %}</a>
+    {% if is_admin and not payment.is_reversed %}<a class="btn danger" href="{% url 'billing:payment_reverse' payment.pk %}">{% trans "Reverse" %}</a>{% endif %}
+    {% if is_admin %}
+      <a class="btn" href="{% url 'billing:payment_edit' payment.pk %}">{% trans "Edit" %}</a>
+      <form method="post" action="{% url 'billing:payment_delete' payment.pk %}" style="display:inline" data-confirm="{% trans 'Delete this payment and its receipt for good? The invoice and ledger will be updated. This cannot be undone.' %}">{% csrf_token %}
+        <button class="btn danger" type="submit">{% trans "Delete" %}</button></form>
+    {% endif %}
+  </div>
+</div>
+<div class="card" style="max-width:640px"><div class="body"><dl class="kv">
+  <dt>{% trans "Amount" %}</dt><dd><strong>{{ currency }} {{ payment.amount|floatformat:2 }}</strong></dd>
+  <dt>{% trans "Mode" %}</dt><dd>{{ payment.mode|default:"—" }}</dd>
+  <dt>{% trans "Approval" %}</dt>
+  <dd>{% if payment.awaits_approval %}<span class="badge soft-amber">{{ payment.get_approval_display }}</span>
+    {% elif payment.approval == "approved" %}<span class="badge soft-green">{{ payment.get_approval_display }}</span>
+      <div class="muted" style="font-size:11px">{{ payment.approved_by.display_name }} · {{ payment.approved_at|date:"d M Y H:i" }}</div>
+    {% elif payment.approval == "rejected" %}<span class="badge soft-red">{{ payment.get_approval_display }}</span>
+      <div class="muted" style="font-size:11px">{{ payment.approval_note }}</div>
+    {% else %}<span class="muted">—</span>{% endif %}</dd>
+  <dt>{% trans "Reference" %}</dt><dd class="mono">{{ payment.reference|default:"—" }}</dd>
+  {% if payment.cheque_due_date %}<dt>{% trans "Cheque due" %}</dt><dd>{{ payment.cheque_due_date|date:"d M Y" }}</dd>{% endif %}
+  <dt>{% trans "Invoice" %}</dt><dd>{% if payment.invoice %}<a href="{% url 'billing:invoice_detail' payment.invoice_id %}">{{ payment.invoice.number }}</a>{% else %}{% trans "Advance credit" %}{% endif %}</dd>
+  <dt>{% trans "Collected by" %}</dt><dd>{{ payment.collected_by_name|default:"—" }}</dd>
+  <dt>{% trans "Recorded" %}</dt><dd>{{ payment.created_at|date:"d M Y H:i" }}</dd>
+  {% if payment.is_reversed %}
+    <dt>{% trans "Reversed by" %}</dt><dd>{{ payment.reversed_by.display_name }} · {{ payment.reversed_at|date:"d M Y H:i" }}</dd>
+    <dt>{% trans "Reason" %}</dt><dd>{{ payment.reversal_reason }}</dd>
+  {% endif %}
+</dl></div></div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Reverse payment" %}{% endblock %}
+{% block topbar_title %}{% trans "Reverse payment" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Reverse" %} {{ payment.receipt_number }}</h1>
+<div class="sub">{% trans "The receipt number stays retired and never gets reused. The income entry is unwound." %}</div></div></div>
+<div class="banner danger">{% blocktrans with a=payment.amount g=payment.tenancy.guest.full_name %}You are about to reverse {{ currency }} {{ a }} collected from {{ g }}.{% endblocktrans %}</div>
+<div class="card" style="max-width:600px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form one_column=1 %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn danger" type="submit">{% trans "Reverse payment" %}</button>
+      <a class="btn" href="{% url 'billing:payment_detail' payment.pk %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

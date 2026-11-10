@@ -1,0 +1,110 @@
+{% load static i18n %}{% get_current_language as LANG %}{% get_current_language_bidi as LANG_BIDI %}<!doctype html>
+<html lang="{{ LANG }}" dir="{% if LANG_BIDI %}rtl{% else %}ltr{% endif %}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f9f9f9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1c1e" media="(prefers-color-scheme: dark)">
+  <title>{% block title %}{% trans "ZyDwell" %}{% endblock %} · {{ brand_name }}</title>
+  {% include "partials/_theme_head.html" %}
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <style>:root { --brand-primary: {{ brand_primary|default:'#0d7d8c' }}; --amber: {{ brand_accent|default:'#e0a03c' }}; }</style>
+</head>
+<body>
+<div class="scrim no-print" data-nav-close></div>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="mark">{% if brand.logo %}<img src="{{ brand.logo.url }}" alt="">{% else %}Z{% endif %}</div>
+      <div style="min-width:0">
+        <b>{{ brand_name|truncatechars:22 }}</b>
+        <span>{% trans "Rental management" %}</span>
+      </div>
+      <button type="button" class="icon-btn burger" data-nav-close
+              aria-label="{% trans 'Close menu' %}" style="margin-inline-start:auto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <nav>
+      {% for item in nav_items %}
+        <a href="{{ item.url }}" class="{% if item.active %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ item.icon }}"/></svg>
+          <span>{{ item.label }}</span>
+        </a>
+      {% endfor %}
+      {% if user.is_super_admin %}
+        <a href="{% url 'platform:tenant_list' %}" class="{% if '/platform/' in request.path %}active{% endif %}" style="margin-top:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l9 5v10l-9 5-9-5V7l9-5zM12 12l9-5M12 12v10M12 12L3 7"/></svg>
+          <span>{% trans "Platform console" %}</span>
+        </a>
+      {% endif %}
+      <a href="{% url 'accounts:profile' %}" class="{% if '/accounts/profile' in request.path %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-8 0v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+        <span>{% trans "Profile" %}</span>
+      </a>
+    </nav>
+    <div class="foot">ZyDwell · {% trans "Hostlane Technolab" %}</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button type="button" class="icon-btn burger" data-burger aria-label="{% trans 'Menu' %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="nav-title"><strong>{% block topbar_title %}{% endblock %}</strong></div>
+      <div class="who">
+        {% if tenant %}<span class="chip">{{ tenant.name|truncatechars:26 }}</span>{% endif %}
+        {% include "partials/_theme_toggle.html" %}
+        <form method="post" action="{% url 'set_language' %}" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          {% get_current_language as CUR %}
+          <select name="language" data-autosubmit aria-label="{% trans 'Language' %}"
+                  style="width:auto;padding:6px 26px 6px 9px;font-size:13px;min-height:38px">
+            <option value="en" {% if CUR == 'en' %}selected{% endif %}>EN</option>
+            <option value="ar" {% if CUR == 'ar' %}selected{% endif %}>AR</option>
+          </select>
+        </form>
+        <span class="muted user-name">{{ user.display_name }} · {{ user.get_role_display }}</span>
+        <form method="post" action="{% url 'accounts:logout' %}" style="display:inline">{% csrf_token %}
+          <button class="btn sm" type="submit">{% trans "Sign out" %}</button>
+        </form>
+      </div>
+    </header>
+
+    <div class="content">
+      {% if impersonating %}
+        <div class="banner danger no-print">
+          <strong>{% trans "Support session" %}</strong>
+          {% trans "You are signed in as this client's admin. Every action is recorded." %}
+          <a class="btn sm" style="margin-inline-start:auto" href="{% url 'platform:stop_impersonation' %}">{% trans "Return to platform" %}</a>
+        </div>
+      {% endif %}
+      {% for notice in system_notices %}
+        <div class="banner {% if notice.level == 'maintenance' %}danger{% endif %} no-print">
+          <strong>{{ notice.title }}</strong> <span>{{ notice.body }}</span>
+        </div>
+      {% endfor %}
+      {% if messages %}
+        <div class="no-print">
+          {% for message in messages %}<div class="flash {{ message.tags }}">{{ message }}</div>{% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<nav class="tabbar no-print">
+  {% for item in nav_items|slice:":5" %}
+    <a href="{{ item.url }}" class="{% if item.active %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{ item.icon }}"/></svg>
+      <span>{{ item.label }}</span>
+    </a>
+  {% endfor %}
+</nav>
+<script src="{% static 'js/app.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

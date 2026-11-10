@@ -1,0 +1,66 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "System health" %}{% endblock %}
+{% block topbar_title %}{% trans "System health" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "System health" %}</h1>
+<div class="sub">{% trans "Delivery failures, printer status, storage and subscriptions coming due." %}</div></div>
+<div class="actions"><a class="btn" href="{% url 'platform:tenant_list' %}">{% trans "Clients" %}</a></div></div>
+<div class="grid split">
+  <div>
+    <div class="card"><header><h2>{% trans "WhatsApp delivery failures" %}</h2></header>
+      <div class="body tight"><div class="table-wrap"><table class="data">
+        <thead><tr><th>{% trans "When" %}</th><th>{% trans "Client" %}</th><th>{% trans "To" %}</th><th>{% trans "Error" %}</th></tr></thead>
+        <tbody>{% for f in failures %}
+          <tr><td class="nowrap">{{ f.created_at|date:"d M H:i" }}</td><td>{{ f.tenant.name }}</td>
+            <td class="mono">{{ f.to_number }}</td><td class="muted" style="font-size:11.5px">{{ f.error|truncatechars:70 }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="muted" style="padding:18px">{% trans "No failures." %}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+    </div>
+    <div class="card"><header><h2>{% trans "Printers" %}</h2></header>
+      <div class="body tight"><div class="table-wrap"><table class="data">
+        <thead><tr><th>{% trans "Client" %}</th><th>{% trans "Printer" %}</th><th>{% trans "Address" %}</th><th>{% trans "Last test" %}</th></tr></thead>
+        <tbody>{% for p in printers %}
+          <tr><td>{{ p.tenant.name }}</td><td>{{ p.name }}</td><td class="mono">{{ p.address|default:"—" }}</td>
+            <td>{% if p.last_test_at %}{{ p.last_test_at|date:"d M H:i" }}
+                {% if p.last_test_ok %}<span class="badge soft-green">{% trans "OK" %}</span>{% else %}<span class="badge soft-red">{% trans "Fail" %}</span>{% endif %}
+              {% else %}<span class="muted">{% trans "Never tested" %}</span>{% endif %}</td></tr>
+        {% empty %}<tr><td colspan="4" class="muted" style="padding:18px">{% trans "No printers registered." %}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+    </div>
+    <div class="card"><header><h2>{% trans "Storage per client" %}</h2></header>
+      <div class="body tight"><table class="data">
+        <thead><tr><th>{% trans "Client" %}</th><th class="num">{% trans "Guests" %}</th><th class="num">{% trans "Documents" %}</th></tr></thead>
+        <tbody>{% for t in storage %}
+          <tr><td>{{ t.name }}</td><td class="num">{{ t.guests }}</td><td class="num">{{ t.docs }}</td></tr>
+        {% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div>
+    <div class="card"><header><h3>{% trans "Subscriptions due" %}</h3></header>
+      <div class="body tight"><table class="data"><tbody>
+        {% for s in expiring_subs %}
+          <tr><td>{{ s.tenant.name }}<div class="muted" style="font-size:11px">{{ s.plan }}</div></td>
+            <td class="right">{{ s.expires_on|date:"d M Y" }}
+              {% if s.is_expired %}<div class="badge soft-red">{% trans "Expired" %}</div>{% endif %}</td></tr>
+        {% empty %}<tr><td class="muted" style="padding:16px">{% trans "Nothing due in 30 days." %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    <div class="card"><header><h3>{% trans "Notices & maintenance banner" %}</h3></header>
+      <div class="body tight"><table class="data"><tbody>
+        {% for n in notices %}
+          <tr><td>{{ n.title }}<div class="muted" style="font-size:11px">{{ n.get_level_display }} · {{ n.tenant.name|default:_("All clients") }}</div></td>
+            <td class="right"><form method="post" action="{% url 'platform:notice_toggle' n.pk %}">{% csrf_token %}
+              <button class="btn sm" type="submit">{% if n.is_active %}{% trans "Hide" %}{% else %}{% trans "Show" %}{% endif %}</button></form></td></tr>
+        {% empty %}<tr><td class="muted" style="padding:16px">{% trans "No notices." %}</td></tr>{% endfor %}
+      </tbody></table></div>
+      <div class="body">
+        <form method="post" action="{% url 'platform:notice_save' %}">{% csrf_token %}
+          {% include "partials/_form.html" with form=notice_form one_column=1 %}
+          <button class="btn primary" type="submit" style="margin-top:10px">{% trans "Publish notice" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

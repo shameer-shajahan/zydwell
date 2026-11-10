@@ -1,0 +1,29 @@
+{% load static i18n %}{% get_current_language as LANG %}{% get_current_language_bidi as LANG_BIDI %}<!doctype html>
+<html lang="{{ LANG }}" dir="{% if LANG_BIDI %}rtl{% else %}ltr{% endif %}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f9f9f9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1c1e" media="(prefers-color-scheme: dark)">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}{% trans "Your details" %}{% endblock %}</title>
+  {% include "partials/_theme_head.html" %}
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<main class="pubpage">
+  <div class="pubhead">
+    <div class="pubmark" aria-hidden="true">{{ org_name|default:"Z"|slice:":1"|upper }}</div>
+    <div>
+      <strong>{{ building.name|default:org_name|default:"ZyDwell" }}</strong>
+      <span>{% block strapline %}{% trans "Guest details" %}{% endblock %}</span>
+    </div>
+    {% include "partials/_theme_toggle.html" %}
+  </div>
+  {% block content %}{% endblock %}
+  <p class="puback">{% trans "Powered by ZyDwell" %}</p>
+</main>
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

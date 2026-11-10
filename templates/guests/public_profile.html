@@ -1,0 +1,46 @@
+{% extends "guests/public_base.html" %}{% load i18n %}
+{% block title %}{% trans "Complete your details" %}{% endblock %}
+{% block strapline %}{% trans "Complete your details" %}{% endblock %}
+
+{% block content %}
+<div class="pubcard">
+  <a class="pubback" href="{% url 'guest_profile' invite.token %}">‹ {% trans "Back" %}</a>
+  <h1>{% trans "Your details" %}</h1>
+  <p class="pubintro">
+    {% trans "Please fill in what you can. Every field except your name is optional — leave anything you are unsure about, and you can come back to this link later." %}
+  </p>
+
+  {% if form.errors %}
+    <div class="flash error" role="alert">
+      {% trans "Please check the highlighted fields below." %}
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" novalidate data-submit-once>
+    {% csrf_token %}
+    {% for heading, fields in form.sections %}
+      <section class="pubsection">
+        <h2>{{ heading }}</h2>
+        <div class="form-grid">
+          {% for field in fields %}
+            <div class="field{% if field.name == 'photo' or field.name|slice:'-5:' == '_scan' %} wide{% endif %}">
+              <label for="{{ field.id_for_label }}">
+                {{ field.label }}{% if field.field.required %} *{% endif %}
+              </label>
+              {{ field }}
+              {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="err" role="alert">{{ error }}</div>{% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+
+    <button class="btn primary pubsubmit" type="submit"
+            data-busy-label="{% trans 'Saving…' %}">{% trans "Save my details" %}</button>
+    <p class="pubnote">
+      {% trans "Your details go only to the building office. Photos are used for your file and your documents." %}
+    </p>
+  </form>
+</div>
+{% endblock %}

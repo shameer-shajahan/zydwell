@@ -1,0 +1,148 @@
+{% load static i18n %}{% get_current_language as LANG %}{% get_current_language_bidi as LANG_BIDI %}<!doctype html>
+<html lang="{{ LANG }}" dir="{% if LANG_BIDI %}rtl{% else %}ltr{% endif %}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f9f9f9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1c1e" media="(prefers-color-scheme: dark)">
+  <meta name="robots" content="noindex">
+  <meta name="description" content="{% trans 'Sign in to ZyDwell rental management.' %}">
+  <title>{% trans "Sign in" %} · ZyDwell</title>
+  {% include "partials/_theme_head.html" %}
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<main class="auth">
+
+  {# ---------- Brand panel: desktop only, so a phone never scrolls past it ---------- #}
+  <section class="auth-brand" aria-hidden="true">
+    <svg class="art" viewBox="0 0 600 700" preserveAspectRatio="xMidYMid slice">
+      <circle cx="540" cy="90" r="190" fill="#ffffff" opacity=".05"/>
+      <circle cx="60" cy="640" r="150" fill="#e0a03c" opacity=".07"/>
+      <g opacity=".10" fill="#ffffff">
+        <rect x="40"  y="430" width="72"  height="270" rx="4"/>
+        <rect x="126" y="360" width="92"  height="340" rx="4"/>
+        <rect x="232" y="470" width="66"  height="230" rx="4"/>
+        <rect x="312" y="320" width="100" height="380" rx="4"/>
+        <rect x="426" y="420" width="76"  height="280" rx="4"/>
+        <rect x="516" y="380" width="60"  height="320" rx="4"/>
+      </g>
+      <g opacity=".30" fill="#e0a03c">
+        <rect x="142" y="384" width="12" height="15" rx="2"/><rect x="172" y="384" width="12" height="15" rx="2"/>
+        <rect x="142" y="420" width="12" height="15" rx="2"/><rect x="172" y="420" width="12" height="15" rx="2"/>
+        <rect x="330" y="344" width="12" height="15" rx="2"/><rect x="362" y="344" width="12" height="15" rx="2"/>
+        <rect x="330" y="380" width="12" height="15" rx="2"/><rect x="362" y="380" width="12" height="15" rx="2"/>
+        <rect x="442" y="444" width="12" height="15" rx="2"/><rect x="472" y="444" width="12" height="15" rx="2"/>
+      </g>
+    </svg>
+
+    <div>
+      <p class="kicker">{% trans "Rental management" %}</p>
+      <p class="wordmark">ZyDwell</p>
+    </div>
+    <p class="lede">
+      {% trans "Floors, rooms, beds, guests, rent and reports — one system instead of notebooks and chat threads." %}
+    </p>
+    <ul class="auth-points">
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 18h18M7 10V7h10v3"/></svg>
+        <span>{% trans "See every free bed at a glance" %}</span>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h18M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+        <span>{% trans "Collect rent and print the receipt" %}</span>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V9m4 8V5m4 12v-5M4 21h16a1 1 0 001-1V4a1 1 0 00-1-1H4a1 1 0 00-1 1v16a1 1 0 001 1z"/></svg>
+        <span>{% trans "Know what is collected and what is pending" %}</span>
+      </li>
+    </ul>
+    <p class="credit">{% trans "Built by Hostlane Technolab" %}</p>
+  </section>
+
+  {# ---------- Form ---------- #}
+  <section class="auth-main">
+    <div class="auth-topbar">
+      <form method="post" action="{% url 'set_language' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        {% get_current_language as CUR %}
+        <label for="auth-lang" class="visually-hidden">{% trans "Language" %}</label>
+        <select id="auth-lang" name="language" data-autosubmit
+                style="width:auto;min-height:40px;padding:6px 28px 6px 11px;font-size:13.5px">
+          <option value="en" {% if CUR == 'en' %}selected{% endif %}>English</option>
+          <option value="ar" {% if CUR == 'ar' %}selected{% endif %}>العربية</option>
+        </select>
+      </form>
+      <span class="spacer"></span>
+      {% include "partials/_theme_toggle.html" %}
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-mask" aria-hidden="true">Z</div>
+      <h1>{% trans "Sign in" %}</h1>
+      <p class="sub">{% trans "Use the account your building owner set up for you." %}</p>
+
+      {% for message in messages %}
+        <div class="flash {{ message.tags }}" role="status">{{ message }}</div>
+      {% endfor %}
+      {% if form.non_field_errors %}
+        <div class="flash error" role="alert">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate data-submit-once>
+        {% csrf_token %}
+
+        <div class="auth-field">
+          <label for="{{ form.username.id_for_label }}">{% trans "Username" %}</label>
+          {{ form.username }}
+          {% for error in form.username.errors %}
+            <div class="err" role="alert">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="auth-field">
+          <label for="{{ form.password.id_for_label }}">{% trans "Password" %}</label>
+          <div class="pw-wrap">
+            {{ form.password }}
+            <button type="button" class="pw-reveal" data-reveal="#{{ form.password.id_for_label }}"
+                    aria-pressed="false" aria-label="{% trans 'Show password' %}"
+                    data-label-show="{% trans 'Show password' %}"
+                    data-label-hide="{% trans 'Hide password' %}">
+              <svg data-eye-on viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg data-eye-off viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10.6 6.2A9.6 9.6 0 0112 6c6.4 0 10 7 10 7a17 17 0 01-3.2 4M6.3 6.4A17 17 0 002 13s3.6 7 10 7a9.4 9.4 0 004.3-1"/>
+                <path d="M3 3l18 18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="caps-hint" data-caps-hint role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l7 7h-4v4H9v-4H5l7-7zM9 19h6"/></svg>
+            {% trans "Caps Lock is on" %}
+          </div>
+          {% for error in form.password.errors %}
+            <div class="err" role="alert">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <button class="btn primary auth-submit" type="submit"
+                data-busy-label="{% trans 'Signing in…' %}">{% trans "Sign in" %}</button>
+      </form>
+
+      <p class="auth-help">
+        {% trans "Forgotten your password? Your building owner can set a new one." %}<br>
+        {% trans "Owners: contact Hostlane Technolab." %}
+      </p>
+    </div>
+
+    <p class="auth-foot">ZyDwell · {% trans "Hostlane Technolab" %}</p>
+  </section>
+</main>
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

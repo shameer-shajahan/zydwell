@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Room types" %}{% endblock %}
+{% block topbar_title %}{% trans "Room types" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Room types" %}</h1><div class="sub">{% trans "Bedspace, partition, studio, family flat — edit these without a code change." %}</div></div>
+<div class="actions"><a class="btn" href="{% url 'properties:building_list' %}">{% trans "Back" %}</a></div></div>
+<div class="grid split">
+  <div class="card"><div class="body tight"><div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>{% trans "Name" %}</th><th>{% trans "Code" %}</th><th>{% trans "Description" %}</th><th class="num">{% trans "Rooms" %}</th></tr></thead>
+      <tbody>{% for t in types %}
+        <tr><td><strong>{{ t.name }}</strong></td><td class="mono">{{ t.code }}</td><td class="muted">{{ t.description }}</td><td class="num">{{ t.n }}</td></tr>
+      {% empty %}<tr><td colspan="4">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+    </table>
+{% include "partials/_pager.html" with page=types %}
+  </div></div></div>
+  <div class="card"><header><h3>{% trans "Add a type" %}</h3></header><div class="body">
+    <form method="post">{% csrf_token %}
+      {% include "partials/_form.html" with form=form one_column=1 %}
+      <button class="btn primary" type="submit" style="margin-top:12px">{% trans "Add" %}</button>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

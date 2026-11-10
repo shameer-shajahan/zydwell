@@ -1,0 +1,150 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Dashboard" %}{% endblock %}
+{% block topbar_title %}{% trans "Dashboard" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Good day" %}, {{ user.display_name }}</h1>
+    <div class="sub">{% trans "The numbers for" %} {{ month_label }}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'properties:bed_board' %}">{% trans "Bed board" %}</a>
+    <a class="btn" href="{% url 'reports:report_index' %}">{% trans "Reports" %}</a>
+  </div>
+</div>
+
+{% if awaiting_count and user.is_admin or awaiting_count and user.is_super_admin %}
+  <div class="banner no-print">
+    <strong>{% blocktrans count counter=awaiting_count %}{{ counter }} collection waiting on you{% plural %}{{ counter }} collections waiting on you{% endblocktrans %}</strong>
+    {% blocktrans with amount=awaiting_total|floatformat:2 %}{{ currency }} {{ amount }} your staff have taken in and you have not confirmed.{% endblocktrans %}
+    <a class="btn sm" style="margin-inline-start:auto" href="{% url 'billing:approvals' %}">{% trans "Review" %}</a>
+  </div>
+{% endif %}
+
+<div class="grid k4" style="margin-bottom:18px">
+  <div class="kpi navy"><div class="label">{% trans "Available beds" %}</div>
+    <div class="value">{{ occupancy.available }}</div><div class="hint">{% trans "of" %} {{ occupancy.total }} {% trans "beds" %}</div></div>
+  <div class="kpi teal"><div class="label">{% trans "Occupancy" %}</div>
+    <div class="value">{{ occupancy.percent }}%</div><div class="hint">{{ live_tenancies }} {% trans "live tenancies" %}</div></div>
+  <div class="kpi green"><div class="label">{% trans "Collected this month" %}</div>
+    <div class="value">{{ currency }} {{ collected|floatformat:0 }}</div></div>
+  <div class="kpi red"><div class="label">{% trans "Pending rent" %}</div>
+    <div class="value">{{ currency }} {{ pending|floatformat:0 }}</div>
+    <div class="hint">60+ {% trans "days" %}: {{ currency }} {{ oldest_due|floatformat:0 }}</div></div>
+  <div class="kpi navy"><div class="label">{% trans "Deposits held" %}</div>
+    <div class="value">{{ currency }} {{ deposits_held|floatformat:0 }}</div>
+    <div class="hint">{% trans "Guests' money, not profit" %}</div></div>
+  <div class="kpi slate"><div class="label">{% trans "Deposit movement" %}</div>
+    <div class="value">{{ currency }} {{ deposit_month.net|floatformat:0 }}</div>
+    <div class="hint">+{{ deposit_month.received|floatformat:0 }} / −{{ deposit_month.paid_out|floatformat:0 }}</div></div>
+  <div class="kpi amber"><div class="label">{% trans "Monthly expense" %}</div>
+    <div class="value">{{ currency }} {{ money.expense|floatformat:0 }}</div></div>
+  <div class="kpi {% if money.net < 0 %}red{% else %}slate{% endif %}"><div class="label">{% trans "Net profit" %}</div>
+    <div class="value">{{ currency }} {{ money.net|floatformat:0 }}</div>
+    <div class="hint">{% trans "Income" %} − {% trans "expense" %}</div></div>
+</div>
+
+<div class="grid split">
+  <div>
+    <div class="card">
+      <header><h2>{% trans "Income vs expense — 12 months" %}</h2>
+        <div class="legend actions"><span><i style="background:var(--teal)"></i>{% trans "Income" %}</span>
+          <span><i style="background:var(--amber)"></i>{% trans "Expense" %}</span></div>
+      </header>
+      <div class="body">
+        <div class="bars">
+          {% for point in trend %}
+            <div class="col" title="{{ point.label }}: +{{ point.income|floatformat:0 }} / −{{ point.expense|floatformat:0 }}">
+              <div class="stack">
+                <i class="inc" style="height:{{ point.income_pct }}%"></i>
+                <i class="exp" style="height:{{ point.expense_pct }}%"></i>
+              </div>
+              <label>{{ point.label }}</label>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <header><h2>{% trans "Floor-wise occupancy" %}</h2>
+        <div class="actions"><a class="btn sm" href="{% url 'reports:occupancy' %}">{% trans "Full report" %}</a></div></header>
+      <div class="body tight"><div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>{% trans "Floor" %}</th><th class="num">{% trans "Beds" %}</th><th class="num">{% trans "Occupied" %}</th>
+        <th class="num">{% trans "Free" %}</th><th style="width:35%">{% trans "Occupancy" %}</th></tr></thead>
+        <tbody>{% for row in floors %}
+          <tr><td><a href="{% url 'properties:building_detail' row.floor.building_id %}">{{ row.floor }}</a></td>
+            <td class="num">{{ row.stats.total }}</td><td class="num">{{ row.stats.occupied }}</td>
+            <td class="num" style="color:var(--green)">{{ row.stats.available }}</td>
+            <td><div class="meter"><i style="width:{{ row.stats.percent }}%"></i></div>
+              <div class="muted" style="font-size:11px;margin-top:3px">{{ row.stats.percent }}%</div></td></tr>
+        {% empty %}<tr><td colspan="5">{% include "partials/_empty.html" with message=_("No beds set up yet.") %}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+    </div>
+
+    <div class="card">
+      <header><h2>{% trans "Most overdue" %}</h2>
+        <div class="actions"><a class="btn sm" href="{% url 'billing:overdue' %}">{% trans "All overdue" %}</a></div></header>
+      <div class="body tight"><div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>{% trans "Guest" %}</th><th>{% trans "Invoice" %}</th><th class="num">{% trans "Days" %}</th><th class="num">{% trans "Balance" %}</th></tr></thead>
+        <tbody>{% for i in overdue_top %}
+          <tr><td>{{ i.tenancy.guest.full_name }}<div class="muted" style="font-size:11px">{{ i.tenancy.location_label }}</div></td>
+            <td class="mono"><a href="{% url 'billing:invoice_detail' i.pk %}">{{ i.number }}</a></td>
+            <td class="num">{{ i.days_overdue }}</td>
+            <td class="num"><strong>{{ currency }} {{ i.balance|floatformat:2 }}</strong></td></tr>
+        {% empty %}<tr><td colspan="4">{% include "partials/_empty.html" with message=_("Nothing overdue.") %}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <header><h3>{% trans "Dues aging" %}</h3></header>
+      <div class="body"><div class="stat-row">
+        {% for label, value in aging_rows %}
+          <div class="stat"><div class="label">{{ label }}</div>
+            <div class="value">{{ value|floatformat:0 }}</div></div>
+        {% endfor %}
+      </div></div>
+    </div>
+
+    <div class="card">
+      <header><h3>{% trans "Expense by category" %}</h3></header>
+      <div class="body">
+        {% for row in expense_split %}
+          <div style="margin-bottom:9px">
+            <div style="display:flex;font-size:12.5px"><span>{{ row.category__name }}</span>
+              <span style="margin-inline-start:auto" class="mono">{{ currency }} {{ row.total|floatformat:0 }}</span></div>
+            <div class="meter" style="margin-top:4px"><i style="width:{% widthratio row.total money.expense 100 %}%;background:var(--amber)"></i></div>
+          </div>
+        {% empty %}<div class="muted">{% trans "No expenses recorded this month." %}</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <header><h3>{% trans "Recent receipts" %}</h3>
+        <div class="actions"><a class="btn sm" href="{% url 'billing:payment_list' %}">{% trans "All" %}</a></div></header>
+      <div class="body tight"><table class="data"><tbody>
+        {% for p in recent_payments %}
+          <tr><td><a class="mono" href="{% url 'billing:receipt' p.pk %}">{{ p.receipt_number }}</a>
+              <div class="muted" style="font-size:11px">{{ p.tenancy.guest.full_name }} · {{ p.paid_on|date:"d M" }}</div></td>
+            <td class="num">{{ currency }} {{ p.amount|floatformat:2 }}</td></tr>
+        {% empty %}<tr><td class="muted" style="padding:16px">{% trans "Nothing collected yet." %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+
+    <div class="card">
+      <header><h3>{% trans "Documents expiring" %}</h3>
+        <div class="actions"><a class="btn sm" href="{% url 'guests:expiring_documents' %}">{% trans "All" %}</a></div></header>
+      <div class="body tight"><table class="data"><tbody>
+        {% for d in expiring %}
+          <tr><td><a href="{% url 'guests:guest_detail' d.guest_id %}">{{ d.guest.full_name }}</a>
+              <div class="muted" style="font-size:11px">{{ d.get_doc_type_display }}</div></td>
+            <td class="right">{% if d.is_expired %}<span class="badge soft-red">{% trans "Expired" %}</span>
+              {% else %}<span class="badge soft-amber">{{ d.days_to_expiry }}d</span>{% endif %}</td></tr>
+        {% empty %}<tr><td class="muted" style="padding:16px">{% trans "Nothing expiring soon." %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

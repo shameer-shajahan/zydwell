@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load i18n listing %}
+{% block title %}{% trans "Net profit" %}{% endblock %}
+{% block topbar_title %}{% trans "Net profit" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Net profit" %}</h1>
+<div class="sub">{{ start|date:"d M Y" }} – {{ end|date:"d M Y" }} · {% trans "income minus expense, per room" %}</div></div></div>
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <label class="fchip" for="f-from"><span>{% trans "From" %}</span><input id="f-from" type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
+      <label class="fchip" for="f-to"><span>{% trans "To" %}</span><input id="f-to" type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Apply" %}</button>
+    </div>
+  </div>
+</form>
+<div class="grid k3" style="margin-bottom:16px">
+  <div class="kpi teal"><div class="label">{% trans "Income" %}</div><div class="value">{{ currency }} {{ summary.income|floatformat:2 }}</div></div>
+  <div class="kpi amber"><div class="label">{% trans "Expense" %}</div><div class="value">{{ currency }} {{ summary.expense|floatformat:2 }}</div></div>
+  <div class="kpi {% if summary.net < 0 %}red{% else %}green{% endif %}"><div class="label">{% trans "Net" %}</div><div class="value">{{ currency }} {{ summary.net|floatformat:2 }}</div></div>
+</div>
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "Room / floor / building" %}</th><th class="num">{% trans "Income" %}</th>
+  <th class="num">{% trans "Expense" %}</th><th class="num">{% trans "Net" %}</th></tr></thead>
+  <tbody>{% for r in rows %}
+    <tr><td>{{ r.label }}</td><td class="num" style="color:var(--green)">{{ r.income|floatformat:2 }}</td>
+      <td class="num" style="color:var(--red)">{{ r.expense|floatformat:2 }}</td>
+      <td class="num"><strong>{{ r.net|floatformat:2 }}</strong></td></tr>
+  {% empty %}<tr><td colspan="4">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% include "partials/_pager.html" with page=rows %}
+{% endblock %}

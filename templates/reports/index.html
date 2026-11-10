@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Reports" %}{% endblock %}
+{% block topbar_title %}{% trans "Reports" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Reports" %}</h1>
+<div class="sub">{% trans "Date-range and floor filters, with Excel and PDF export." %}</div></div>
+{% if user.is_admin or user.is_super_admin %}
+<div class="actions"><a class="btn primary" href="{% url 'reports:export_everything' %}">{% trans "Export every module (Excel)" %}</a></div>{% endif %}</div>
+<div class="prop-grid">
+  {% include "reports/_report_card.html" with url="reports:rent_roll" name=_("Rent roll") desc=_("Who is in which bed, at what rent, and what they owe.") icon="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" %}
+  {% include "reports/_report_card.html" with url="reports:collection" name=_("Collection") desc=_("Receipts by collector, mode and building for any date range.") icon="M3 10h18M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" %}
+  {% include "reports/_report_card.html" with url="reports:expense" name=_("Expense") desc=_("Spending split by category and building.") icon="M4 19V5m0 14h16M8 15V9m4 6V6m4 9v-4" %}
+  {% include "reports/_report_card.html" with url="reports:profit" name=_("Net profit") desc=_("Income minus expense, per month and per room.") icon="M3 17l6-6 4 4 7-7M14 8h7v7" %}
+  {% include "reports/_report_card.html" with url="reports:deposits" name=_("Deposits") desc=_("Deposit money in and out, and what you are holding right now.") icon="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" %}
+  {% include "reports/_report_card.html" with url="reports:occupancy" name=_("Occupancy") desc=_("Building and floor level occupancy with a live bed count.") icon="M3 18v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 18h18M7 10V7h10v3" %}
+  {% include "reports/_report_card.html" with url="billing:overdue" name=_("Overdue & aging") desc=_("Dues aged 0-30, 31-60 and 60+ days, ranked.") icon="M12 8v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z" %}
+</div>
+{% endblock %}

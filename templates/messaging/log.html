@@ -1,0 +1,99 @@
+{% extends "base.html" %}{% load i18n listing %}
+{% block title %}{% trans "WhatsApp log" %}{% endblock %}
+{% block topbar_title %}{% trans "WhatsApp alerts" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "WhatsApp log" %}</h1>
+    <div class="sub">{% trans "Every message, who sent it and what happened to it — proof a reminder was issued." %}
+      {% blocktrans with days=keep_days %}Messages are kept for {{ days }} days, then deleted automatically; ones still waiting to send stay until they go out.{% endblocktrans %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'messaging:waiting' %}">{% trans "Waiting to send" %}</a>
+    {% if user.is_admin or user.is_super_admin %}<a class="btn" href="{% url 'messaging:template_list' %}">{% trans "Templates & schedule" %}</a>{% endif %}
+    {% if can_send %}<a class="btn" href="{% url 'messaging:broadcast' %}">{% trans "Building notice" %}</a>
+      <a class="btn primary" href="{% url 'messaging:send_manual' %}">{% trans "Send a message" %}</a>{% endif %}
+  </div>
+</div>
+
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <input class="fb-search" type="search" name="q" value="{{ query }}" enterkeyhint="search"
+             aria-label="{% trans 'Search' %}" placeholder="{% trans 'Search' %}"
+             data-hint="{% trans 'Guest, number or message text…' %}" title="{% trans 'Guest, number or message text…' %}">
+      <label class="fchip" for="f-from"><span>{% trans "From" %}</span><input id="f-from" type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
+      <label class="fchip" for="f-to"><span>{% trans "To" %}</span><input id="f-to" type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+      <label class="visually-hidden" for="f-sender">{% trans "Sent by" %}</label>
+      <select id="f-sender" name="sender" data-autosubmit data-placeholder="{% trans 'Sent by' %}" data-prefix="{% trans 'Sent by' %}">
+        <option value="">{% trans "Everyone" %}</option>
+        <option value="system" {% if sender == 'system' %}selected{% endif %}>{% trans "Automatic (nightly job)" %}</option>
+        {% for u in senders %}<option value="{{ u.pk }}" {% if sender == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.display_name }}</option>{% endfor %}
+      </select>
+      <label class="visually-hidden" for="f-status">{% trans "Status" %}</label>
+      <select id="f-status" name="status" data-autosubmit data-placeholder="{% trans 'Status' %}" data-prefix="{% trans 'Status' %}">
+        <option value="">{% trans "All statuses" %}</option>
+        {% for value, label in statuses %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Apply" %}</button>
+    </div>
+  </div>
+</form>
+
+<div class="grid split">
+  <div class="card"><div class="body tight"><div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>{% trans "When" %}</th><th>{% trans "To" %}</th><th>{% trans "Template" %}</th>
+      <th>{% trans "Message" %}</th><th>{% trans "Status" %}</th><th>{% trans "Sent by" %}</th><th></th></tr></thead>
+      <tbody>{% for m in page %}
+        <tr><td class="nowrap">{{ m.created_at|date:"d M H:i" }}</td>
+          <td class="mono">{{ m.to_number|default:"—" }}
+            <div class="muted" style="font-size:11px">{{ m.guest.full_name|default:"" }}</div></td>
+          <td>{{ m.template_code }}</td>
+          <td class="muted" style="font-size:12px;max-width:300px">{{ m.body|truncatechars:110 }}</td>
+          <td>{% if m.status == 'sent' or m.status == 'delivered' or m.status == 'read' %}<span class="badge soft-green">{{ m.get_status_display }}</span>
+            {% elif m.status == 'opened' %}<span class="badge soft-teal">{{ m.get_status_display }}</span>
+            {% elif m.status == 'failed' %}<span class="badge soft-red">{{ m.get_status_display }}</span>
+            {% elif m.status == 'queued' %}<span class="badge soft-amber">{{ m.get_status_display }}</span>
+            {% else %}<span class="badge soft-slate">{{ m.get_status_display }}</span>{% endif %}
+            {% if m.error %}<div class="muted" style="font-size:10.5px">{{ m.error|truncatechars:52 }}</div>{% endif %}</td>
+          <td>{% if m.sent_by %}<strong>{{ m.sent_by.display_name }}</strong>
+              <div class="muted" style="font-size:10.5px">{{ m.sent_by.get_role_display }}</div>
+            {% else %}<span class="badge soft-slate">{% trans "Automatic" %}</span>{% endif %}
+            <div class="muted" style="font-size:10.5px">{{ m.get_channel_display }}</div></td>
+          <td class="right nowrap">{% if m.is_waiting and can_send and m.to_number %}
+            <a class="btn sm primary"{% if chat_new_tab %} target="_blank" rel="noopener"{% endif %}
+               href="{% url 'messaging:open_log' m.pk %}">{% trans "Open" %}</a>{% endif %}
+            {% if can_delete %}<form method="post" action="{% url 'messaging:log_delete' m.pk %}" style="display:inline"
+                  data-confirm="{% trans 'Delete this message from the log? This cannot be undone.' %}">{% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button class="btn sm danger" type="submit" title="{% trans 'Delete' %}" aria-label="{% trans 'Delete' %}">×</button></form>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="7">{% include "partials/_empty.html" with message=_("No messages in this range.") %}</td></tr>{% endfor %}</tbody>
+    </table></div>{% include "partials/_pager.html" %}</div>
+  </div>
+
+  <div class="card">
+    <header><h3>{% trans "Who sent them" %}</h3></header>
+    <div class="body tight"><div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>{% trans "Person" %}</th><th class="num">{% trans "Sent" %}</th>
+        <th class="num">{% trans "Waiting" %}</th><th class="num">{% trans "Failed" %}</th></tr></thead>
+        <tbody>{% for row in by_sender %}
+          <tr><td>{% if row.is_person %}<strong>{{ row.who }}</strong>
+              <div class="muted" style="font-size:11px">{{ row.role }}</div>
+              {% else %}<span class="badge soft-slate">{{ row.who }}</span>{% endif %}</td>
+            <td class="num">{{ row.sent }}</td>
+            <td class="num">{% if row.waiting %}<span class="badge soft-amber">{{ row.waiting }}</span>{% else %}0{% endif %}</td>
+            <td class="num">{% if row.failed %}<span class="badge soft-red">{{ row.failed }}</span>{% else %}0{% endif %}</td></tr>
+        {% empty %}<tr><td colspan="4" class="muted" style="padding:16px">{% trans "Nothing sent in this range." %}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+    <div class="body">
+      <p class="muted" style="font-size:12.5px">
+        {% trans "“Automatic” is the nightly job preparing reminders. Everything else was sent by a person, and their name stays on it." %}
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

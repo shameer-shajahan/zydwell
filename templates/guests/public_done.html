@@ -1,0 +1,22 @@
+{% extends "guests/public_base.html" %}{% load i18n %}
+{% block title %}{% trans "Thank you" %}{% endblock %}
+{% block strapline %}{% trans "Details received" %}{% endblock %}
+
+{% block content %}
+<div class="pubcard center">
+  <div class="pubtick" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+         stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+  </div>
+  <h1>{% trans "Thank you" %}</h1>
+  <p class="pubintro">
+    {% blocktrans with name=guest.full_name %}We have your details, {{ name }}. The office will be in touch if anything else is needed.{% endblocktrans %}
+  </p>
+  {% if invite.is_usable %}
+    <p class="pubnote">
+      {% blocktrans with days=invite.days_left %}This link still works for another {{ days }} day(s) if you need to add something.{% endblocktrans %}
+    </p>
+    <a class="btn" href="{{ invite.path }}">{% trans "Add more details" %}</a>
+  {% endif %}
+</div>
+{% endblock %}

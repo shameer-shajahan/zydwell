@@ -1,0 +1,93 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{{ tenant_obj.name }}{% endblock %}
+{% block topbar_title %}{% trans "Client" %}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="{% url 'platform:tenant_list' %}">{% trans "Clients" %}</a> <span>/</span> <span>{{ tenant_obj.name }}</span></div>
+<div class="page-head">
+  <div><h1>{{ tenant_obj.name }}</h1>
+    <div class="sub">{{ tenant_obj.contact_person }} · {{ tenant_obj.contact_email }} · {{ tenant_obj.contact_phone }}</div></div>
+  <div class="actions">
+    <a class="btn primary" href="{% url 'platform:switch_tenant' tenant_obj.pk %}">{% trans "Open account" %}</a>
+    <a class="btn" href="{% url 'platform:tenant_edit' tenant_obj.pk %}">{% trans "Edit" %}</a>
+    <a class="btn" href="{% url 'platform:tenant_integrations' tenant_obj.pk %}">{% trans "Keys" %}</a>
+    <form method="post" action="{% url 'platform:tenant_status' tenant_obj.pk %}" style="display:inline">{% csrf_token %}
+      <select name="status" data-autosubmit style="width:auto;padding:7px 10px">
+        <option value="active" {% if tenant_obj.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+        <option value="locked" {% if tenant_obj.status == 'locked' %}selected{% endif %}>{% trans "Locked" %}</option>
+        <option value="suspended" {% if tenant_obj.status == 'suspended' %}selected{% endif %}>{% trans "Suspended" %}</option>
+      </select>
+    </form>
+  </div>
+</div>
+
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi navy"><div class="label">{% trans "Owner accounts" %}</div><div class="value">{{ admins|length }}</div></div>
+  <div class="kpi teal"><div class="label">{% trans "Staff seats used" %}</div><div class="value">{{ staff_count }}</div>
+    <div class="hint">{% trans "limit" %} {{ tenant_obj.max_staff_seats }}</div></div>
+  <div class="kpi green"><div class="label">{% trans "Lifetime collected" %}</div><div class="value">{{ tenant_obj.currency }} {{ collected|floatformat:0 }}</div></div>
+  <div class="kpi {% if message_failures %}red{% else %}slate{% endif %}"><div class="label">{% trans "WhatsApp failures" %}</div><div class="value">{{ message_failures }}</div></div>
+</div>
+
+<div class="grid split">
+  <div>
+    <div class="card"><header><h2>{% trans "Subscription & billing" %}</h2></header><div class="body">
+      <form method="post"><input type="hidden" name="action" value="subscription">{% csrf_token %}
+        {% include "partials/_form.html" with form=sub_form %}
+        <div class="btn-row" style="margin-top:14px"><button class="btn primary" type="submit">{% trans "Save subscription" %}</button></div>
+      </form>
+      <p class="muted" style="font-size:12px;margin-top:12px">{% trans "With auto-lock on, the account is blocked once the grace period after the expiry date has passed." %}</p>
+    </div></div>
+
+    <div class="card"><header><h2>{% trans "Design & branding" %}</h2></header><div class="body">
+      <form method="post" enctype="multipart/form-data"><input type="hidden" name="action" value="branding">{% csrf_token %}
+        {% include "partials/_form.html" with form=brand_form wide_fields="login_tagline,footer_note" %}
+        <div class="btn-row" style="margin-top:14px"><button class="btn primary" type="submit">{% trans "Save branding" %}</button></div>
+      </form>
+    </div></div>
+  </div>
+
+  <div>
+    <div class="card"><header><h3>{% trans "Modules" %}</h3></header><div class="body">
+      <form method="post"><input type="hidden" name="action" value="flags">{% csrf_token %}
+        {% for m in modules %}
+          <label class="checkline" style="margin-bottom:7px">
+            <input type="checkbox" name="flag_{{ m.key }}" {% if m.enabled %}checked{% endif %}>
+            <span>{{ m.label }}</span>
+          </label>
+        {% endfor %}
+        <button class="btn" type="submit" style="margin-top:10px">{% trans "Save modules" %}</button>
+      </form>
+    </div></div>
+
+    <div class="card"><header><h3>{% trans "Limits in use" %}</h3></header><div class="body">
+      {% for label, used, allowed in limits %}
+        <div style="margin-bottom:9px">
+          <div style="display:flex;font-size:12.5px"><span>{{ label }}</span><span style="margin-inline-start:auto" class="mono">{{ used }} / {{ allowed }}</span></div>
+          <div class="meter" style="margin-top:4px"><i style="width:{% widthratio used allowed 100 %}%"></i></div>
+        </div>
+      {% endfor %}
+    </div></div>
+
+    <div class="card"><header><h3>{% trans "Owner accounts" %}</h3></header><div class="body tight">
+      <table class="data"><tbody>
+        {% for a in admins %}
+          <tr><td>{{ a.display_name }}<div class="muted mono" style="font-size:11px">{{ a.username }}</div>
+              {% if a.must_change_password %}
+                <div class="badge soft-amber">{% trans "must set a new password" %}</div>{% endif %}</td>
+            <td class="right nowrap">
+              <a class="btn sm" href="{% url 'platform:reset_admin_password' a.pk %}">{% trans "Set password" %}</a>
+              <form method="post" action="{% url 'platform:impersonate' a.pk %}" style="display:inline"
+                data-confirm="{% trans 'Sign in as this owner for support? The action is recorded.' %}">{% csrf_token %}
+              <button class="btn sm" type="submit">{% trans "Sign in as" %}</button></form></td></tr>
+        {% empty %}<tr><td class="muted" style="padding:16px">{% trans "No owner account yet." %}</td></tr>{% endfor %}
+      </tbody></table>
+    </div></div>
+
+    <div class="card"><header><h3>{% trans "Master data" %}</h3></header><div class="body">
+      <p class="muted" style="font-size:12.5px">{% trans "Re-push the default statuses, categories, room types and message templates. Existing rows are left alone." %}</p>
+      <form method="post"><input type="hidden" name="action" value="reseed">{% csrf_token %}
+        <button class="btn" type="submit">{% trans "Re-seed master data" %}</button></form>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

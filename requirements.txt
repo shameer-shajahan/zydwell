@@ -1,0 +1,12 @@
+Django>=5.1,<6.0
+Pillow>=10.4          # guest photos, building logos, document scans
+openpyxl>=3.1         # Excel export of every module
+reportlab>=4.2        # PDF receipts and PDF reports
+python-dateutil>=2.9
+requests>=2.32        # WhatsApp Business Cloud API
+python-dotenv>=1.0
+
+# Production extras (optional)
+# psycopg[binary]>=3.2   # PostgreSQL
+# gunicorn>=22.0         # WSGI server
+# whitenoise>=6.7        # static files without a separate web server

@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Late fee rule" %}{% endblock %}
+{% block topbar_title %}{% trans "Late fee rule" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Late fee rule" %}</h1>
+<div class="sub">{% trans "Applied automatically by the nightly job to any invoice past its grace period." %}</div></div></div>
+<div class="card" style="max-width:640px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form %}
+    <div class="btn-row" style="margin-top:16px"><button class="btn primary" type="submit">{% trans "Save rule" %}</button></div>
+  </form>
+</div></div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{{ building.name }}{% endblock %}
+{% block topbar_title %}{{ building.name }}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="{% url 'properties:building_list' %}">{% trans "Buildings" %}</a> <span>/</span> <span>{{ building.name }}</span></div>
+<div class="page-head">
+  <div><h1>{{ building.name }}</h1>
+    <div class="sub">{{ building.address|default:"" }}{% if building.licence_number %} · {% trans "Licence" %} {{ building.licence_number }}{% endif %}</div></div>
+  <div class="actions">
+    {% if can_edit %}
+      <a class="btn" href="{% url 'properties:building_edit' building.pk %}">{% trans "Edit building" %}</a>
+      <a class="btn" href="{% url 'properties:floor_create' %}?building={{ building.pk }}&amp;{% return_here %}">+ {% trans "Floor" %}</a>
+      <a class="btn" href="{% url 'properties:apartment_create' %}?{% return_here %}">+ {% trans "Apartment" %}</a>
+      <a class="btn primary" href="{% url 'properties:room_create' %}?{% return_here %}">+ {% trans "Room" %}</a>
+    {% endif %}
+    {% if can_delete %}
+      <form method="post" action="{% url 'properties:building_delete' building.pk %}" data-confirm="{% trans 'Delete this building? If it still has floors or history it will be archived instead.' %}">{% csrf_token %}
+        <button class="btn danger" type="submit">{% trans "Delete / archive" %}</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi navy"><div class="label">{% trans "Beds" %}</div><div class="value">{{ occupancy.total }}</div></div>
+  <div class="kpi teal"><div class="label">{% trans "Occupied" %}</div><div class="value">{{ occupancy.occupied }}</div><div class="hint">{{ occupancy.percent }}% {% trans "occupancy" %}</div></div>
+  <div class="kpi green"><div class="label">{% trans "Available" %}</div><div class="value">{{ occupancy.available }}</div></div>
+  <div class="kpi slate"><div class="label">{% trans "Blocked / maintenance" %}</div><div class="value">{{ occupancy.other }}</div></div>
+</div>
+
+<div class="toolbar">
+  <input class="grow" type="text" data-filter=".plan-room" placeholder="{% trans 'Filter rooms or guests…' %}">
+  <div class="status-legend">
+    {% for s in statuses %}<span><i style="background:{{ s.color }}"></i>{{ s.name }}</span>{% endfor %}
+  </div>
+</div>
+
+{% for block in floor_blocks %}
+  <div class="floor-block">
+    <div class="floor-head">
+      <h2>{{ block.floor.name }}</h2>
+      <span class="badge soft-teal">{{ block.occupancy.occupied }}/{{ block.occupancy.total }} {% trans "beds" %}</span>
+      <span class="badge soft-green">{{ block.occupancy.available }} {% trans "free" %}</span>
+      {% if can_edit %}
+        <span style="margin-inline-start:auto" class="btn-row">
+          <a class="btn sm" href="{% url 'properties:floor_edit' block.floor.pk %}">{% trans "Edit floor" %}</a>
+          <a class="btn sm primary" href="{% url 'properties:apartment_create' %}?floor={{ block.floor.pk }}&amp;{% return_here %}">+ {% trans "Apartment" %}</a>
+        </span>
+      {% endif %}
+      {% if can_delete %}
+        <form method="post" action="{% url 'properties:floor_delete' block.floor.pk %}" style="display:inline{% if not can_edit %};margin-inline-start:auto{% endif %}" data-confirm="{% trans 'Delete this floor? If it still has apartments or history it will be archived instead.' %}">{% csrf_token %}
+          <button class="btn sm danger" type="submit">{% trans "Delete" %}</button>
+        </form>
+      {% endif %}
+    </div>
+
+    {% for flat in block.apartments %}
+      <div class="apartment-block">
+        <div class="apartment-head">
+          <span class="apt-badge">{% trans "Apartment" %} {{ flat.apartment.name }}</span>
+          <span class="badge soft-teal">{{ flat.occupancy.occupied }}/{{ flat.occupancy.total }} {% trans "beds" %}</span>
+          <span class="badge soft-green">{{ flat.occupancy.available }} {% trans "free" %}</span>
+          {% if flat.apartment.notes %}<span class="muted" style="font-size:12px">{{ flat.apartment.notes }}</span>{% endif %}
+          {% if can_edit %}
+            <span style="margin-inline-start:auto" class="btn-row">
+              <a class="btn sm" href="{% url 'properties:apartment_edit' flat.apartment.pk %}">{% trans "Edit" %}</a>
+              <a class="btn sm" href="{% url 'properties:room_create' %}?apartment={{ flat.apartment.pk }}&amp;{% return_here %}">+ {% trans "Room" %}</a>
+            </span>
+          {% endif %}
+          {% if can_delete %}
+            <form method="post" action="{% url 'properties:apartment_delete' flat.apartment.pk %}" style="display:inline{% if not can_edit %};margin-inline-start:auto{% endif %}" data-confirm="{% trans 'Delete this apartment? If it still has rooms or history it will be archived instead.' %}">{% csrf_token %}
+              <button class="btn sm danger" type="submit">{% trans "Delete" %}</button>
+            </form>
+          {% endif %}
+        </div>
+        {% if flat.rooms %}
+          <div class="plan">{% for row in flat.rooms %}{% include "partials/_plan_room.html" %}{% endfor %}</div>
+        {% else %}
+          <div class="muted" style="font-size:13px;padding:4px 2px 10px">
+            {% trans "No rooms in this apartment yet." %}
+            {% if can_edit %}<a href="{% url 'properties:room_create' %}?apartment={{ flat.apartment.pk }}&amp;{% return_here %}">{% trans "Add one" %}</a>.{% endif %}</div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="card"><div class="body muted">{% trans "No apartments on this floor yet." %}
+        {% if can_edit %}<a href="{% url 'properties:apartment_create' %}?floor={{ block.floor.pk }}&amp;{% return_here %}">{% trans "Add one" %}</a>.{% endif %}</div></div>
+    {% endfor %}
+  </div>
+{% empty %}
+  <div class="card"><div class="body">{% include "partials/_empty.html" with message=_("No floors yet. Add a floor, then rooms and beds.") %}</div></div>
+{% endfor %}
+{% endblock %}

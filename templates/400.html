@@ -1,0 +1,9 @@
+{% extends "error.html" %}{% load i18n %}
+
+{% block title %}{% trans "Bad request" %}{% endblock %}
+{% block glyph %}<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>{% endblock %}
+{% block code %}400{% endblock %}
+{% block heading %}{% trans "That request could not be read" %}{% endblock %}
+{% block message %}
+  {% trans "Something in the address or the submitted form was malformed. Try again from the beginning." %}
+{% endblock %}

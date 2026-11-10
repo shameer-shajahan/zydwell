@@ -1,0 +1,53 @@
+{% extends "base.html" %}{% load i18n listing return_links %}
+{% block title %}{% trans "Invoices" %}{% endblock %}
+{% block topbar_title %}{% trans "Invoices" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Invoices" %}</h1><div class="sub">{% trans "One invoice per tenancy per billing period." %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'billing:overdue' %}">{% trans "Overdue & aging" %}</a>
+    {% if user.is_admin or user.is_super_admin %}
+      <form method="post" action="{% url 'billing:run_billing' %}" style="display:inline"
+            data-confirm="{% trans 'Raise every invoice that falls due today?' %}">{% csrf_token %}
+        <button class="btn" type="submit">{% trans "Run billing now" %}</button></form>
+    {% endif %}
+    {% if can_create %}<a class="btn primary" href="{% url 'billing:invoice_create' %}?{% return_here %}">+ {% trans "New invoice" %}</a>{% endif %}
+  </div>
+</div>
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <input class="fb-search" type="search" name="q" value="{{ query }}" enterkeyhint="search"
+             aria-label="{% trans 'Search' %}" placeholder="{% trans 'Search' %}"
+             data-hint="{% trans 'Invoice number, guest or mobile…' %}" title="{% trans 'Invoice number, guest or mobile…' %}">
+      <label class="visually-hidden" for="f-status">{% trans "Status" %}</label>
+      <select id="f-status" name="status" data-autosubmit data-placeholder="{% trans 'Status' %}" data-prefix="{% trans 'Status' %}">
+        <option value="">{% trans "All statuses" %}</option>
+        {% for s in statuses %}<option value="{{ s.code }}" {% if status == s.code %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Search" %}</button>
+    </div>
+  </div>
+  <div class="fb-note">{% trans "Billed" %} <strong>{{ currency }} {{ sum_total|floatformat:2 }}</strong> · {% trans "collected" %} <strong>{{ currency }} {{ sum_paid|floatformat:2 }}</strong></div>
+</form>
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "Invoice" %}</th><th>{% trans "Guest" %}</th><th>{% trans "Location" %}</th>
+  <th>{% trans "Period" %}</th><th>{% trans "Due" %}</th><th class="num">{% trans "Total" %}</th>
+  <th class="num">{% trans "Balance" %}</th><th>{% trans "Status" %}</th><th></th></tr></thead>
+  <tbody>{% for i in page %}
+    <tr><td class="mono"><a href="{% url 'billing:invoice_detail' i.pk %}">{{ i.number }}</a>{% if i.is_prorata %} <span class="badge soft-slate">{% trans "pro-rata" %}</span>{% endif %}</td>
+      <td>{{ i.tenancy.guest.full_name }}</td>
+      <td class="muted" style="font-size:12px">{{ i.tenancy.location_label }}</td>
+      <td class="nowrap">{{ i.period_label }}</td>
+      <td class="nowrap">{{ i.due_date|date:"d M Y" }}{% if i.days_overdue %}<div class="muted" style="font-size:11px">{{ i.days_overdue }} {% trans "days late" %}</div>{% endif %}</td>
+      <td class="num">{{ i.total|floatformat:2 }}</td>
+      <td class="num"><strong>{{ i.balance|floatformat:2 }}</strong></td>
+      <td>{% include "partials/_status.html" with status=i.status %}</td>
+      <td class="right nowrap">{% if can_create and i.balance > 0 %}<a class="btn sm accent" href="{% url 'billing:payment_create' %}?invoice={{ i.pk }}&amp;{% return_here %}">{% trans "Collect" %}</a>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="9">{% include "partials/_empty.html" with message=_("No invoices match.") %}</td></tr>{% endfor %}</tbody>
+</table></div>{% include "partials/_pager.html" %}</div></div>
+{% endblock %}

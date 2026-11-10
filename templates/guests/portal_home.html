@@ -1,0 +1,44 @@
+{% extends "guests/public_base.html" %}{% load i18n %}
+{% block title %}{% trans "Your details" %}{% endblock %}
+{% block strapline %}{% trans "Your details" %}{% endblock %}
+
+{% block content %}
+<div class="pubcard">
+  <h1>{% blocktrans with name=guest.full_name %}Hello {{ name }}{% endblocktrans %}</h1>
+  {% if tenancy %}
+    <p class="pubintro">
+      {% blocktrans with where=tenancy.location_label since=tenancy.check_in_date|date:"d M Y" %}You are staying at {{ where }}, since {{ since }}.{% endblocktrans %}
+    </p>
+  {% else %}
+    <p class="pubintro">{% trans "Here you can keep your details up to date and pick up your receipts." %}</p>
+  {% endif %}
+
+  <div class="portal-links">
+    <a class="portal-link" href="{% url 'guest_portal_profile' invite.token %}">
+      <span class="pl-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-8 0v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+      </span>
+      <span class="pl-text">
+        <b>{% trans "Your details" %}</b>
+        <span>{% trans "Name, contact, employer and your documents — you can change these" %}</span>
+      </span>
+      <span class="pl-go" aria-hidden="true">›</span>
+    </a>
+
+    <a class="portal-link" href="{% url 'guest_portal_receipts' invite.token %}">
+      <span class="pl-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l2 2 4-4M7 3h10a2 2 0 012 2v14l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 012-2z"/></svg>
+      </span>
+      <span class="pl-text">
+        <b>{% trans "Your receipts" %}</b>
+        <span>{% blocktrans count counter=receipt_count %}{{ counter }} receipt to view or download{% plural %}{{ counter }} receipts to view or download{% endblocktrans %}</span>
+      </span>
+      <span class="pl-go" aria-hidden="true">›</span>
+    </a>
+  </div>
+
+  <p class="pubnote">
+    {% blocktrans with days=invite.days_left %}This link is yours alone and works for another {{ days }} day(s). Do not pass it on.{% endblocktrans %}
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "error.html" %}{% load i18n %}
+
+{% block title %}{% trans "Page not found" %}{% endblock %}
+{% block glyph %}<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>{% endblock %}
+{% block code %}404{% endblock %}
+{% block heading %}{% trans "We cannot find that page" %}{% endblock %}
+{% block message %}
+  {% trans "The link may be out of date, or the record it points at was removed." %}
+{% endblock %}
+
+{% block detail %}
+  {% if request %}<p class="errpath mono">{{ request.path }}</p>{% endif %}
+{% endblock %}
+
+{% block actions %}
+  {% if user.is_authenticated %}
+    {% if nav_items %}
+      <a class="btn primary" href="{{ nav_items.0.url }}">{{ nav_items.0.label }}</a>
+    {% else %}
+      <a class="btn primary" href="{% url 'accounts:profile' %}">{% trans "My profile" %}</a>
+    {% endif %}
+    <button class="btn" type="button" onclick="history.back()">{% trans "Back" %}</button>
+  {% else %}
+    <a class="btn primary" href="{% url 'accounts:login' %}">{% trans "Sign in" %}</a>
+  {% endif %}
+{% endblock %}
+
+{% block extra %}
+  {% if nav_items %}
+    <div class="errlinks">
+      <p class="errlinks-head">{% trans "Or jump to" %}</p>
+      {% for item in nav_items %}<a href="{{ item.url }}">{{ item.label }}</a>{% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

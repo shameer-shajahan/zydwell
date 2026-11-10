@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% trans "Record payment" %}{% endblock %}
+{% block topbar_title %}{% trans "Record payment" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Record payment" %}</h1>
+<div class="sub">{% trans "Full or partial. Leave the invoice empty to hold the money as advance credit." %}</div></div></div>
+<div class="card" style="max-width:820px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form wide_fields="note" %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save receipt" %}</button>
+      <button class="btn accent" type="submit" name="and_print" value="1">{% trans "Save and print" %}</button>
+      <a class="btn" href="{% back_or 'billing:payment_list' %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

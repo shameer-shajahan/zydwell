@@ -1,0 +1,14 @@
+{% extends "guests/public_base.html" %}{% load i18n %}
+{% block title %}{% trans "Receipt not available" %}{% endblock %}
+{% block strapline %}{% trans "Rent receipt" %}{% endblock %}
+
+{% block content %}
+<div class="pubcard center">
+  <div class="pubtick dead" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg>
+  </div>
+  <h1>{% if expired %}{% trans "This receipt link has expired" %}{% else %}{% trans "This receipt link is not valid" %}{% endif %}</h1>
+  <p class="pubintro">{% trans "Ask the building office to send it again." %}</p>
+</div>
+{% endblock %}

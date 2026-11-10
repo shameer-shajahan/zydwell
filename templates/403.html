@@ -1,0 +1,42 @@
+{% extends "error.html" %}{% load i18n %}
+
+{% block title %}{% trans "No access" %}{% endblock %}
+{% block glyph %}<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/>{% endblock %}
+{% block code %}403{% endblock %}
+{% block heading %}{% trans "You do not have access to this" %}{% endblock %}
+{% block message %}
+  {% if exception %}{{ exception }}{% else %}
+    {% trans "This screen is outside the permissions set for your account." %}
+  {% endif %}
+{% endblock %}
+
+{% block extra %}
+  {% if nav_items %}
+    <div class="errlinks">
+      <p class="errlinks-head">{% trans "What you can open" %}</p>
+      {% for item in nav_items %}<a href="{{ item.url }}">{{ item.label }}</a>{% endfor %}
+    </div>
+  {% endif %}
+  <p class="errnote">
+    {% if user.is_staff_member %}
+      {% trans "Your building owner grants access per module on your staff record." %}
+    {% elif user.is_authenticated %}
+      {% trans "If this module should be switched on for your account, contact Hostlane Technolab." %}
+    {% else %}
+      {% trans "You may need to sign in first." %}
+    {% endif %}
+  </p>
+{% endblock %}
+
+{% block actions %}
+  {% if user.is_authenticated %}
+    {% if nav_items %}
+      <a class="btn primary" href="{{ nav_items.0.url }}">{{ nav_items.0.label }}</a>
+    {% else %}
+      <a class="btn primary" href="{% url 'accounts:profile' %}">{% trans "My profile" %}</a>
+    {% endif %}
+    <button class="btn" type="button" onclick="history.back()">{% trans "Back" %}</button>
+  {% else %}
+    <a class="btn primary" href="{% url 'accounts:login' %}">{% trans "Sign in" %}</a>
+  {% endif %}
+{% endblock %}

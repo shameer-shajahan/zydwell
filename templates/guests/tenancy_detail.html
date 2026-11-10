@@ -1,0 +1,135 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{{ tenancy.guest.full_name }}{% endblock %}
+{% block topbar_title %}{% trans "Tenancy" %}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="{% url 'guests:tenancy_list' %}">{% trans "Tenancies" %}</a> <span>/</span>
+  <a href="{% url 'guests:guest_detail' tenancy.guest_id %}">{{ tenancy.guest.full_name }}</a></div>
+<div class="page-head">
+  <div><h1>{{ tenancy.guest.full_name }}</h1>
+    <div class="sub">{{ tenancy.location_label }} · {% trans "since" %} {{ tenancy.check_in_date|date:"d M Y" }}
+      {% include "partials/_status.html" with status=tenancy.status %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'messaging:send_manual' %}?guest={{ tenancy.guest_id }}">{% trans "WhatsApp" %}</a>
+    {% if can_bill %}<a class="btn accent" href="{% url 'billing:payment_create' %}?tenancy={{ tenancy.pk }}&amp;{% return_here %}">{% trans "Collect rent" %}</a>
+      <a class="btn" href="{% url 'billing:invoice_create' %}?tenancy={{ tenancy.pk }}&amp;{% return_here %}">{% trans "Raise invoice" %}</a>{% endif %}
+    {% if can_edit and tenancy.is_live %}
+      <a class="btn" href="{% url 'guests:transfer' tenancy.pk %}">{% trans "Transfer bed" %}</a>
+      <a class="btn" href="{% url 'guests:give_notice' tenancy.pk %}">{% trans "Record notice" %}</a>
+      <a class="btn danger" href="{% url 'guests:check_out' tenancy.pk %}">{% trans "Check out" %}</a>
+    {% endif %}
+    {% if can_edit %}<a class="btn" href="{% url 'guests:tenancy_edit' tenancy.pk %}">{% trans "Edit" %}</a>{% endif %}
+  </div>
+</div>
+
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi teal"><div class="label">{% trans "Monthly rent" %}</div><div class="value">{{ currency }} {{ tenancy.monthly_rent|floatformat:0 }}</div>
+    <div class="hint">{% if tenancy.bills_in_advance %}{% trans "Paid in advance" %}{% else %}{% trans "Post-paid" %}{% endif %}
+      · {% trans "day" %} {{ tenancy.billing_day }}</div></div>
+  <div class="kpi {% if outstanding > 0 %}red{% else %}green{% endif %}"><div class="label">{% trans "Outstanding" %}</div><div class="value">{{ currency }} {{ outstanding|floatformat:2 }}</div></div>
+  <div class="kpi navy"><div class="label">{% trans "Deposit held" %}</div><div class="value">{{ currency }} {{ deposit_held|floatformat:2 }}</div>
+    <div class="hint">{% trans "Agreed" %} {{ currency }} {{ tenancy.deposit_amount|floatformat:2 }}</div></div>
+  <div class="kpi {% if deposit_shortfall > 0 %}amber{% else %}slate{% endif %}"><div class="label">{% trans "Deposit shortfall" %}</div><div class="value">{{ currency }} {{ deposit_shortfall|floatformat:2 }}</div></div>
+</div>
+
+<div class="grid split">
+  <div>
+    <div class="card">
+      <header><h2>{% trans "Invoices" %}</h2></header>
+      <div class="body tight"><div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>{% trans "Invoice" %}</th><th>{% trans "Period" %}</th><th>{% trans "Due" %}</th>
+        <th class="num">{% trans "Total" %}</th><th class="num">{% trans "Balance" %}</th><th>{% trans "Status" %}</th></tr></thead>
+        <tbody>{% for i in invoices %}
+          <tr><td><a class="mono" href="{% url 'billing:invoice_detail' i.pk %}">{{ i.number }}</a></td>
+            <td class="nowrap">{{ i.period_label }}</td><td class="nowrap">{{ i.due_date|date:"d M Y" }}</td>
+            <td class="num">{{ i.total|floatformat:2 }}</td><td class="num">{{ i.balance|floatformat:2 }}</td>
+            <td>{% include "partials/_status.html" with status=i.status %}</td></tr>
+        {% empty %}<tr><td colspan="6">{% include "partials/_empty.html" with message=_("No invoices yet.") %}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+{% include "partials/_pager.html" with page=invoices %}
+    </div>
+
+    <div class="card">
+      <header><h2>{% trans "Payments" %}</h2></header>
+      <div class="body tight"><div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>{% trans "Receipt" %}</th><th>{% trans "Date" %}</th><th class="num">{% trans "Amount" %}</th>
+        <th>{% trans "Mode" %}</th><th>{% trans "Collected by" %}</th><th></th></tr></thead>
+        <tbody>{% for p in payments %}
+          <tr {% if p.is_reversed %}style="opacity:.55;text-decoration:line-through"{% endif %}>
+            <td class="mono">{{ p.receipt_number }}</td><td class="nowrap">{{ p.paid_on|date:"d M Y" }}</td>
+            <td class="num">{{ currency }} {{ p.amount|floatformat:2 }}</td>
+            <td>{{ p.mode|default:"—" }}</td><td>{{ p.collected_by_name|default:"—" }}</td>
+            <td class="right"><a class="btn sm" href="{% url 'billing:receipt' p.pk %}">{% trans "Receipt" %}</a></td></tr>
+        {% empty %}<tr><td colspan="6">{% include "partials/_empty.html" with message=_("Nothing collected yet.") %}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+{% include "partials/_pager.html" with page=payments %}
+    </div>
+
+    {% if transfers %}
+    <div class="card">
+      <header><h3>{% trans "Bed transfers" %}</h3></header>
+      <div class="body tight"><div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>{% trans "Date" %}</th><th>{% trans "From" %}</th><th>{% trans "To" %}</th>
+        <th class="num">{% trans "Old pro-rata" %}</th><th class="num">{% trans "New pro-rata" %}</th></tr></thead>
+        <tbody>{% for t in transfers %}
+          <tr><td class="nowrap">{{ t.transfer_date|date:"d M Y" }}</td>
+            <td>{{ t.from_bed|default:t.from_room }}</td><td>{{ t.to_bed|default:t.to_room }}</td>
+            <td class="num">{{ t.old_prorata|floatformat:2 }} <span class="muted">({{ t.old_days }}d)</span></td>
+            <td class="num">{{ t.new_prorata|floatformat:2 }} <span class="muted">({{ t.new_days }}d)</span></td></tr>
+        {% endfor %}</tbody>
+      </table></div></div>
+{% include "partials/_pager.html" with page=transfers %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="card">
+      <header><h3>{% trans "Deposit" %}</h3></header>
+      <div class="body">
+        <table class="data" style="margin:-16px -16px 10px;width:calc(100% + 32px)">
+          <tbody>{% for d in deposits %}
+            <tr><td>{{ d.get_kind_display }}
+                <div class="muted" style="font-size:11px">{{ d.happened_on|date:"d M Y" }}
+                  · <span class="mono">{{ d.receipt_number }}</span> {{ d.reason }}</div></td>
+              <td class="num">{% if d.is_money_in %}+{% else %}−{% endif %}{{ d.amount|floatformat:2 }}</td>
+              <td class="right"><a class="btn sm" href="{% url 'guests:deposit_receipt' d.pk %}">{% trans "Receipt" %}</a></td></tr>
+          {% empty %}<tr><td class="muted" style="padding:14px">{% trans "No deposit movements." %}</td></tr>{% endfor %}</tbody>
+        </table>
+{% include "partials/_pager.html" with page=deposits %}
+        {% if can_edit %}
+        <form method="post" action="{% url 'guests:add_deposit' tenancy.pk %}">{% csrf_token %}
+          {% include "partials/_form.html" with form=deposit_form one_column=1 %}
+          <button class="btn" type="submit" style="margin-top:10px">{% trans "Record deposit" %}</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <header><h3>{% trans "Tenancy" %}</h3></header>
+      <div class="body"><dl class="kv">
+        <dt>{% trans "Building" %}</dt><dd>{{ tenancy.building.name }}</dd>
+        <dt>{% trans "Floor" %}</dt><dd>{{ tenancy.floor.name }}</dd>
+        <dt>{% trans "Apartment" %}</dt><dd>{{ tenancy.apartment.name|default:"—" }}</dd>
+        <dt>{% trans "Room" %}</dt><dd><a href="{% url 'properties:room_detail' tenancy.room_id %}">{{ tenancy.room.number }}</a></dd>
+        <dt>{% trans "Bed" %}</dt><dd>{{ tenancy.bed.label|default:_("Whole unit") }}</dd>
+        <dt>{% trans "Billing" %}</dt>
+        <dd>{% if tenancy.bills_in_advance %}{% trans "Pay in advance" %}{% else %}{% trans "Post-paid" %}{% endif %}
+          <div class="muted" style="font-size:11.5px">
+            {% if tenancy.prorate_first_period %}{% trans "Part periods charged by the day" %}
+            {% else %}{% trans "Full rent for a part period" %}{% endif %}</div></dd>
+        <dt>{% trans "Check-in" %}</dt><dd>{{ tenancy.check_in_date|date:"d M Y" }}</dd>
+        <dt>{% trans "Expected out" %}</dt><dd>{{ tenancy.expected_check_out|date:"d M Y"|default:"—" }}</dd>
+        <dt>{% trans "Notice given" %}</dt><dd>{{ tenancy.notice_given_on|date:"d M Y"|default:"—" }}</dd>
+        <dt>{% trans "Checked out" %}</dt><dd>{{ tenancy.actual_check_out|date:"d M Y"|default:"—" }}</dd>
+        <dt>{% trans "Opened by" %}</dt><dd>{{ tenancy.created_by.display_name|default:"—" }}</dd>
+      </dl>
+      {% if tenancy.agreement_note %}<p class="muted" style="margin-top:12px">{{ tenancy.agreement_note }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% load i18n listing %}
+{% block title %}{% trans "Rent roll" %}{% endblock %}
+{% block topbar_title %}{% trans "Rent roll" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Rent roll" %}</h1>
+<div class="sub">{% trans "Every live tenancy with its rent, deposit and outstanding balance." %}</div></div>
+<div class="actions">
+  <a class="btn" href="{% url 'reports:export_rent_roll' %}{% query %}">{% trans "Excel" %}</a>
+  <a class="btn" href="{% url 'reports:export_rent_roll' %}{% query format='pdf' %}">{% trans "PDF" %}</a>
+</div></div>
+<div class="grid k3" style="margin-bottom:16px">
+  <div class="kpi teal"><div class="label">{% trans "Monthly rent roll" %}</div><div class="value">{{ currency }} {{ total_rent|floatformat:0 }}</div></div>
+  <div class="kpi red"><div class="label">{% trans "Outstanding" %}</div><div class="value">{{ currency }} {{ total_due|floatformat:2 }}</div></div>
+  <div class="kpi navy"><div class="label">{% trans "Live tenancies" %}</div><div class="value">{{ live_count }}</div></div>
+</div>
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <input class="fb-search" type="search" name="q" value="{{ query }}" enterkeyhint="search"
+             aria-label="{% trans 'Search' %}" placeholder="{% trans 'Search' %}"
+             data-hint="{% trans 'Search guest, mobile or room…' %}" title="{% trans 'Search guest, mobile or room…' %}">
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Search" %}</button>
+    </div>
+  </div>
+</form>
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "Guest" %}</th><th>{% trans "Building" %}</th><th>{% trans "Floor" %}</th>
+  <th>{% trans "Room / bed" %}</th><th>{% trans "Since" %}</th><th class="num">{% trans "Rent" %}</th>
+  <th class="num">{% trans "Deposit" %}</th><th class="num">{% trans "Outstanding" %}</th></tr></thead>
+  <tbody>{% for t in data %}
+    <tr><td><a href="{% url 'guests:tenancy_detail' t.pk %}">{{ t.guest.full_name }}</a>
+        <div class="muted mono" style="font-size:11px">{{ t.guest.mobile }}</div></td>
+      <td>{{ t.building.name }}</td><td>{{ t.floor.name }}</td>
+      <td>{{ t.apartment.name|default:"—" }}</td>
+      <td>{{ t.room.number }}{% if t.bed %} · {{ t.bed.label }}{% endif %}</td>
+      <td class="nowrap">{{ t.check_in_date|date:"d M Y" }}</td>
+      <td class="num">{{ t.monthly_rent|floatformat:2 }}</td>
+      <td class="num">{{ t.deposit_held_total|floatformat:2 }}</td>
+      <td class="num" style="color:{% if t.outstanding_total > 0 %}var(--red){% else %}var(--green){% endif %}">{{ t.outstanding_total|floatformat:2 }}</td></tr>
+  {% empty %}<tr><td colspan="8">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% include "partials/_pager.html" with page=data %}
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Delete guest" %}{% endblock %}
+{% block topbar_title %}{% trans "Delete guest" %}{% endblock %}
+{% block content %}
+<div class="crumbs">
+  <a href="{% url 'guests:guest_list' %}">{% trans "Guests" %}</a> <span>/</span>
+  <a href="{% url 'guests:guest_detail' guest.pk %}">{{ guest.full_name }}</a> <span>/</span>
+  <span>{% trans "Delete" %}</span>
+</div>
+<div class="page-head">
+  <div><h1>{% trans "Delete" %} {{ guest.full_name }}</h1>
+    <div class="sub">{% trans "This erases the guest and everything attached to them. It cannot be undone." %}</div></div>
+</div>
+
+<div class="grid split">
+  <div>
+    <div class="banner danger">
+      <strong>{% trans "This is permanent." %}</strong>
+      {% trans "There is no undo and no archive. Restoring would mean restoring a database backup." %}
+    </div>
+
+    {% if footprint.live_tenancy %}
+      <div class="banner">
+        {% blocktrans with where=footprint.live_tenancy.location_label %}This guest is still checked in at {{ where }}. Deleting them releases that bed.{% endblocktrans %}
+      </div>
+    {% endif %}
+    {% if footprint.outstanding > 0 %}
+      <div class="banner danger">
+        {% blocktrans with amount=footprint.outstanding %}They still owe {{ currency }} {{ amount }}. Deleting them writes that debt off the books.{% endblocktrans %}
+      </div>
+    {% endif %}
+    {% if footprint.deposit_held > 0 %}
+      <div class="banner danger">
+        {% blocktrans with amount=footprint.deposit_held %}You are still holding {{ currency }} {{ amount }} of their deposit. Settle it before deleting.{% endblocktrans %}
+      </div>
+    {% endif %}
+
+    <div class="card">
+      <header><h2>{% trans "What will be destroyed" %}</h2></header>
+      <div class="body tight">
+        <table class="data">
+          <tbody>
+            <tr><td>{% trans "Tenancies" %}</td><td class="num">{{ footprint.tenancies }}</td></tr>
+            <tr><td>{% trans "Invoices" %}</td><td class="num">{{ footprint.invoices }}</td></tr>
+            <tr><td>{% trans "Receipts" %}</td><td class="num">{{ footprint.payments }}</td></tr>
+            <tr><td>{% trans "Rent already collected from them" %}
+                <div class="muted" style="font-size:11.5px">{% trans "Removed from the income ledger too" %}</div></td>
+              <td class="num">{{ currency }} {{ footprint.collected|floatformat:2 }}</td></tr>
+            <tr><td>{% trans "Documents and scans" %}</td><td class="num">{{ footprint.documents }}</td></tr>
+            <tr><td>{% trans "WhatsApp messages" %}</td><td class="num">{{ footprint.messages }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="body">
+        <p class="muted" style="font-size:13px">
+          {% trans "Receipt numbers already issued stay retired — they are never handed out again. One audit entry records this deletion and its totals." %}
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <header><h3>{% trans "Confirm" %}</h3></header>
+      <div class="body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="field" style="margin-bottom:16px">
+            <label for="confirm_name">
+              {% blocktrans with name=guest.full_name %}Type <strong>{{ name }}</strong> to confirm{% endblocktrans %}
+            </label>
+            <input type="text" id="confirm_name" name="confirm_name" autocomplete="off"
+                   autocapitalize="none" spellcheck="false" required
+                   placeholder="{{ guest.full_name }}">
+          </div>
+          <div class="btn-row">
+            <button class="btn danger" type="submit">{% trans "Delete permanently" %}</button>
+            <a class="btn" href="{% url 'guests:guest_detail' guest.pk %}">{% trans "Cancel" %}</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <header><h3>{% trans "Consider instead" %}</h3></header>
+    <div class="body">
+      <p class="muted" style="font-size:13.5px">
+        {% trans "If you only want them out of the active lists, check them out and leave the record in place. The history stays, the bed is freed, and the money still reconciles." %}
+      </p>
+      {% if footprint.live_tenancy %}
+        <a class="btn" href="{% url 'guests:check_out' footprint.live_tenancy.pk %}">{% trans "Check out instead" %}</a>
+      {% endif %}
+      <hr style="border:0;border-top:0.5px solid var(--separator);margin:16px 0">
+      <p class="muted" style="font-size:13.5px">
+        {% trans "If they should not be let a bed again, mark them blacklisted on their profile rather than deleting them." %}
+      </p>
+      <a class="btn" href="{% url 'guests:guest_edit' guest.pk %}">{% trans "Edit profile" %}</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

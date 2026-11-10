@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Staff" %}{% endblock %}
+{% block topbar_title %}{% trans "Staff & access" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Staff & access" %}</h1>
+    <div class="sub">{% blocktrans %}{{ active_seats }} of {{ seat_limit }} seats in use{% endblocktrans %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'accounts:login_history' %}">{% trans "Login history" %}</a>
+    <a class="btn primary" href="{% url 'accounts:staff_create' %}">+ {% trans "New staff account" %}</a>
+  </div>
+</div>
+<div class="card">
+  <header>
+    <form method="get" class="filters" style="width:100%">
+      <div class="field" style="flex:1;max-width:280px"><input type="text" name="q" value="{{ query }}" placeholder="{% trans 'Search name or username' %}"></div>
+      <button class="btn" type="submit">{% trans "Search" %}</button>
+    </form>
+  </header>
+  <div class="body tight">
+    <div class="table-wrap">
+    <table class="data">
+      <thead><tr>
+        <th>{% trans "Name" %}</th><th>{% trans "Contact" %}</th><th>{% trans "Modules granted" %}</th>
+        <th>{% trans "Assigned to" %}</th><th>{% trans "Status" %}</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for s in page %}
+        <tr>
+          <td><strong>{{ s.display_name }}</strong><div class="muted mono" style="font-size:11px">{{ s.username }}</div></td>
+          <td>{{ s.phone|default:"—" }}<div class="muted" style="font-size:11px">{{ s.email|default:"" }}</div></td>
+          <td>{% for p in s.module_permissions.all %}<span class="badge soft-teal" style="margin:1px">{{ p.get_module_display }}</span>{% empty %}<span class="muted">{% trans "None" %}</span>{% endfor %}</td>
+          <td>{% for a in s.assignments.all %}<div style="font-size:12px">{{ a.floor|default:a.building }}</div>{% empty %}<span class="muted">{% trans "All buildings" %}</span>{% endfor %}</td>
+          <td>{% if s.is_active %}<span class="badge soft-green">{% trans "Active" %}</span>{% else %}<span class="badge soft-slate">{% trans "Disabled" %}</span>{% endif %}</td>
+          <td class="right nowrap">
+            <a class="btn sm" href="{% url 'accounts:staff_edit' s.pk %}">{% trans "Edit" %}</a>
+            <a class="btn sm" href="{% url 'accounts:staff_permissions' s.pk %}">{% trans "Access" %}</a>
+            <form method="post" action="{% url 'accounts:staff_toggle' s.pk %}" style="display:inline">{% csrf_token %}
+              <button class="btn sm {% if s.is_active %}danger{% endif %}" type="submit">{% if s.is_active %}{% trans "Disable" %}{% else %}{% trans "Enable" %}{% endif %}</button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">{% include "partials/_empty.html" with message=_("No staff accounts yet.") %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% include "partials/_pager.html" %}
+  </div>
+</div>
+{% endblock %}

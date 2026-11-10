@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% trans "Building" %}{% endblock %}
+{% block topbar_title %}{% trans "Building" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% if building %}{{ building.name }}{% else %}{% trans "New building" %}{% endif %}</h1>
+<div class="sub">{% trans "Name, address, owner, licence and the details printed on receipts." %}</div></div></div>
+<div class="card" style="max-width:880px"><div class="body">
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% include "partials/_form.html" with form=form wide_fields="address,receipt_footer" %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save building" %}</button>
+      <a class="btn" href="{% back_or 'properties:building_list' %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}{% load i18n listing return_links %}
+{% block title %}{% trans "Income & expense" %}{% endblock %}
+{% block topbar_title %}{% trans "Income & expense" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Income & expense" %}</h1><div class="sub">{% trans "Every entry is tagged to a building, floor or room." %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'accounting:category_list' %}">{% trans "Categories" %}</a>
+    {% if user.is_admin or user.is_super_admin %}<a class="btn" href="{% url 'accounting:recurring_list' %}">{% trans "Recurring" %}</a>{% endif %}
+    {% if can_create %}
+      <a class="btn" href="{% url 'accounting:entry_create' %}?kind=income&amp;{% return_here %}">+ {% trans "Income" %}</a>
+      <a class="btn primary" href="{% url 'accounting:entry_create' %}?kind=expense&amp;{% return_here %}">+ {% trans "Expense" %}</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid k3" style="margin-bottom:16px">
+  <div class="kpi teal"><div class="label">{% trans "Income" %}</div><div class="value">{{ currency }} {{ summary.income|floatformat:2 }}</div></div>
+  <div class="kpi amber"><div class="label">{% trans "Expense" %}</div><div class="value">{{ currency }} {{ summary.expense|floatformat:2 }}</div></div>
+  <div class="kpi {% if summary.net < 0 %}red{% else %}green{% endif %}"><div class="label">{% trans "Net profit" %}</div><div class="value">{{ currency }} {{ summary.net|floatformat:2 }}</div>
+    <div class="hint">{{ start|date:"d M" }} – {{ end|date:"d M Y" }}</div></div>
+</div>
+
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <input class="fb-search" type="search" name="q" value="{{ query }}" enterkeyhint="search"
+             aria-label="{% trans 'Search' %}" placeholder="{% trans 'Search' %}"
+             data-hint="{% trans 'Description, payee, reference or category…' %}" title="{% trans 'Description, payee, reference or category…' %}">
+      <label class="fchip" for="f-from"><span>{% trans "From" %}</span><input id="f-from" type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
+      <label class="fchip" for="f-to"><span>{% trans "To" %}</span><input id="f-to" type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+      <label class="visually-hidden" for="f-kind">{% trans "Ledger" %}</label>
+      <select id="f-kind" name="kind" data-autosubmit data-placeholder="{% trans 'Ledger' %}" data-prefix="{% trans 'Ledger' %}">
+        <option value="">{% trans "Income and expense" %}</option>
+        <option value="income" {% if kind == 'income' %}selected{% endif %}>{% trans "Income" %}</option>
+        <option value="expense" {% if kind == 'expense' %}selected{% endif %}>{% trans "Expense" %}</option>
+      </select>
+      <label class="visually-hidden" for="f-category">{% trans "Category" %}</label>
+      <select id="f-category" name="category" data-autosubmit data-placeholder="{% trans 'Category' %}" data-prefix="{% trans 'Category' %}">
+        <option value="">{% trans "All categories" %}</option>
+        {% for c in categories %}<option value="{{ c.pk }}" {% if category_id == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions">
+      <button class="btn primary" type="submit">{% trans "Apply" %}</button>
+      <a class="btn" href="{% url 'reports:export_ledger' %}{% query from=start|date:'Y-m-d' to=end|date:'Y-m-d' %}">{% trans "Excel" %}</a>
+    </div>
+  </div>
+</form>
+
+<div class="grid split">
+  <div class="card"><div class="body tight"><div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>{% trans "Date" %}</th><th>{% trans "Category" %}</th><th>{% trans "Description" %}</th>
+      <th>{% trans "Tagged to" %}</th><th>{% trans "Source" %}</th><th class="num">{% trans "Amount" %}</th><th></th></tr></thead>
+      <tbody>{% for e in page %}
+        <tr><td class="nowrap">{{ e.entry_date|date:"d M Y" }}</td>
+          <td>{{ e.category.name }}</td>
+          <td>{{ e.description|default:"—" }}{% if e.payee %}<div class="muted" style="font-size:11px">{{ e.payee }}</div>{% endif %}</td>
+          <td class="muted" style="font-size:12px">{{ e.room|default:e.apartment|default:e.floor|default:e.building|default:"—" }}</td>
+          <td>{% if e.source_type == 'manual' %}<span class="badge soft-slate">{% trans "Manual" %}</span>
+            {% else %}<span class="badge soft-teal">{{ e.get_source_type_display }}</span>{% endif %}</td>
+          <td class="num" style="color:{% if e.kind == 'income' %}var(--green){% else %}var(--red){% endif %}">
+            {% if e.kind == 'income' %}+{% else %}−{% endif %}{{ e.amount|floatformat:2 }}</td>
+          <td class="right nowrap">
+            {% if e.attachment %}<a class="btn sm" href="{{ e.attachment.url }}" target="_blank" rel="noopener">{% trans "Bill" %}</a>{% endif %}
+            {% if can_create and e.source_type == 'manual' %}<a class="btn sm" href="{% url 'accounting:entry_edit' e.pk %}">{% trans "Edit" %}</a>{% endif %}
+            {% if can_delete and e.source_type in deletable_sources %}
+              <form method="post" action="{% url 'accounting:entry_delete' e.pk %}" style="display:inline" data-confirm="{% trans 'Delete this entry for good?' %}">{% csrf_token %}
+                <button class="btn sm danger" type="submit">×</button></form>
+            {% endif %}
+          </td></tr>
+      {% empty %}<tr><td colspan="7">{% include "partials/_empty.html" with message=_("No entries in this range.") %}</td></tr>{% endfor %}</tbody>
+    </table></div>{% include "partials/_pager.html" %}</div>
+  </div>
+  <div class="card"><header><h3>{% trans "By category" %}</h3></header>
+    <div class="body tight"><table class="data"><tbody>
+      {% for row in by_category %}
+        <tr><td>{{ row.category__name }}<div class="muted" style="font-size:11px">{{ row.kind }}</div></td>
+          <td class="num" style="color:{% if row.kind == 'income' %}var(--green){% else %}var(--red){% endif %}">{{ row.total|floatformat:2 }}</td></tr>
+      {% empty %}<tr><td class="muted" style="padding:16px">{% trans "Nothing to summarise." %}</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</div>
+{% endblock %}

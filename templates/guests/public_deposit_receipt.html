@@ -1,0 +1,41 @@
+{% extends "guests/public_base.html" %}{% load i18n %}
+{% block title %}{{ entry.receipt_number }}{% endblock %}
+{% block strapline %}{% trans "Deposit receipt" %}{% endblock %}
+
+{% block content %}
+<div class="pubcard slip">
+  {% if back_to %}<a class="pubback" href="{{ back_to }}">‹ {% trans "Your receipts" %}</a>{% endif %}
+
+  <div class="slip-head">
+    <span class="slip-tick {% if not entry.is_money_in %}out{% endif %}" aria-hidden="true">
+      {% if entry.is_money_in %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+      {% else %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      {% endif %}
+    </span>
+    <p class="slip-kicker">{{ entry.get_kind_display }}</p>
+    <p class="slip-amount">{% if not entry.is_money_in %}−{% endif %}{{ org_currency }}{{ entry.amount|floatformat:2 }}</p>
+    <p class="slip-number mono">{{ entry.receipt_number }}</p>
+  </div>
+
+  <dl class="slip-rows">
+    <dt>{% trans "Date" %}</dt><dd>{{ entry.happened_on|date:"d M Y" }}</dd>
+    <dt>{% trans "Guest" %}</dt><dd>{{ guest.full_name }}</dd>
+    <dt>{% trans "Building" %}</dt><dd>{{ building.name }}</dd>
+    <dt>{% trans "Room" %}</dt>
+    <dd>{{ tenancy.room.number }}{% if tenancy.bed %} · {% trans "bed" %} {{ tenancy.bed.label }}{% endif %}</dd>
+    {% if entry.reason %}<dt>{% trans "Reason" %}</dt><dd>{{ entry.reason }}</dd>{% endif %}
+    <dt>{% trans "Recorded by" %}</dt><dd>{{ entry.recorded_by.display_name|default:"—" }}</dd>
+  </dl>
+
+  <div class="slip-total">
+    <span>{% trans "Deposit held for you now" %}</span>
+    <b>{{ org_currency }}{{ held|floatformat:2 }}</b>
+  </div>
+
+  <p class="pubnote center">
+    {% trans "A deposit is held, not rent. It is returned when you leave, less anything agreed." %}
+  </p>
+</div>
+{% endblock %}

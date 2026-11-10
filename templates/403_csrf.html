@@ -1,0 +1,19 @@
+{% extends "error.html" %}{% load i18n %}
+
+{% block title %}{% trans "Session expired" %}{% endblock %}
+{% block glyph %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>{% endblock %}
+{% block code %}403{% endblock %}
+{% block heading %}{% trans "Your session expired" %}{% endblock %}
+{% block message %}
+  {% trans "The page sat open too long, so the form could not be submitted safely. Sign in again and redo that last step." %}
+{% endblock %}
+
+{% block actions %}
+  <a class="btn primary" href="{% url 'accounts:login' %}">{% trans "Sign in again" %}</a>
+{% endblock %}
+
+{% block extra %}
+  <p class="errnote">
+    {% trans "Cookies must be switched on for sign-in to work." %}
+  </p>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Transfer bed" %}{% endblock %}
+{% block topbar_title %}{% trans "Transfer bed" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Transfer bed" %}</h1><div class="sub">{% trans "Move the guest mid-month; the rent is split pro-rata." %}</div></div></div>
+{% block above_form %}{% endblock %}
+<div class="card" style="max-width:860px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form wide_fields="agreement_note,reason,note" %}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Transfer bed" %}</button>
+      <a class="btn" href="{% if tenancy %}{% url 'guests:tenancy_detail' tenancy.pk %}{% else %}{% url 'guests:tenancy_list' %}{% endif %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Clients" %}{% endblock %}
+{% block topbar_title %}{% trans "Platform console" %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{% trans "Clients" %}</h1><div class="sub">{% trans "Building owners on the platform, their limits and subscriptions." %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'platform:system_health' %}">{% trans "System health" %}</a>
+    <a class="btn" href="{% url 'platform:global_audit' %}">{% trans "Global audit" %}</a>
+    <a class="btn" href="{% url 'platform:global_statuses' %}">{% trans "Default statuses" %}</a>
+    <a class="btn primary" href="{% url 'platform:tenant_create' %}">+ {% trans "New client" %}</a>
+  </div>
+</div>
+<form method="get" class="toolbar">
+  <input class="grow" type="text" name="q" value="{{ query }}" placeholder="{% trans 'Search clients…' %}">
+  <button class="btn" type="submit">{% trans "Search" %}</button>
+</form>
+<div class="prop-grid">
+  {% for card in cards %}
+    <div class="client-card">
+      <div class="cc-top">
+        <span class="av">{{ card.obj.name|slice:":1"|upper }}</span>
+        <span style="min-width:0">
+          <a href="{% url 'platform:tenant_detail' card.obj.pk %}"><strong>{{ card.obj.name }}</strong></a>
+          <div class="muted" style="font-size:11.5px">{{ card.obj.contact_person|default:"—" }} · {{ card.obj.currency }}</div>
+        </span>
+        <span style="margin-inline-start:auto">
+          {% if card.obj.status == 'active' %}<span class="badge soft-green">{% trans "Active" %}</span>
+          {% elif card.obj.status == 'locked' %}<span class="badge soft-red">{% trans "Locked" %}</span>
+          {% else %}<span class="badge soft-slate">{% trans "Suspended" %}</span>{% endif %}
+        </span>
+      </div>
+      <div class="cc-limits">
+        {% for label, used, allowed in card.limits %}
+          <div class="row"><div style="display:flex"><span>{{ label }}</span><span style="margin-inline-start:auto" class="mono">{{ used }}/{{ allowed }}</span></div>
+            <div class="meter" style="margin-top:3px;height:5px"><i style="width:{% widthratio used allowed 100 %}%"></i></div></div>
+        {% endfor %}
+      </div>
+      {% if card.subscription %}
+        <div style="padding:0 15px 10px;font-size:11.5px" class="muted">
+          {{ card.subscription.plan }} · {% trans "renews" %} {{ card.subscription.expires_on|date:"d M Y" }}
+          {% if card.subscription.is_expired %}<span class="badge soft-red">{% trans "Expired" %}</span>{% endif %}
+        </div>
+      {% endif %}
+      <div class="cc-foot">
+        <a class="btn sm primary" href="{% url 'platform:switch_tenant' card.obj.pk %}">{% trans "Open account" %}</a>
+        <a class="btn sm" href="{% url 'platform:tenant_detail' card.obj.pk %}">{% trans "Manage" %}</a>
+      </div>
+    </div>
+  {% empty %}
+    <div class="card" style="grid-column:1/-1"><div class="body">
+      {% include "partials/_empty.html" with message=_("No clients yet. Create the first building owner account.") %}
+      <div class="center"><a class="btn primary" href="{% url 'platform:tenant_create' %}">+ {% trans "New client" %}</a></div>
+    </div></div>
+  {% endfor %}
+</div>
+{% include "partials/_pager.html" %}
+{% endblock %}

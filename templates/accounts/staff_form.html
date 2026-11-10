@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Staff account" %}{% endblock %}
+{% block topbar_title %}{% trans "Staff account" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% if staff %}{{ staff.display_name }}{% else %}{% trans "New staff account" %}{% endif %}</h1>
+<div class="sub">{% trans "Supervisor or rent collector. Grant module access on the next screen." %}</div></div></div>
+<div class="card" style="max-width:820px">
+  <div class="body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% include "partials/_form.html" with form=form %}
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn primary" type="submit">{% trans "Save and set access" %}</button>
+        <a class="btn" href="{% url 'accounts:staff_list' %}">{% trans "Cancel" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

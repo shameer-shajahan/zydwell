@@ -1,0 +1,60 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Daily collection" %}{% endblock %}
+{% block topbar_title %}{% trans "Daily cash collection" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Daily cash collection" %}</h1>
+<div class="sub">{% trans "What each collector took in, and the handover to the owner." %}</div></div></div>
+<form method="get" class="toolbar">
+  <div class="field"><label>{% trans "From" %}</label><input type="date" name="from" value="{{ start|date:'Y-m-d' }}"></div>
+  <div class="field"><label>{% trans "To" %}</label><input type="date" name="to" value="{{ end|date:'Y-m-d' }}"></div>
+  {% if is_admin %}
+  <div class="field"><label>{% trans "Collector" %}</label><select name="staff">
+    <option value="">{% trans "Everyone" %}</option>
+    {% for u in staff_list %}<option value="{{ u.pk }}" {% if staff and staff.pk == u.pk %}selected{% endif %}>{{ u.display_name }}</option>{% endfor %}
+  </select></div>{% endif %}
+  <button class="btn primary" type="submit">{% trans "Apply" %}</button>
+</form>
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi teal"><div class="label">{% trans "Total collected" %}</div><div class="value">{{ currency }} {{ summary.total|floatformat:2 }}</div></div>
+  <div class="kpi navy"><div class="label">{% trans "Cash in hand" %}</div><div class="value">{{ currency }} {{ summary.cash|floatformat:2 }}</div></div>
+  <div class="kpi slate"><div class="label">{% trans "Receipts" %}</div><div class="value">{{ summary.count }}</div></div>
+  <div class="kpi amber"><div class="label">{% trans "Collector" %}</div><div class="value" style="font-size:16px;line-height:1.4">{{ staff.display_name|default:_("Everyone") }}</div></div>
+</div>
+<div class="grid split">
+  <div class="card"><header><h2>{% trans "Receipts in range" %}</h2></header>
+    <div class="body tight"><div class="table-wrap"><table class="data">
+      <thead><tr><th>{% trans "Receipt" %}</th><th>{% trans "Guest" %}</th><th>{% trans "Mode" %}</th><th>{% trans "By" %}</th><th class="num">{% trans "Amount" %}</th></tr></thead>
+      <tbody>{% for p in summary.payments %}
+        <tr><td class="mono">{{ p.receipt_number }}</td><td>{{ p.tenancy.guest.full_name }}</td>
+          <td>{{ p.mode|default:"—" }}</td><td>{{ p.collected_by_name|default:"—" }}</td>
+          <td class="num">{{ currency }} {{ p.amount|floatformat:2 }}</td></tr>
+      {% empty %}<tr><td colspan="5">{% include "partials/_empty.html" %}</td></tr>{% endfor %}</tbody>
+    </table></div></div>
+  </div>
+  <div>
+    <div class="card"><header><h3>{% trans "Declare cash handover" %}</h3></header>
+      <div class="body">
+        <p class="muted" style="font-size:12.5px">{% trans "Expected cash" %}: <strong>{{ currency }} {{ summary.cash|floatformat:2 }}</strong></p>
+        <form method="post">{% csrf_token %}
+          {% include "partials/_form.html" with form=form one_column=1 %}
+          <button class="btn primary" type="submit" style="margin-top:12px">{% trans "Declare handover" %}</button>
+        </form>
+      </div>
+    </div>
+    {% if is_admin %}
+    <div class="card"><header><h3>{% trans "Awaiting your confirmation" %}</h3></header>
+      <div class="body tight"><table class="data"><tbody>
+        {% for h in pending %}
+          <tr><td>{{ h.staff.display_name }}<div class="muted" style="font-size:11px">{{ h.handover_date|date:"d M Y" }}
+              · {% trans "expected" %} {{ h.expected_amount|floatformat:2 }}</div></td>
+            <td class="num">{{ currency }} {{ h.declared_amount|floatformat:2 }}
+              {% if h.variance %}<div class="badge soft-red">{{ h.variance|floatformat:2 }}</div>{% endif %}</td>
+            <td class="right"><form method="post" action="{% url 'billing:handover_confirm' h.pk %}">{% csrf_token %}
+              <button class="btn sm primary" type="submit">{% trans "Confirm" %}</button></form></td></tr>
+        {% empty %}<tr><td class="muted" style="padding:16px">{% trans "Nothing pending." %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
