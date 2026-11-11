@@ -252,7 +252,10 @@ img, svg, video { max-width: 100%; }
   font-size: 12.5px; font-weight: 590; max-width: 190px; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap;
 }
-.content { padding: 18px 20px 40px; max-width: 1360px; width: 100%; }
+.content {
+  padding: 18px clamp(20px, 2vw, 36px) 40px;
+  width: 100%; max-width: 1680px; margin-inline: auto;
+}
 
 /* Icon buttons in the nav bar (menu, theme) */
 .icon-btn {
@@ -812,7 +815,7 @@ pre.receipt { font-family: var(--mono); font-size: 12px; line-height: 1.5; backg
   .toolbar .seg a { flex: 1; text-align: center; }
   .toolbar > .btn { flex: 1 1 auto; }
 
-  .grid.k3, .grid.k2 { grid-template-columns: 1fr; }
+  .grid.k3 { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   /* Bottom tab bar */
   .tabbar {
@@ -834,6 +837,7 @@ pre.receipt { font-family: var(--mono); font-size: 12px; line-height: 1.5; backg
 /* --- Phone: tables become stacked cards --- */
 @media (max-width: 680px) {
   .grid.k6, .grid.k4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.k2 { grid-template-columns: 1fr; }
   .kpi { padding: 12px 13px 13px; }
   .kpi .value { font-size: 21px; }
   .kpi .label { font-size: 11.5px; }
@@ -884,6 +888,19 @@ pre.receipt { font-family: var(--mono); font-size: 12px; line-height: 1.5; backg
   .grid.k6, .grid.k4 { grid-template-columns: 1fr; }
   .page-head h1 { font-size: 22px; }
   .bed-tile { width: 62px; }
+}
+
+/* Give wide workstations more room while keeping line lengths controlled. */
+@media (min-width: 1600px) {
+  .content { max-width: 1840px; padding: 28px clamp(32px, 2.5vw, 56px) 48px; }
+  .grid { gap: 18px; }
+  .card .body { padding: 20px 22px; }
+  .card > header { padding: 16px 22px 14px; }
+}
+
+@media (min-width: 2200px) {
+  .content { max-width: 2040px; }
+  .sidebar { width: 280px; flex-basis: 280px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
