@@ -79,32 +79,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'zydwell.wsgi.application'
 
-if os.environ.get('DATABASE_URL'):
-    DATABASES = {
-        'default': dj_database_url.parse(
-            os.environ['DATABASE_URL'],
-            conn_max_age=600,
-            ssl_require=not DEBUG,
-        )
-    }
-elif os.environ.get('ZYDWELL_DB_ENGINE') == 'postgres':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('ZYDWELL_DB_NAME', 'zydwell'),
-            'USER': os.environ.get('ZYDWELL_DB_USER', 'zydwell'),
-            'PASSWORD': os.environ.get('ZYDWELL_DB_PASSWORD', ''),
-            'HOST': os.environ.get('ZYDWELL_DB_HOST', 'localhost'),
-            'PORT': os.environ.get('ZYDWELL_DB_PORT', '5432'),
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get(
+            'DATABASE_URL',
+            f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        ),
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=bool(os.environ.get('DATABASE_URL')),
+    )
+}
 
 AUTH_USER_MODEL = 'accounts.User'
 AUTH_PASSWORD_VALIDATORS = [
