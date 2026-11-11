@@ -11,3 +11,6 @@ db.sqlite3.*
 tests/js/node_modules/
 tests/js/package-lock.json
 .npm-cache/
+gunicorn
+dj-database-url
+psycopg2-binary
