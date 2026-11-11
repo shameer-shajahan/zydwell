@@ -1,12 +1,21 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import include, path
 
 from billing import views as billing_views
 from guests import views as guest_views
 
+
+def health_check(request):
+    return HttpResponse('ok')
+
+
 urlpatterns = [
+    # Render's existing service health check is configured to request /zydwell.
+    # Keep this unauthenticated and lightweight so deployment checks can pass.
+    path('zydwell', health_check, name='health_check'),
     path('django-admin/', admin.site.urls),
     path('i18n/', include('django.conf.urls.i18n')),
     path('', include('reports.urls', namespace='reports')),
