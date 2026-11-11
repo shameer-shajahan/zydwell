@@ -10,6 +10,10 @@
     <a class="btn primary" href="{% url 'platform:switch_tenant' tenant_obj.pk %}">{% trans "Open account" %}</a>
     <a class="btn" href="{% url 'platform:tenant_edit' tenant_obj.pk %}">{% trans "Edit" %}</a>
     <a class="btn" href="{% url 'platform:tenant_integrations' tenant_obj.pk %}">{% trans "Keys" %}</a>
+    <form method="post" action="{% url 'platform:tenant_delete' tenant_obj.pk %}" style="display:inline"
+      data-confirm="{% trans 'Permanently delete this company and all its data? This cannot be undone.' %}">{% csrf_token %}
+      <button class="btn danger" type="submit">{% trans "Delete company" %}</button>
+    </form>
     <form method="post" action="{% url 'platform:tenant_status' tenant_obj.pk %}" style="display:inline">{% csrf_token %}
       <select name="status" data-autosubmit style="width:auto;padding:7px 10px">
         <option value="active" {% if tenant_obj.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>

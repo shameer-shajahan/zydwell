@@ -10,6 +10,7 @@ urlpatterns = [
     path('clients/<int:pk>/', views.tenant_detail, name='tenant_detail'),
     path('clients/<int:pk>/edit/', views.tenant_form, name='tenant_edit'),
     path('clients/<int:pk>/status/', views.tenant_status, name='tenant_status'),
+    path('clients/<int:pk>/delete/', views.tenant_delete, name='tenant_delete'),
     path('clients/<int:pk>/keys/', views.tenant_integrations,
          name='tenant_integrations'),
     path('clients/<int:pk>/open/', views.switch_tenant, name='switch_tenant'),

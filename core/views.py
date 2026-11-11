@@ -1,6 +1,8 @@
 """Platform console — the super admin tier that sits above every client admin."""
 from django.contrib import messages
 from django.contrib.auth import login
+from django.apps import apps
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -194,6 +196,34 @@ def tenant_status(request, pk):
                       changes={'status': [before, new_status]})
             messages.success(request, _('Client status updated.'))
     return redirect('platform:tenant_detail', pk=tenant.pk)
+
+
+@super_admin_required
+def tenant_delete(request, pk):
+    if request.method != 'POST':
+        return redirect('platform:tenant_detail', pk=pk)
+
+    tenant = get_object_or_404(Tenant, pk=pk)
+    name = tenant.name
+    from accounts.models import User
+    from .management.commands.reset_data import WIPE_ORDER
+
+    # Follow the same child-first order used by reset_data so protected billing,
+    # tenancy and property records are removed safely for this company only.
+    with transaction.atomic():
+        for app_label, model_name, _filters in WIPE_ORDER:
+            model = apps.get_model(app_label, model_name)
+            model.objects.filter(tenant=tenant).delete()
+        User.objects.filter(tenant=tenant).delete()
+
+        # Keep a platform audit record after the tenant's own data is gone.
+        audit.log(AuditLog.ACTION_DELETE, tenant, tenant=tenant,
+                  summary=_('Client %(n)s deleted') % {'n': name})
+        tenant.delete()
+    if request.session.get('active_tenant_id') == pk:
+        request.session.pop('active_tenant_id', None)
+    messages.success(request, _('Client %(n)s and its data were deleted.') % {'n': name})
+    return redirect('platform:tenant_list')
 
 
 @super_admin_required
