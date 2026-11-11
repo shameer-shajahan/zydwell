@@ -40,9 +40,11 @@ urlpatterns = [
     path('messaging/', include('messaging.urls', namespace='messaging')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# User uploads (logos, guest photos and documents) are stored under MEDIA_ROOT.
+# Unlike collected static assets, they need a runtime route in production too.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
+if settings.DEBUG:
     # Error pages only render when DEBUG is off, which makes them awkward to
     # work on. These previews exist in development only.
     from django.shortcuts import render
