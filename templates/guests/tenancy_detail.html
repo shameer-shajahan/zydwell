@@ -11,6 +11,7 @@
   <div class="actions">
     <a class="btn" href="{% url 'messaging:send_manual' %}?guest={{ tenancy.guest_id }}">{% trans "WhatsApp" %}</a>
     {% if can_bill %}<a class="btn accent" href="{% url 'billing:payment_create' %}?tenancy={{ tenancy.pk }}&amp;{% return_here %}">{% trans "Collect rent" %}</a>
+      {% if tenancy.is_live %}<a class="btn" href="{% url 'billing:collect_advance' tenancy.pk %}?{% return_here %}">{% trans "Collect in advance" %}</a>{% endif %}
       <a class="btn" href="{% url 'billing:invoice_create' %}?tenancy={{ tenancy.pk }}&amp;{% return_here %}">{% trans "Raise invoice" %}</a>{% endif %}
     {% if can_edit and tenancy.is_live %}
       <a class="btn" href="{% url 'guests:transfer' tenancy.pk %}">{% trans "Transfer bed" %}</a>

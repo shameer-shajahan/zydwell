@@ -117,6 +117,53 @@ class PaymentForm(forms.ModelForm):
         return data
 
 
+class AdvancePaymentForm(forms.ModelForm):
+    """Rent for the next period, taken before it falls due.
+
+    The guest and the period are fixed by the page; only the money is asked for.
+    """
+
+    class Meta:
+        model = Payment
+        fields = ['amount', 'mode', 'reference', 'cheque_due_date', 'paid_on', 'note']
+        widgets = {
+            'paid_on': forms.DateInput(attrs={'type': 'date'}),
+            'cheque_due_date': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+    def __init__(self, *args, tenant=None, rent=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rent = rent
+        self.fields['amount'].initial = rent
+        self.fields['amount'].help_text = _('Less than the full rent leaves the rest owing.')
+        self.fields['paid_on'].initial = timezone.localdate()
+        self.fields['mode'].queryset = PaymentMode.objects.filter(
+            tenant=tenant, is_active=True)
+        self.fields['mode'].empty_label = None
+        default = PaymentMode.by_code(tenant, 'cash') or PaymentMode.default_for(tenant)
+        if default:
+            self.fields['mode'].initial = default.pk
+
+    def clean(self):
+        data = super().clean()
+        mode = data.get('mode')
+        if mode and mode.needs_reference and not data.get('reference'):
+            self.add_error('reference', _('Add the %(mode)s reference.') % {
+                'mode': mode.name.lower()})
+        if mode and mode.needs_due_date and not data.get('cheque_due_date'):
+            self.add_error('cheque_due_date', _('Record when it falls due.'))
+        if mode and mode.settles_from_credit:
+            self.add_error('mode', _('Use “Apply credit” on the invoice to spend advance credit.'))
+        amount = data.get('amount')
+        if amount is not None and amount <= 0:
+            self.add_error('amount', _('Enter an amount greater than zero.'))
+        elif amount is not None and self.rent is not None and amount > self.rent:
+            self.add_error('amount', _(
+                'That is more than the %(rent)s rent for this period. '
+                'Collect the following period separately.') % {'rent': self.rent})
+        return data
+
+
 class PaymentEditForm(forms.ModelForm):
     """Admin correction of a receipt already collected. Guest and invoice stay put."""
 

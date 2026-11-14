@@ -62,6 +62,98 @@ def build_invoice(tenancy, *, period_start, period_end, due_date=None, user=None
     return invoice
 
 
+def period_terms(tenancy, period_start, period_end):
+    """How one billing period is charged: the dates, due date and rent rules.
+
+    Shared by the nightly run and advance collection so a period collected
+    early is billed exactly as the nightly job would have billed it.
+    """
+    effective_start, effective_end = period_start, period_end
+    part_period = False
+    if tenancy.check_in_date > period_start:
+        effective_start = tenancy.check_in_date
+        part_period = True
+    if tenancy.expected_check_out and tenancy.expected_check_out < period_end:
+        effective_end = tenancy.expected_check_out
+        part_period = True
+
+    # A part period is only charged pro-rata when the tenancy says so; some
+    # agreements take the whole month's rent whatever day they arrived.
+    prorata = part_period and tenancy.prorate_first_period
+
+    rent_amount = None
+    if tenancy.first_invoice_amount is not None and \
+            not Invoice.objects.filter(tenancy=tenancy).exists():
+        rent_amount = tenancy.first_invoice_amount
+
+    return {
+        'period_start': effective_start,
+        'period_end': effective_end,
+        'due_date': tenancy.due_date_for(effective_start, period_end),
+        'rent_amount': rent_amount,
+        'prorata': prorata,
+        'period_days': tenancy.period_length(period_start),
+    }
+
+
+def rent_for_terms(tenancy, terms):
+    """The rent ``build_invoice`` would charge for ``period_terms`` output."""
+    if terms['rent_amount'] is not None:
+        amount = Decimal(terms['rent_amount'])
+    elif terms['prorata']:
+        days = (terms['period_end'] - terms['period_start']).days + 1
+        amount = tenancy.prorata(days, period_days=terms['period_days'])
+    else:
+        amount = tenancy.monthly_rent
+    return Decimal(amount).quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+
+
+def next_unbilled_period(tenancy):
+    """The ``period_terms`` for the first period not yet invoiced, or ``None``.
+
+    That is the period after the latest one already billed, or the period the
+    stay starts in when nothing is billed yet. ``None`` once the stay has
+    ended, or will have ended, before that period opens.
+    """
+    from django.db.models import Max
+
+    last_end = Invoice.objects.filter(tenancy=tenancy).aggregate(
+        last=Max('period_end'))['last']
+    anchor = last_end + timezone.timedelta(days=1) if last_end else tenancy.check_in_date
+    period_start, period_end = tenancy.period_for(anchor)
+    # A hand-made invoice can end mid-period. The nightly run treats any overlap
+    # as already billed, so move on to the first period nothing touches.
+    while Invoice.objects.filter(tenancy=tenancy, period_start__lte=period_end,
+                                 period_end__gte=period_start).exists():
+        period_start, period_end = tenancy.period_for(period_end + timezone.timedelta(days=1))
+    for leaving in (tenancy.actual_check_out, tenancy.expected_check_out):
+        if leaving and period_start > leaving:
+            return None
+    return period_terms(tenancy, period_start, period_end)
+
+
+@transaction.atomic
+def collect_in_advance(*, tenant, user, tenancy, amount, mode=None, reference='',
+                       paid_on=None, note='', cheque_due_date=None):
+    """Raise the next unbilled period's invoice now and take payment against it.
+
+    The nightly run later finds the period already invoiced and skips it, so
+    the guest is never billed twice. Returns ``(invoice, payment)``.
+    """
+    terms = next_unbilled_period(tenancy)
+    if terms is None:
+        raise ValueError('Nothing left to bill for this stay.')
+    invoice = build_invoice(
+        tenancy, user=user,
+        notes=_('Raised early to collect rent in advance.'), **terms)
+    payment = record_payment(
+        tenant=tenant, user=user, tenancy=tenancy, invoice=invoice, amount=amount,
+        mode=mode, reference=reference, paid_on=paid_on, note=note,
+        cheque_due_date=cheque_due_date,
+    )
+    return invoice, payment
+
+
 @transaction.atomic
 def generate_due_invoices(tenant, on_date=None, user=None):
     """Raise the invoices that fall due today for every live tenancy.
@@ -88,35 +180,8 @@ def generate_due_invoices(tenant, on_date=None, user=None):
         ).exists():
             continue
 
-        effective_start = period_start
-        effective_end = period_end
-        part_period = False
-        if tenancy.check_in_date > period_start:
-            effective_start = tenancy.check_in_date
-            part_period = True
-        if tenancy.expected_check_out and tenancy.expected_check_out < period_end:
-            effective_end = tenancy.expected_check_out
-            part_period = True
-
-        # A part period is only charged pro-rata when the tenancy says so; some
-        # agreements take the whole month's rent whatever day they arrived.
-        prorata = part_period and tenancy.prorate_first_period
-
-        rent_amount = None
-        if tenancy.first_invoice_amount is not None and \
-                not Invoice.objects.filter(tenancy=tenancy).exists():
-            rent_amount = tenancy.first_invoice_amount
-
         created.append(build_invoice(
-            tenancy,
-            period_start=effective_start,
-            period_end=effective_end,
-            due_date=tenancy.due_date_for(effective_start, period_end),
-            user=user,
-            rent_amount=rent_amount,
-            prorata=prorata,
-            period_days=tenancy.period_length(period_start),
-        ))
+            tenancy, user=user, **period_terms(tenancy, period_start, period_end)))
     return created
 
 

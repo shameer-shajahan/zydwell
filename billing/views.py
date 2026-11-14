@@ -21,7 +21,7 @@ from guests.services import with_deposit_held
 
 from . import receipts, services, sharing
 from .forms import (
-    InvoiceEditForm, PaymentEditForm,
+    AdvancePaymentForm, InvoiceEditForm, PaymentEditForm,
     DiscountForm, HandoverForm, InvoiceForm, LateFeeRuleForm, PaymentForm,
     PaymentModeForm, PrinterForm, RejectionForm, ReversalForm,
 )
@@ -252,6 +252,49 @@ def payment_create(request):
             return redirect('billing:receipt', pk=payment.pk)
         return redirect_back(request, 'billing:payment_detail', pk=payment.pk, made=payment)
     return render(request, 'billing/payment_form.html', {'form': form})
+
+
+@require_module(MODULE_BILLING, 'create')
+def collect_advance(request, tenancy_pk):
+    """Take the next period's rent before it falls due.
+
+    Raises that period's invoice now and records the payment against it, so the
+    receipt names the month paid for and the nightly run does not bill it again.
+    """
+    tenancy = get_object_or_404(
+        request.user.scope_queryset(
+            Tenancy.objects.filter(tenant=request.tenant).select_related('guest')),
+        pk=tenancy_pk)
+    terms = services.next_unbilled_period(tenancy) if tenancy.is_live else None
+    if terms is None:
+        messages.info(request, _('%(guest)s has no further rent to collect for this stay.') % {
+            'guest': tenancy.guest.full_name})
+        return redirect_back(request, 'guests:tenancy_detail', pk=tenancy.pk)
+    rent = services.rent_for_terms(tenancy, terms)
+    form = AdvancePaymentForm(request.POST or None, tenant=request.tenant, rent=rent)
+    if request.method == 'POST' and form.is_valid():
+        data = form.cleaned_data
+        invoice, payment = services.collect_in_advance(
+            tenant=request.tenant, user=request.user, tenancy=tenancy,
+            amount=data['amount'], mode=data['mode'], reference=data['reference'],
+            paid_on=data['paid_on'], note=data['note'],
+            cheque_due_date=data['cheque_due_date'],
+        )
+        if payment.awaits_approval:
+            messages.success(request, _(
+                'Receipt %(no)s recorded for %(period)s. It is waiting for the owner to '
+                'approve it.') % {'no': payment.receipt_number,
+                                  'period': invoice.period_label()})
+        else:
+            messages.success(request, _('Receipt %(no)s recorded for %(period)s.') % {
+                'no': payment.receipt_number, 'period': invoice.period_label()})
+        if request.POST.get('and_print'):
+            return redirect('billing:receipt', pk=payment.pk)
+        return redirect_back(request, 'guests:tenancy_detail', pk=tenancy.pk, made=payment)
+    return render(request, 'billing/advance_form.html', {
+        'form': form, 'tenancy': tenancy, 'terms': terms, 'rent': rent,
+        'outstanding': tenancy.outstanding(),
+    })
 
 
 @require_module(MODULE_BILLING)

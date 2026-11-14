@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% trans "Collect rent in advance" %}{% endblock %}
+{% block topbar_title %}{% trans "Collect in advance" %}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="{% url 'guests:tenancy_detail' tenancy.pk %}">{{ tenancy.guest.full_name }}</a> <span>/</span> <span>{% trans "Collect in advance" %}</span></div>
+<div class="page-head"><div><h1>{% trans "Collect rent in advance" %}</h1>
+<div class="sub">{{ tenancy.guest.full_name }} · {{ tenancy.location_label }}</div></div></div>
+
+{% if outstanding > 0 %}
+<div class="banner">{% blocktrans with amount=outstanding|floatformat:2 %}{{ currency }} {{ amount }} is still owed on earlier invoices. This payment goes to the next period only.{% endblocktrans %}</div>
+{% endif %}
+
+<div class="card" style="max-width:820px;margin-bottom:16px">
+  <header><h2>{% trans "Next period" %}</h2></header>
+  <div class="body tight"><div class="table-wrap">
+  <table class="data"><tbody>
+    <tr><td>{% trans "Period" %}</td><td class="num">{{ terms.period_start|date:"d M Y" }} – {{ terms.period_end|date:"d M Y" }}</td></tr>
+    <tr><td>{% trans "Falls due" %}</td><td class="num">{{ terms.due_date|date:"d M Y" }}</td></tr>
+    <tr><td>{% trans "Rent" %}{% if terms.prorata %} <span class="badge soft-slate">{% trans "pro-rata" %}</span>{% endif %}</td>
+      <td class="num"><strong>{{ currency }} {{ rent|floatformat:2 }}</strong></td></tr>
+  </tbody></table>
+  </div></div>
+</div>
+
+<div class="card" style="max-width:820px"><div class="body">
+  <form method="post">{% csrf_token %}
+    {% include "partials/_form.html" with form=form wide_fields="note" %}
+    <div class="help" style="margin-top:10px">{% trans "The invoice for this period is raised now, so the receipt names the month paid for and it is not billed again when it falls due." %}</div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn primary" type="submit">{% trans "Save receipt" %}</button>
+      <button class="btn accent" type="submit" name="and_print" value="1">{% trans "Save and print" %}</button>
+      <a class="btn" href="{% back_or 'guests:tenancy_list' %}">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}
