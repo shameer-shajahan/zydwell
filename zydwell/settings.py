@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'accounts',
     'properties',
     'guests',
+    'teams',
     'billing',
     'accounting',
     'messaging',

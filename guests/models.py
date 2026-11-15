@@ -35,6 +35,12 @@ class Guest(TenantScopedModel):
     notes = models.TextField(blank=True)
     is_blacklisted = models.BooleanField(default=False)
     blacklist_reason = models.CharField(max_length=200, blank=True)
+    # A company that takes whole flats for its workers (see teams.TeamLet).
+    # It is billed and receipted exactly like a guest; ``mobile`` is the
+    # collector's number and ``contact_person`` the collector's name.
+    is_company = models.BooleanField(_('company'), default=False)
+    contact_person = models.CharField(_('contact person (collector)'), max_length=150,
+                                      blank=True)
 
     class Meta:
         ordering = ['full_name']
@@ -218,7 +224,10 @@ class Tenancy(TenantScopedModel):
         Bed, on_delete=models.PROTECT, null=True, blank=True, related_name='tenancies',
         help_text=_('Empty when the whole room or flat is let.'),
     )
-    room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name='tenancies')
+    room = models.ForeignKey(
+        Room, on_delete=models.PROTECT, related_name='tenancies', null=True, blank=True,
+        help_text=_('Empty only for a team let, which takes a whole apartment.'),
+    )
     apartment = models.ForeignKey(
         'properties.Apartment', on_delete=models.PROTECT, related_name='tenancies',
         null=True, blank=True,
@@ -281,10 +290,38 @@ class Tenancy(TenantScopedModel):
         where = [self.building.name, self.floor.name]
         if self.apartment_id:
             where.append(self.apartment.name)
-        where.append(self.room.number)
+        if self.room_id:
+            where.append(self.room.number)
         if self.bed_id:
             where.append(self.bed.label)
-        return ' / '.join(where)
+        label = ' / '.join(where)
+        if self.is_team_let:
+            label = f'{label} · {_("Team")} {self.team_title}'
+        return label
+
+    def unit_label(self):
+        """The room (and bed) on a receipt, or the flat for a team let."""
+        if not self.room_id:
+            return f'{_("Flat")} {self.apartment.name}' if self.apartment_id else ''
+        if self.bed_id:
+            return f'{self.room.number} · {_("bed")} {self.bed.label}'
+        return self.room.number
+
+    @property
+    def is_team_let(self):
+        """A team let is the only kind of stay without a room: it takes the flat."""
+        return self.room_id is None
+
+    @property
+    def team_title(self):
+        """The team's name, from a TeamLet or from a plain Tenancy row of one."""
+        if not self.is_team_let:
+            return ''
+        name = self.__dict__.get('team_name')
+        if name is None:
+            team = getattr(self, 'teamlet', None)
+            name = team.team_name if team else ''
+        return name
 
     @property
     def is_live(self):
@@ -330,6 +367,8 @@ class Tenancy(TenantScopedModel):
 
     def clean(self):
         super().clean()
+        if not self.room_id and not self.apartment_id:
+            raise ValidationError({'room': _('Pick a room.')})
         if self.bed_id and self.room_id and self.bed.room_id != self.room_id:
             raise ValidationError({'bed': _('That bed is not in the selected room.')})
         if self.expected_check_out and self.expected_check_out < self.check_in_date:
@@ -349,8 +388,9 @@ class Tenancy(TenantScopedModel):
     def save(self, *args, **kwargs):
         if self.room_id:
             self.apartment = self.room.apartment
-            self.floor = self.room.apartment.floor
-            self.building = self.room.apartment.floor.building
+        if self.apartment_id:
+            self.floor = self.apartment.floor
+            self.building = self.apartment.floor.building
         if self.status_id is None and self.tenant_id:
             self.status = Status.by_code(self.tenant, Status.KIND_TENANCY, 'active') \
                 or Status.default_for(self.tenant, Status.KIND_TENANCY)
