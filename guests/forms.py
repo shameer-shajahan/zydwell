@@ -142,14 +142,75 @@ class CheckOutForm(forms.Form):
                                        required=False, initial=Decimal('0'))
     note = forms.CharField(label=_('Note'), required=False, max_length=200)
 
-    def __init__(self, *args, tenancy=None, **kwargs):
+    # Rent for the part period they stayed. Only offered to someone who may
+    # bill; without that right check-out leaves the invoices alone.
+    FINAL_KEEP, FINAL_PRORATA, FINAL_CUSTOM = 'keep', 'prorata', 'custom'
+    RENT_FIELDS = ['final_charge', 'final_amount', 'collect_amount', 'collect_mode',
+                   'collect_reference']
+    final_charge = forms.ChoiceField(
+        label=_('Rent for the final period'),
+        choices=[
+            (FINAL_KEEP, _('No change — leave it as already billed')),
+            (FINAL_PRORATA, _('Only the days stayed')),
+            (FINAL_CUSTOM, _('A set amount we agreed')),
+        ],
+        initial=FINAL_KEEP, required=False,
+    )
+    final_amount = forms.DecimalField(
+        label=_('Amount agreed for the final period'), max_digits=10, decimal_places=2,
+        required=False, min_value=Decimal('0'),
+        help_text=_('Only used when "a set amount" is chosen above.'),
+    )
+    collect_amount = forms.DecimalField(
+        label=_('Collect now'), max_digits=10, decimal_places=2, required=False,
+        min_value=Decimal('0'),
+        help_text=_('Rent taken for the final period. Leave empty to collect nothing.'),
+    )
+    collect_mode = forms.ModelChoiceField(label=_('Paid by'), queryset=None, required=False)
+    collect_reference = forms.CharField(label=_('Payment reference'), required=False,
+                                        max_length=80)
+
+    def __init__(self, *args, tenancy=None, can_bill=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.tenancy = tenancy
+        self.can_bill = can_bill
+        self.final = None
         if tenancy is not None:
             self.fields['refund_amount'].initial = tenancy.deposit_held()
+        if not can_bill or tenancy is None:
+            for name in self.RENT_FIELDS:
+                del self.fields[name]
+            return
+        from billing.models import PaymentMode
+
+        # A post-dated cheque or spending advance credit needs the full payment
+        # screen; at the door it is money in hand.
+        modes = PaymentMode.objects.filter(
+            tenant=tenancy.tenant, is_active=True, needs_due_date=False,
+            settles_from_credit=False)
+        self.fields['collect_mode'].queryset = modes
+        self.fields['collect_mode'].empty_label = None
+        default = modes.filter(code='cash').first() or modes.first()
+        if default:
+            self.fields['collect_mode'].initial = default.pk
+
+    def rent_fields(self):
+        return [self[name] for name in self.RENT_FIELDS if name in self.fields]
+
+    def date_fields(self):
+        return [self['check_out_date']]
+
+    def deposit_fields(self):
+        return [self[name] for name in self.fields
+                if name not in self.RENT_FIELDS and name != 'check_out_date']
 
     def clean(self):
         data = super().clean()
+        leaving = data.get('check_out_date')
+        if self.tenancy and leaving and leaving < self.tenancy.check_in_date:
+            self.add_error('check_out_date', _('Check-out cannot be before check-in.'))
+        elif self.can_bill and leaving:
+            self._clean_final_rent(data, leaving)
         held = self.tenancy.deposit_held() if self.tenancy else Decimal('0')
         total_out = (data.get('deduction_amount') or Decimal('0')) + \
                     (data.get('refund_amount') or Decimal('0'))
@@ -160,6 +221,58 @@ class CheckOutForm(forms.Form):
         if data.get('deduction_amount') and not data.get('deduction_reason'):
             self.add_error('deduction_reason', _('Give a reason for the deduction.'))
         return data
+
+    def _clean_final_rent(self, data, leaving):
+        from billing import services as billing
+
+        final = self.final = billing.final_period(self.tenancy, leaving)
+        invoice = final['invoice']
+        choice = data.get('final_charge') or self.FINAL_KEEP
+        rent = None
+        if choice == self.FINAL_PRORATA:
+            rent = final['prorata_rent']
+        elif choice == self.FINAL_CUSTOM:
+            rent = data.get('final_amount')
+            if rent is None:
+                self.add_error('final_amount', _('Enter the amount you agreed with the guest.'))
+                return
+        if rent is not None and final['clash']:
+            self.add_error('final_charge', _(
+                'More than one invoice covers this period. Correct them on the invoice '
+                'pages, then choose "No change".'))
+            return
+        if rent is not None and invoice is not None:
+            floor = billing.final_invoice_floor(invoice)
+            if rent < floor:
+                self.add_error('final_amount' if choice == self.FINAL_CUSTOM
+                               else 'final_charge', _(
+                    '%(paid)s has already been paid for this period, so the rent cannot '
+                    'go below %(floor)s. Refund any difference from the deposit.') % {
+                    'paid': invoice.paid_amount, 'floor': floor})
+                return
+        data['final_rent'] = rent
+
+        collect = data.get('collect_amount') or Decimal('0')
+        if collect <= 0:
+            return
+        if rent is None:
+            balance = invoice.balance if invoice is not None else Decimal('0')
+        else:
+            others = (invoice.extras_total + invoice.late_fee - invoice.discount_amount
+                      - invoice.paid_amount) if invoice is not None else Decimal('0')
+            balance = rent + others
+        if balance <= 0:
+            self.add_error('collect_amount', _(
+                'Nothing is owed for the final period. Choose how much to charge above.'))
+        elif collect > balance:
+            self.add_error('collect_amount', _(
+                'That is more than the %(bal)s owed for the final period.') % {'bal': balance})
+        mode = data.get('collect_mode')
+        if mode is None:
+            self.add_error('collect_mode', _('Pick how the guest paid.'))
+        elif mode.needs_reference and not data.get('collect_reference'):
+            self.add_error('collect_reference', _('Add the %(mode)s reference.') % {
+                'mode': mode.name.lower()})
 
 
 class TransferForm(forms.Form):

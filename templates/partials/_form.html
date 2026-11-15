@@ -1,7 +1,7 @@
 {% load i18n %}
-{% if form.non_field_errors %}<div class="flash error">{{ form.non_field_errors }}</div>{% endif %}
+{% if form and form.non_field_errors %}<div class="flash error">{{ form.non_field_errors }}</div>{% endif %}
 <div class="form-grid{% if one_column %} one{% endif %}">
-  {% for field in form %}
+  {% for field in fields|default:form %}
     <div class="field {% if field.field.widget.input_type == 'checkbox' %}{% endif %}{% if field.name in wide_fields %} wide{% endif %}">
       {% if field.field.widget.input_type == 'checkbox' %}
         <label class="checkline">{{ field }} <span>{{ field.label }}</span></label>

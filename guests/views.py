@@ -3,11 +3,13 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Count, Prefetch, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.utils.translation import gettext as _
 
 from core import audit
@@ -302,24 +304,72 @@ def _raise_first_invoice(request, tenancy):
 @require_module(MODULE_GUESTS, 'edit')
 def check_out(request, pk):
     tenancy = get_object_or_404(_scoped_tenancies(request), pk=pk)
-    form = CheckOutForm(request.POST or None, tenancy=tenancy)
+    if not tenancy.is_live:
+        messages.info(request, _('%(name)s has already checked out.') % {
+            'name': tenancy.guest.full_name})
+        return redirect('guests:tenancy_detail', pk=tenancy.pk)
+    can_bill = request.user.can(MODULE_BILLING, 'create')
+    initial = {}
+    try:
+        picked = parse_date(request.GET.get('date') or '')
+    except ValueError:
+        picked = None
+    if picked:
+        initial['check_out_date'] = picked
+    form = CheckOutForm(request.POST or None, tenancy=tenancy, can_bill=can_bill,
+                        initial=initial)
+    if can_bill and not form.is_bound:
+        # The final-rent figures follow the date, so a new date reloads them.
+        form.fields['check_out_date'].widget.attrs['data-reload-with'] = 'date'
     if request.method == 'POST' and form.is_valid():
+        from billing import services as billing
+
         data = form.cleaned_data
         deductions = []
         if data.get('deduction_amount'):
             deductions.append({'amount': data['deduction_amount'],
                                'reason': data['deduction_reason']})
-        services.check_out(
-            tenancy=tenancy, user=request.user, check_out_date=data['check_out_date'],
-            deductions=deductions, refund_amount=data.get('refund_amount') or Decimal('0'),
-            note=data.get('note', ''),
-        )
+        payment = None
+        with transaction.atomic():
+            if can_bill:
+                _invoice, payment = billing.settle_final_period(
+                    tenant=request.tenant, user=request.user, tenancy=tenancy,
+                    leaving_on=data['check_out_date'], rent_amount=data.get('final_rent'),
+                    collect_amount=data.get('collect_amount'), mode=data.get('collect_mode'),
+                    reference=data.get('collect_reference') or '',
+                    note=_('Final rent on check-out'),
+                )
+            services.check_out(
+                tenancy=tenancy, user=request.user, check_out_date=data['check_out_date'],
+                deductions=deductions, refund_amount=data.get('refund_amount') or Decimal('0'),
+                note=data.get('note', ''),
+            )
         messages.success(request, _('%(name)s checked out.') % {'name': tenancy.guest.full_name})
+        if payment is not None:
+            if payment.awaits_approval:
+                messages.info(request, _(
+                    'Receipt %(no)s recorded for the final rent. It is waiting for the owner '
+                    'to approve it.') % {'no': payment.receipt_number})
+            else:
+                messages.info(request, _('Receipt %(no)s recorded for the final rent.') % {
+                    'no': payment.receipt_number})
+            if request.POST.get('and_print'):
+                return redirect('billing:receipt', pk=payment.pk)
         return redirect('guests:tenancy_detail', pk=tenancy.pk)
+
+    leaving = (form.cleaned_data.get('check_out_date') if form.is_bound
+               else picked) or timezone.localdate()
+    final = None
+    if can_bill and leaving >= tenancy.check_in_date:
+        from billing import services as billing
+
+        final = form.final or billing.final_period(tenancy, leaving)
     return render(request, 'guests/check_out.html', {
         'form': form, 'tenancy': tenancy,
         'deposit_held': tenancy.deposit_held(),
         'outstanding': tenancy.outstanding(),
+        'final': final,
+        'leaving': leaving,
     })
 
 

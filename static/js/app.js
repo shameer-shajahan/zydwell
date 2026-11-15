@@ -507,6 +507,16 @@
     (root || document).querySelectorAll('select').forEach(enhance);
   }
 
+  /* A field the figures on the page are worked out from, such as a check-out
+     date: reload with the new value so the server redoes the sums. */
+  document.addEventListener('change', function (event) {
+    var field = event.target.closest('[data-reload-with]');
+    if (!field || !field.value) { return; }
+    var url = new URL(window.location.href);
+    url.searchParams.set(field.getAttribute('data-reload-with'), field.value);
+    window.location.assign(url.toString());
+  });
+
   /* Auto-submitting filter bars, without inline javascript. */
   document.addEventListener('change', function (event) {
     var field = event.target.closest('[data-autosubmit]');

@@ -154,6 +154,115 @@ def collect_in_advance(*, tenant, user, tenancy, amount, mode=None, reference=''
     return invoice, payment
 
 
+def final_period(tenancy, leaving_on):
+    """What the last, part period of a stay looks like when leaving on ``leaving_on``.
+
+    The guest is charged from the start of the period that contains the
+    leaving day (or their check-in, if later) up to and including that day.
+    ``invoice`` is the one already raised for that period, if any, and
+    ``clash`` is set when more than one invoice touches it, which is too
+    tangled to settle automatically.
+    """
+    period_start, period_end = tenancy.period_for(leaving_on)
+    start = max(period_start, tenancy.check_in_date)
+    period_days = tenancy.period_length(period_start)
+    days = max((leaving_on - start).days + 1, 0)
+    touching = list(Invoice.objects.filter(
+        tenancy=tenancy, period_start__lte=period_end, period_end__gte=period_start,
+    ).order_by('period_start', 'pk'))
+    invoice = touching[0] if len(touching) == 1 else None
+    later = Invoice.objects.filter(tenancy=tenancy, period_start__gt=period_end)
+    return {
+        'period_start': start,
+        'period_end': leaving_on,
+        'full_period_end': period_end,
+        'period_days': period_days,
+        'days': days,
+        'prorata_rent': tenancy.prorata(days, period_days=period_days),
+        'invoice': invoice,
+        'clash': len(touching) > 1,
+        'later_invoices': list(later.order_by('period_start')),
+    }
+
+
+def final_invoice_floor(invoice):
+    """The lowest rent the final invoice can take without going below what is paid."""
+    if invoice is None:
+        return Decimal('0')
+    others = invoice.extras_total + invoice.late_fee - invoice.discount_amount
+    return max(invoice.paid_amount - others, Decimal('0')).quantize(TWOPLACES)
+
+
+@transaction.atomic
+def settle_final_period(*, tenant, user, tenancy, leaving_on, rent_amount=None,
+                        collect_amount=None, mode=None, reference='', note='',
+                        cheque_due_date=None):
+    """Charge the agreed rent for the part period a leaving guest stayed, and
+    optionally take the money for it.
+
+    An invoice already raised for that period (a full month billed in
+    advance) is cut down to the days stayed and the agreed rent. When nothing
+    was billed yet (post-paid, or the nightly run has not reached it) a new
+    invoice is raised for those days. ``rent_amount`` of ``None`` leaves the
+    period as already billed and only takes the money, if any.
+    Returns ``(invoice_or_None, payment_or_None)``.
+    """
+    terms = final_period(tenancy, leaving_on)
+    invoice = terms['invoice']
+    if rent_amount is None:
+        payment = None
+        if collect_amount and invoice is not None:
+            payment = record_payment(
+                tenant=tenant, user=user, tenancy=tenancy, invoice=invoice,
+                amount=collect_amount, mode=mode, reference=reference, note=note,
+                cheque_due_date=cheque_due_date)
+        return invoice, payment
+    if terms['clash']:
+        raise ValueError('More than one invoice covers the final period.')
+    rent_amount = Decimal(rent_amount).quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+    if invoice is not None and rent_amount < final_invoice_floor(invoice):
+        raise ValueError('The final rent cannot go below what is already paid.')
+    full_start = tenancy.period_for(leaving_on)[0]
+    is_prorata = terms['days'] < (terms['full_period_end'] - full_start).days + 1
+    label = _('Final rent for %(days)s days, leaving on %(date)s') % {
+        'days': terms['days'], 'date': leaving_on.strftime('%d %b %Y')}
+
+    if invoice is None:
+        invoice = build_invoice(
+            tenancy, user=user, period_start=terms['period_start'],
+            period_end=terms['period_end'],
+            due_date=leaving_on, rent_amount=rent_amount, prorata=is_prorata,
+            notes=label[:200],
+        )
+    else:
+        tracked = ['period_start', 'period_end', 'rent_amount', 'total']
+        before = audit.snapshot(invoice, tracked)
+        invoice.period_start = min(invoice.period_start, terms['period_start'])
+        invoice.period_end = leaving_on
+        invoice.rent_amount = rent_amount
+        invoice.is_prorata = is_prorata
+        invoice.notes = label[:200]
+        if invoice.due_date > leaving_on:
+            invoice.due_date = leaving_on
+        invoice.save(update_fields=['period_start', 'period_end', 'rent_amount',
+                                    'is_prorata', 'notes', 'due_date', 'updated_at'])
+        invoice.recalculate()
+        audit.log(audit.AuditLog.ACTION_UPDATE, invoice, tenant=tenant,
+                  summary=_('Final rent on %(no)s set to %(amount)s for %(guest)s') % {
+                      'no': invoice.number, 'amount': rent_amount,
+                      'guest': tenancy.guest.full_name},
+                  changes=audit.diff(before, audit.snapshot(invoice, tracked)))
+
+    payment = None
+    if collect_amount:
+        payment = record_payment(
+            tenant=tenant, user=user, tenancy=tenancy, invoice=invoice,
+            amount=collect_amount, mode=mode, reference=reference, note=note,
+            cheque_due_date=cheque_due_date,
+        )
+    return invoice, payment
+
+
 @transaction.atomic
 def generate_due_invoices(tenant, on_date=None, user=None):
     """Raise the invoices that fall due today for every live tenancy.
