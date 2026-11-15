@@ -41,7 +41,7 @@ def _live_stays():
 @require_module(MODULE_GUESTS)
 def guest_list(request):
     location = LocationFilter(request)
-    rows = Guest.objects.filter(tenant=request.tenant)
+    rows = Guest.objects.filter(tenant=request.tenant, is_company=False)
     query = request.GET.get('q', '').strip()
     if query:
         # Subqueries rather than joins: no duplicate rows, so no DISTINCT.
@@ -203,7 +203,8 @@ def expiring_documents(request):
 @require_module(MODULE_GUESTS)
 def tenancy_list(request):
     location = LocationFilter(request)
-    rows = location.apply(_scoped_tenancies(request))
+    # Team lets have their own list (Teams); this one is guests in rooms and beds.
+    rows = location.apply(_scoped_tenancies(request).filter(room__isnull=False))
     state = request.GET.get('state', 'live')
     if state == 'live':
         rows = rows.filter(status__code__in=Tenancy.LIVE_STATUS_CODES)
@@ -223,6 +224,8 @@ def tenancy_list(request):
 @require_module(MODULE_GUESTS)
 def tenancy_detail(request, pk):
     tenancy = get_object_or_404(_scoped_tenancies(request), pk=pk)
+    if tenancy.is_team_let:
+        return redirect('teams:team_detail', pk=tenancy.pk)
     from billing.models import Invoice, Payment
 
     return render(request, 'guests/tenancy_detail.html', {
@@ -376,6 +379,8 @@ def check_out(request, pk):
 @require_module(MODULE_GUESTS, 'edit')
 def transfer(request, pk):
     tenancy = get_object_or_404(_scoped_tenancies(request), pk=pk)
+    if tenancy.is_team_let:
+        return redirect('teams:team_edit', pk=tenancy.pk)
     form = TransferForm(request.POST or None, tenancy=tenancy, user=request.user)
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
@@ -407,6 +412,8 @@ def give_notice(request, pk):
 @require_module(MODULE_GUESTS, 'edit')
 def tenancy_edit(request, pk):
     tenancy = get_object_or_404(_scoped_tenancies(request), pk=pk)
+    if tenancy.is_team_let:
+        return redirect('teams:team_edit', pk=tenancy.pk)
     is_admin = request.user.is_admin or request.user.is_super_admin
     # Snapshot before the form binds — a ModelForm mutates its instance in is_valid().
     audited = ['monthly_rent', 'billing_day', 'deposit_amount', 'expected_check_out',

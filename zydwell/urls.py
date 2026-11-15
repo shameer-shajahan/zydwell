@@ -35,6 +35,7 @@ urlpatterns = [
     path('platform/', include('core.urls', namespace='platform')),
     path('properties/', include('properties.urls', namespace='properties')),
     path('guests/', include('guests.urls', namespace='guests')),
+    path('teams/', include('teams.urls', namespace='teams')),
     path('billing/', include('billing.urls', namespace='billing')),
     path('accounting/', include('accounting.urls', namespace='accounting')),
     path('messaging/', include('messaging.urls', namespace='messaging')),

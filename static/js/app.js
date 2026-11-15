@@ -517,6 +517,26 @@
     window.location.assign(url.toString());
   });
 
+  /* Team let form: members × per head beside the agreed rent. A different
+     rent is allowed — it is only pointed out. */
+  document.addEventListener('input', function (event) {
+    if (!event.target.closest('[data-team-members], [data-team-per-head], [data-team-rent]')) {
+      return;
+    }
+    var form = event.target.form;
+    var note = form && form.querySelector('[data-team-calc]');
+    if (!note) { return; }
+    var members = parseFloat((form.querySelector('[data-team-members]') || {}).value);
+    var rate = parseFloat((form.querySelector('[data-team-per-head]') || {}).value);
+    var rent = parseFloat((form.querySelector('[data-team-rent]') || {}).value);
+    var calc = members * rate;
+    var show = isFinite(calc) && !(isFinite(rent) && Math.abs(calc - rent) < 0.005);
+    note.style.display = show ? '' : 'none';
+    if (show) {
+      note.textContent = note.getAttribute('data-template').replace('{calc}', calc.toFixed(2));
+    }
+  });
+
   /* Auto-submitting filter bars, without inline javascript. */
   document.addEventListener('change', function (event) {
     var field = event.target.closest('[data-autosubmit]');
