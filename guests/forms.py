@@ -14,11 +14,24 @@ class GuestForm(forms.ModelForm):
         model = Guest
         fields = ['full_name', 'mobile', 'whatsapp_number', 'email', 'photo', 'nationality',
                   'date_of_birth', 'gender', 'emergency_contact_name', 'emergency_contact_number',
-                  'employer', 'employer_phone', 'notes']
+                  'employer', 'employer_phone', 'notes', 'contact_person']
         widgets = {
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
             'notes': forms.Textarea(attrs={'rows': 2}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.is_company:
+            # A company: its name, the collector and how to reach them.
+            for name in ('photo', 'nationality', 'date_of_birth', 'gender',
+                         'emergency_contact_name', 'emergency_contact_number',
+                         'employer', 'employer_phone'):
+                del self.fields[name]
+            self.fields['full_name'].label = _('Company name')
+            self.fields['mobile'].label = _('Collector mobile')
+        else:
+            del self.fields['contact_person']
 
 
 class GuestDocumentForm(forms.ModelForm):
@@ -77,7 +90,8 @@ class CheckInForm(forms.Form):
         self.tenant = tenant
         from properties.models import visible_beds
 
-        self.fields['guest'].queryset = Guest.objects.filter(tenant=tenant, is_blacklisted=False)
+        self.fields['guest'].queryset = Guest.objects.filter(
+            tenant=tenant, is_blacklisted=False, is_company=False)
         rooms = Room.objects.filter(tenant=tenant, is_archived=False).select_related(
             'apartment', 'apartment__floor', 'apartment__floor__building'
         )
@@ -97,6 +111,14 @@ class CheckInForm(forms.Form):
             self.add_error('bed', _('That bed is not in the selected room.'))
         if room and not bed and not room.lets_whole_unit:
             self.add_error('bed', _('Pick a bed — this room is let per bed.'))
+        if room:
+            from .services import team_let_blocking
+
+            team = team_let_blocking(room=room)
+            if team:
+                self.add_error('room', _(
+                    'This flat is let to team %(team)s. Its beds cannot be booked '
+                    'one by one.') % {'team': team.team_name})
         if bed:
             clash = Tenancy.objects.filter(
                 bed=bed, status__code__in=Tenancy.LIVE_STATUS_CODES
@@ -308,6 +330,13 @@ class TransferForm(forms.Form):
             self.add_error('new_bed', _('That bed is not in the selected room.'))
         if bed and bed.pk == self.tenancy.bed_id:
             self.add_error('new_bed', _('The guest is already in this bed.'))
+        if room:
+            from .services import team_let_blocking
+
+            team = team_let_blocking(room=room)
+            if team:
+                self.add_error('new_room', _('This flat is let to team %(team)s.') % {
+                    'team': team.team_name})
         if bed:
             clash = Tenancy.objects.filter(
                 bed=bed, status__code__in=Tenancy.LIVE_STATUS_CODES

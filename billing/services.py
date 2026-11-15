@@ -264,10 +264,11 @@ def settle_final_period(*, tenant, user, tenancy, leaving_on, rent_amount=None,
 
 
 @transaction.atomic
-def generate_due_invoices(tenant, on_date=None, user=None):
+def generate_due_invoices(tenant, on_date=None, user=None, only=None):
     """Raise the invoices that fall due today for every live tenancy.
 
-    Safe to run repeatedly — a period already invoiced is skipped.
+    Safe to run repeatedly — a period already invoiced is skipped. ``only``
+    narrows the run to some tenancies (a queryset of them, or their ids).
     """
     on_date = on_date or timezone.localdate()
     created = []
@@ -275,6 +276,8 @@ def generate_due_invoices(tenant, on_date=None, user=None):
         Tenancy.objects.filter(tenant=tenant, status__code__in=Tenancy.LIVE_STATUS_CODES)
         .select_related('guest', 'room', 'floor', 'building')
     )
+    if only is not None:
+        tenancies = tenancies.filter(pk__in=only)
     for tenancy in tenancies:
         period_start, period_end = tenancy.billing_period_for(on_date)
         if period_end < tenancy.check_in_date:
