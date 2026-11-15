@@ -178,7 +178,18 @@ def owner_dashboard(request):
         expiry_date__lte=today + timezone.timedelta(days=30),
     ).select_related('guest')[:8]
 
+    from teams.models import TeamLet
+    from teams.services import live_summary
+
+    team_summary = live_summary(TeamLet.objects.filter(tenant=tenant))
+    if team_summary['count']:
+        team_summary['pending'] = with_balance(open_invoices.filter(
+            tenancy__room__isnull=True)).aggregate(s=Sum('due_balance'))['s'] or Decimal('0')
+        team_summary['collected'] = payments.filter(
+            tenancy__room__isnull=True).aggregate(s=Sum('amount'))['s'] or Decimal('0')
+
     return render(request, 'reports/dashboard.html', {
+        'teams': team_summary,
         'occupancy': occupancy,
         'collected': collected,
         'pending': pending,
@@ -393,7 +404,7 @@ def export_deposits(request):
                _('In'), _('Out'), _('Reason'), _('Recorded by')]
     data = [[
         entry.receipt_number, entry.happened_on, entry.tenancy.guest.full_name,
-        entry.tenancy.building.name, entry.tenancy.room.number,
+        entry.tenancy.building.name, entry.tenancy.unit_label(),
         entry.get_kind_display(),
         float(entry.amount) if entry.is_money_in else '',
         '' if entry.is_money_in else float(entry.amount),
@@ -461,8 +472,9 @@ def export_rent_roll(request):
                _('Outstanding')]
     data = [[
         t.guest.full_name, t.guest.mobile, t.building.name, t.floor.name,
-        t.apartment.name if t.apartment_id else '', t.room.number,
-        t.bed.label if t.bed_id else _('Whole unit'), t.check_in_date,
+        t.apartment.name if t.apartment_id else '', t.room.number if t.room_id else '',
+        t.bed.label if t.bed_id else (_('Whole unit') if t.room_id else _('Team')),
+        t.check_in_date,
         float(t.monthly_rent), float(t.deposit_held_total), float(t.outstanding_total),
     ] for t in rows]
     audit.log(AuditLog.ACTION_EXPORT, None, tenant=request.tenant, model_name='Tenancy',
