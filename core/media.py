@@ -1,8 +1,9 @@
-"""Serving uploaded files (MEDIA_ROOT) in production.
+"""Serving uploaded files in production.
 
 ``django.conf.urls.static.static()`` only works while DEBUG is on, so with
 DEBUG off every photo, logo and scan answered 404. Uploads are not static
-files either — ``collectstatic`` never sees them — so Django serves them here.
+files either — ``collectstatic`` never sees them — so Django serves them
+here, from the database (``core.storage``).
 
 Most uploads are private: passport and Emirates ID scans, guest photos, bill
 photos. Those need a signed-in user of the account the file belongs to, with
@@ -12,10 +13,10 @@ sign-in and error pages show them to people who are not signed in.
 import mimetypes
 import posixpath
 
-from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
-from django.http import Http404
-from django.views.static import serve
+from django.core.exceptions import SuspiciousFileOperation
+from django.core.files.storage import default_storage
+from django.http import FileResponse, Http404
 
 from core.constants import MODULE_ACCOUNTING, MODULE_GUESTS
 
@@ -78,9 +79,12 @@ def media(request, path):
         # Someone else's file looks exactly like a missing one.
         if not _may_see(request, path):
             raise Http404
-    # serve() joins safely under MEDIA_ROOT and answers If-Modified-Since.
-    response = serve(request, path, document_root=settings.MEDIA_ROOT)
+    try:
+        handle = default_storage.open(path)
+    except (FileNotFoundError, SuspiciousFileOperation):
+        raise Http404
     kind = mimetypes.guess_type(path)[0] or 'application/octet-stream'
+    response = FileResponse(handle, content_type=kind)
     if kind not in INLINE_TYPES:
         response['Content-Disposition'] = 'attachment; filename="%s"' % (
             posixpath.basename(path).replace('"', ''))

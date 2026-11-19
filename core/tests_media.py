@@ -1,13 +1,18 @@
 """Uploaded files are served with DEBUG off, and only to the right people."""
+import io
 import shutil
 import tempfile
 from pathlib import Path
 
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.core.management import call_command
 from django.test import override_settings
+from PIL import Image
 
 from accounts.models import User
 from core.constants import MODULE_GUESTS
-from core.models import Tenant
+from core.models import StoredFile, Tenant
 from core.seed import seed_tenant
 from core.tests import ZyDwellTestCase
 from guests.models import GuestDocument
@@ -103,3 +108,72 @@ class MediaServingTests(ZyDwellTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response['Content-Disposition'].startswith('attachment'))
         self.assertEqual(response['Content-Security-Policy'], 'sandbox')
+
+
+def photo(width=4000, height=3000):
+    out = io.BytesIO()
+    Image.new('RGB', (width, height), (200, 120, 40)).save(out, 'JPEG', quality=95)
+    return out.getvalue()
+
+
+@override_settings(MEDIA_ROOT=MEDIA, DEBUG=False)
+class DatabaseStorageTests(ZyDwellTestCase):
+    """Uploads are kept in the database, which outlives every deploy."""
+
+    def test_an_upload_is_saved_in_the_database_not_on_disk(self):
+        self.guest.photo.save('face.jpg', ContentFile(photo(800, 600)))
+        row = StoredFile.objects.get(name=self.guest.photo.name)
+        self.assertTrue(row.name.startswith('guests/'))
+        self.assertEqual(row.content_type, 'image/jpeg')
+        self.assertFalse((Path(MEDIA) / row.name).exists())
+
+    def test_a_big_phone_photo_is_shrunk(self):
+        big = photo()
+        self.guest.photo.save('big.jpg', ContentFile(big))
+        row = StoredFile.objects.get(name=self.guest.photo.name)
+        self.assertLess(row.size, len(big))
+        with Image.open(io.BytesIO(bytes(row.content))) as image:
+            self.assertEqual(max(image.size), 2000)
+
+    def test_a_pdf_is_kept_exactly(self):
+        pdf = b'%PDF-1.4 scan'
+        doc = GuestDocument.objects.create(tenant=self.tenant, guest=self.guest,
+                                           doc_type=GuestDocument.TYPE_VISA, number='V')
+        doc.scan.save('visa.pdf', ContentFile(pdf))
+        self.assertEqual(bytes(StoredFile.objects.get(name=doc.scan.name).content), pdf)
+
+    def test_the_saved_photo_is_served(self):
+        self.guest.photo.save('face.jpg', ContentFile(photo(400, 300)))
+        self.client.login(username='owner', password='pw-owner-123')
+        response = self.client.get(self.guest.photo.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+        self.assertEqual(b''.join(response.streaming_content),
+                         bytes(StoredFile.objects.get(name=self.guest.photo.name).content))
+
+    def test_the_same_name_twice_gets_a_new_name(self):
+        first = default_storage.save('guests/x.jpg', ContentFile(b'one'))
+        second = default_storage.save('guests/x.jpg', ContentFile(b'two'))
+        self.assertNotEqual(first, second)
+        self.assertEqual(default_storage.open(first).read(), b'one')
+
+    def test_deleting_removes_it(self):
+        name = default_storage.save('guests/x.jpg', ContentFile(b'one'))
+        default_storage.delete(name)
+        self.assertFalse(default_storage.exists(name))
+
+    def test_files_left_on_disk_are_copied_in_once(self):
+        folder = Path(MEDIA) / 'buildings'
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / 'old-logo.png').write_bytes(b'\x89PNGold')
+        call_command('move_media_to_db', stdout=io.StringIO())
+        call_command('move_media_to_db', stdout=io.StringIO())
+        self.assertEqual(StoredFile.objects.filter(name='buildings/old-logo.png').count(), 1)
+        self.assertTrue((folder / 'old-logo.png').exists())
+
+    def test_dry_run_saves_nothing(self):
+        folder = Path(MEDIA) / 'ledger'
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / 'bill.pdf').write_bytes(b'%PDF')
+        call_command('move_media_to_db', '--dry-run', stdout=io.StringIO())
+        self.assertFalse(StoredFile.objects.filter(name='ledger/bill.pdf').exists())

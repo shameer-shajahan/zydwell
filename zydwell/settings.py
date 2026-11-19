@@ -111,14 +111,16 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STORAGES = {
-    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    # Uploads live in the database (Neon): the server keeps no files between
+    # deploys. See core/storage.py.
+    'default': {'BACKEND': 'core.storage.DatabaseStorage'},
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
 }
 MEDIA_URL = '/media/'
-# Uploads must live on storage that survives a deploy. On Render that is a
-# Persistent Disk; point this at its mount, e.g. /var/data/media.
+# Only read now, for files uploaded before they were kept in the database
+# (and by manage.py move_media_to_db).
 MEDIA_ROOT = Path(os.environ.get('ZYDWELL_MEDIA_ROOT') or BASE_DIR / 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
