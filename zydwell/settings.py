@@ -117,7 +117,9 @@ STORAGES = {
     },
 }
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Uploads must live on storage that survives a deploy. On Render that is a
+# Persistent Disk; point this at its mount, e.g. /var/data/media.
+MEDIA_ROOT = Path(os.environ.get('ZYDWELL_MEDIA_ROOT') or BASE_DIR / 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
