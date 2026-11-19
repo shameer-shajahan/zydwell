@@ -367,6 +367,10 @@ def check_out(request, pk):
         from billing import services as billing
 
         final = form.final or billing.final_period(tenancy, leaving)
+        final['paid_over'] = max(
+            billing.final_invoice_floor(final['invoice']) - final['prorata_rent'], Decimal('0'))
+        if not form.is_bound:
+            form.fields['final_charge'].initial = _default_final_charge(final)
     return render(request, 'guests/check_out.html', {
         'form': form, 'tenancy': tenancy,
         'deposit_held': tenancy.deposit_held(),
@@ -374,6 +378,15 @@ def check_out(request, pk):
         'final': final,
         'leaving': leaving,
     })
+
+
+def _default_final_charge(final):
+    """Charge only the days stayed, unless that cannot be done here: more than
+    one invoice covers the period, or more than the days' rent is already paid
+    (the difference goes back from the deposit instead)."""
+    if final['clash'] or final['paid_over'] > 0:
+        return CheckOutForm.FINAL_KEEP
+    return CheckOutForm.FINAL_PRORATA
 
 
 @require_module(MODULE_GUESTS, 'edit')

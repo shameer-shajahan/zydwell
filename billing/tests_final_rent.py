@@ -192,3 +192,45 @@ class FinalRentTests(ZyDwellTestCase):
         response = self.post(final_charge='prorata', check_out_date='2026-11-20')
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Invoice.objects.count(), count)
+
+    # --- the month they leave in is charged for the days stayed --------------
+
+    def initial_choice(self, response):
+        return response.context['form'].fields['final_charge'].initial
+
+    def test_check_out_starts_on_the_days_stayed(self):
+        self.check_in()
+        services.generate_due_invoices(self.tenant, on_date=date(2026, 11, 1))
+        self.client.login(username='owner', password='pw-owner-123')
+        response = self.client.get(self.url)
+        self.assertEqual(self.initial_choice(response), 'prorata')
+        self.assertContains(response, '450.00')
+
+    def test_check_out_keeps_the_bill_when_more_is_already_paid(self):
+        self.check_in()
+        services.generate_due_invoices(self.tenant, on_date=date(2026, 11, 1))
+        services.record_payment(tenant=self.tenant, user=self.owner, tenancy=self.tenancy,
+                                invoice=self.november(), amount=Decimal('900'), mode=self.cash)
+        self.client.login(username='owner', password='pw-owner-123')
+        response = self.client.get(self.url)
+        self.assertEqual(self.initial_choice(response), 'keep')
+        self.assertEqual(response.context['final']['paid_over'], Decimal('450.00'))
+        self.assertContains(response, 'Give it back with the refund below')
+
+    def test_notice_bills_the_last_month_by_the_day_even_on_full_first_month(self):
+        # Checked in on "full rent for the first period"; still, leaving on the
+        # 10th of December means 10 of 31 days.
+        self.check_in(prorate_first_period=False)
+        self.tenancy.expected_check_out = date(2026, 12, 10)
+        self.tenancy.save()
+        services.generate_due_invoices(self.tenant, on_date=date(2026, 12, 1))
+        december = Invoice.objects.get(tenancy=self.tenancy, period_start=date(2026, 12, 1))
+        self.assertEqual(december.period_end, date(2026, 12, 10))
+        self.assertTrue(december.is_prorata)
+        self.assertEqual(december.rent_amount, Decimal('290.32'))
+
+    def test_a_full_first_month_is_still_charged_in_full(self):
+        self.check_in(prorate_first_period=False, check_in_date=date(2026, 11, 10))
+        services.generate_due_invoices(self.tenant, on_date=date(2026, 11, 10))
+        invoice = Invoice.objects.get(tenancy=self.tenancy)
+        self.assertEqual(invoice.rent_amount, Decimal('900.00'))

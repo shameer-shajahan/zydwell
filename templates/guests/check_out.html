@@ -34,6 +34,9 @@
         <tr><td>{% trans "Already billed" %} · <a href="{% url 'billing:invoice_detail' final.invoice.pk %}">{{ final.invoice.number }}</a></td>
           <td class="num">{{ currency }} {{ final.invoice.total|floatformat:2 }}</td></tr>
         <tr><td>{% trans "Paid on it" %}</td><td class="num">{{ currency }} {{ final.invoice.paid_amount|floatformat:2 }}</td></tr>
+        {% if final.paid_over %}
+        <tr><td colspan="2" class="muted">{% blocktrans with amount=final.paid_over|floatformat:2 %}{{ currency }} {{ amount }} more than the days stayed is already paid. Give it back with the refund below.{% endblocktrans %}</td></tr>
+        {% endif %}
         {% elif final.clash %}
         <tr><td colspan="2" class="muted">{% trans "More than one invoice covers this period — correct them on the invoice pages." %}</td></tr>
         {% else %}

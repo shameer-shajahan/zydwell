@@ -120,8 +120,9 @@
         <dt>{% trans "Billing" %}</dt>
         <dd>{% if tenancy.bills_in_advance %}{% trans "Pay in advance" %}{% else %}{% trans "Post-paid" %}{% endif %}
           <div class="muted" style="font-size:11.5px">
-            {% if tenancy.prorate_first_period %}{% trans "Part periods charged by the day" %}
-            {% else %}{% trans "Full rent for a part period" %}{% endif %}</div></dd>
+            {% if tenancy.prorate_first_period %}{% trans "First month charged by the day" %}
+            {% else %}{% trans "Full rent for the first month" %}{% endif %}
+            · {% trans "last month by the days stayed" %}</div></dd>
         <dt>{% trans "Check-in" %}</dt><dd>{{ tenancy.check_in_date|date:"d M Y" }}</dd>
         <dt>{% trans "Expected out" %}</dt><dd>{{ tenancy.expected_check_out|date:"d M Y"|default:"—" }}</dd>
         <dt>{% trans "Notice given" %}</dt><dd>{{ tenancy.notice_given_on|date:"d M Y"|default:"—" }}</dd>

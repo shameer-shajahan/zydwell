@@ -69,17 +69,18 @@ def period_terms(tenancy, period_start, period_end):
     early is billed exactly as the nightly job would have billed it.
     """
     effective_start, effective_end = period_start, period_end
-    part_period = False
+    arriving = leaving = False
     if tenancy.check_in_date > period_start:
         effective_start = tenancy.check_in_date
-        part_period = True
+        arriving = True
     if tenancy.expected_check_out and tenancy.expected_check_out < period_end:
         effective_end = tenancy.expected_check_out
-        part_period = True
+        leaving = True
 
-    # A part period is only charged pro-rata when the tenancy says so; some
-    # agreements take the whole month's rent whatever day they arrived.
-    prorata = part_period and tenancy.prorate_first_period
+    # The month they arrive in is charged by the day only when the tenancy says
+    # so; some agreements take the whole month's rent whatever day they came.
+    # The month they leave in is always charged for the days stayed.
+    prorata = leaving or (arriving and tenancy.prorate_first_period)
 
     rent_amount = None
     if tenancy.first_invoice_amount is not None and \
