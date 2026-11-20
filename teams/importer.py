@@ -175,7 +175,7 @@ def _check(row, tenant):
     existing = None
     if row.company is not None:
         existing = TeamLet.objects.live().filter(
-            guest=row.company, apartment=row.apartment,
+            guest=row.company, apartment=row.apartment, room__isnull=True,
             team_name__iexact=team_name).first()
     if existing is None:
         stays = list(services.individual_stays_in(row.apartment)[:3])

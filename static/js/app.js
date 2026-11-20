@@ -182,6 +182,28 @@
     amount.value = total.toFixed(2);
   });
 
+  /* Team lets can cover a flat or one room within the selected flat. */
+  function updateTeamRoomPicker() {
+    var space = document.querySelector('[data-team-space]');
+    var apartment = document.querySelector('[data-team-apartment]');
+    var room = document.querySelector('[data-team-room]');
+    if (!space || !apartment || !room) { return; }
+    var wrapper = room.closest('.field');
+    if (wrapper) { wrapper.hidden = space.value !== 'room'; }
+    Array.prototype.forEach.call(room.options, function (option) {
+      var allowed = !option.value || option.getAttribute('data-apartment') === apartment.value;
+      option.hidden = !allowed;
+      option.disabled = !allowed;
+      if (!allowed && option.selected) { option.selected = false; }
+    });
+  }
+  document.addEventListener('change', function (event) {
+    if (event.target.closest('[data-team-space], [data-team-apartment]')) {
+      updateTeamRoomPicker();
+    }
+  });
+  updateTeamRoomPicker();
+
   /* ---------------- Sign in ---------------- */
 
   /* Reveal the password. Staff type these on a phone, in a corridor. */

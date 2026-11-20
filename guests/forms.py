@@ -116,9 +116,13 @@ class CheckInForm(forms.Form):
 
             team = team_let_blocking(room=room)
             if team:
-                self.add_error('room', _(
-                    'This flat is let to team %(team)s. Its beds cannot be booked '
-                    'one by one.') % {'team': team.team_name})
+                if team.room_id:
+                    self.add_error('room', _('This room is let to team %(team)s.') % {
+                        'team': team.team_name})
+                else:
+                    self.add_error('room', _(
+                        'This flat is let to team %(team)s. Its beds cannot be booked '
+                        'one by one.') % {'team': team.team_name})
         if bed:
             clash = Tenancy.objects.filter(
                 bed=bed, status__code__in=Tenancy.LIVE_STATUS_CODES
@@ -335,8 +339,9 @@ class TransferForm(forms.Form):
 
             team = team_let_blocking(room=room)
             if team:
-                self.add_error('new_room', _('This flat is let to team %(team)s.') % {
-                    'team': team.team_name})
+                place = _('room') if team.room_id else _('flat')
+                self.add_error('new_room', _('This %(place)s is let to team %(team)s.') % {
+                    'place': place, 'team': team.team_name})
         if bed:
             clash = Tenancy.objects.filter(
                 bed=bed, status__code__in=Tenancy.LIVE_STATUS_CODES

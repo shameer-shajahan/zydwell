@@ -3,7 +3,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import transaction
 from django.db.models import (
-    Case, DecimalField, F, OuterRef, Subquery, Sum, Value, When,
+    Case, DecimalField, F, OuterRef, Q, Subquery, Sum, Value, When,
 )
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -396,13 +396,16 @@ def _occupy(tenancy):
 
 
 def _release(tenancy):
-    if tenancy.is_team_let and Tenancy.objects.filter(
-        apartment_id=tenancy.apartment_id, room__isnull=True,
-        status__code__in=Tenancy.LIVE_STATUS_CODES,
-    ).exclude(pk=tenancy.pk).exists():
-        # Another team still has the flat.
-        return
     for bed in _beds_of(tenancy):
+        still_occupied = Tenancy.objects.filter(
+            status__code__in=Tenancy.LIVE_STATUS_CODES,
+        ).exclude(pk=tenancy.pk).filter(
+            Q(bed_id=bed.pk)
+            | Q(room_id=bed.room_id, bed__isnull=True)
+            | Q(apartment_id=bed.room.apartment_id, room__isnull=True)
+        ).exists()
+        if still_occupied:
+            continue
         bed.set_status_code('available')
 
 
@@ -418,14 +421,19 @@ def team_lets_in(apartment_ids):
 
 
 def team_let_blocking(room=None, apartment=None):
-    """The live team let holding this room's flat, if any — it cannot be booked."""
+    """The live team let holding this room or its whole flat, if any."""
     from teams.models import TeamLet
 
     apartment_id = apartment.pk if apartment is not None else (
         room.apartment_id if room is not None else None)
     if apartment_id is None:
         return None
-    return TeamLet.objects.live().filter(apartment_id=apartment_id).first()
+    teams = TeamLet.objects.live().filter(apartment_id=apartment_id)
+    if room is not None:
+        teams = teams.filter(Q(room__isnull=True) | Q(room=room))
+    else:
+        teams = teams.filter(room__isnull=True)
+    return teams.first()
 
 
 # --- Money per tenancy, for whole lists in one query -------------------------

@@ -20,7 +20,7 @@ MAX_IMPORT_BYTES = 512 * 1024
 
 def _scoped_teams(request):
     qs = TeamLet.objects.filter(tenant=request.tenant).select_related(
-        'guest', 'apartment', 'floor', 'building', 'status')
+        'guest', 'apartment', 'room', 'floor', 'building', 'status')
     return request.user.scope_queryset(qs)
 
 
@@ -64,13 +64,15 @@ def _save_form(request, form, team=None):
         'agreement_note': data['agreement_note'],
         'prorate_first_period': data['prorate_first_period'],
     }
+    room = data['room'] if data['space'] == 'room' else None
     if team is None:
         return services.create_team_let(
             tenant=request.tenant, user=request.user, company=company,
-            apartment=data['apartment'], deposit_received=data.get('deposit_received') or 0,
+            apartment=data['apartment'], room=room,
+            deposit_received=data.get('deposit_received') or 0,
             **fields)
     return services.update_team_let(team=team, user=request.user, company=company,
-                                    apartment=data['apartment'], **fields)
+                                    apartment=data['apartment'], room=room, **fields)
 
 
 def _flash_headcount(request, form):
@@ -95,8 +97,8 @@ def team_create(request):
         except ValidationError as exc:
             form.add_error(None, exc)
         else:
-            messages.success(request, _('Flat %(flat)s let to team %(team)s.') % {
-                'flat': team.apartment.name, 'team': team.team_name})
+            messages.success(request, _('Place %(place)s let to team %(team)s.') % {
+                'place': team.room or team.apartment, 'team': team.team_name})
             _flash_headcount(request, form)
             return redirect_back(request, 'teams:team_detail', pk=team.pk, made=team)
     return render(request, 'teams/team_form.html', {'form': form, 'team': None})
@@ -137,7 +139,8 @@ def team_detail(request, pk):
         'outstanding': team.outstanding(),
         'others': TeamLet.objects.live().filter(apartment=team.apartment_id).exclude(
             pk=team.pk).select_related('guest'),
-        'beds': team.apartment.bed_queryset.count(),
+        'beds': (team.room.beds.filter(is_archived=False).count() if team.room_id
+                 else team.apartment.bed_queryset.count()),
         'deposit_form': DepositForm(tenant=request.tenant),
         'can_edit': request.user.can(MODULE_GUESTS, 'edit'),
         'can_bill': request.user.can(MODULE_BILLING, 'create'),

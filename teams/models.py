@@ -1,4 +1,4 @@
-"""Team lets: a company takes a whole apartment and pays one rent for its people."""
+"""Team lets: a company rents a whole apartment or one room for its people."""
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -14,16 +14,16 @@ class TeamLetQuerySet(models.QuerySet):
 
 
 class TeamLet(Tenancy):
-    """A whole apartment let to a company's team, billed as one rent.
+    """A room or whole apartment let to a company's team, billed as one rent.
 
     It *is* a tenancy (multi-table inheritance): the parent row carries the
     company (``guest``), the apartment, rent, billing day, deposit and status,
     so invoices, payments, the nightly billing run, overdue lists and reports
     treat it like any other stay. This table adds what only a team has.
 
-    The parent's ``room`` and ``bed`` stay empty — that is what marks a stay as
-    a team let. Several teams may share one apartment, and the headcount is
-    deliberately not checked against the beds.
+    ``bed`` stays empty. ``room`` is empty for a whole-apartment let, or names
+    the one room the team takes. Several teams may share one apartment, and the
+    headcount is deliberately not checked against the beds.
     """
 
     team_name = models.CharField(_('team name'), max_length=150)
@@ -39,8 +39,8 @@ class TeamLet(Tenancy):
         verbose_name = _('team let')
 
     def __str__(self):
-        flat = self.apartment.name if self.apartment_id else '—'
-        return f'{self.team_name} @ {flat}'
+        place = self.room.number if self.room_id else self.apartment.name
+        return f'{self.team_name} @ {place}'
 
     @property
     def company(self):
@@ -59,14 +59,15 @@ class TeamLet(Tenancy):
         return expected is not None and expected != self.monthly_rent
 
     def clean(self):
+        if self.room_id:
+            self.apartment = self.room.apartment
         if self.apartment_id is None:
-            raise ValidationError({'apartment': _('Pick the apartment the team takes.')})
-        self.room = None
+            raise ValidationError({'apartment': _('Pick an apartment or room for the team.')})
         self.bed = None
         super().clean()
 
     def save(self, *args, **kwargs):
-        # A team takes the flat, never one room of it.
-        self.room = None
+        if self.room_id:
+            self.apartment = self.room.apartment
         self.bed = None
         super().save(*args, **kwargs)

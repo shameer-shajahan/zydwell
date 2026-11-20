@@ -57,7 +57,7 @@
     <tr><td><a href="{% url 'teams:team_detail' t.pk %}"><strong>{{ t.team_name }}</strong></a>
         {% if t.joining_date %}<div class="muted" style="font-size:11px">{% trans "since" %} {{ t.joining_date|date:"d M Y" }}</div>{% endif %}</td>
       <td>{{ t.guest.full_name }}<div class="muted mono" style="font-size:11px">{{ t.guest.mobile }}</div></td>
-      <td class="nowrap">{{ t.apartment.name }}<div class="muted" style="font-size:11px">{{ t.building.name }}</div></td>
+      <td class="nowrap">{{ t.apartment.name }}{% if t.room_id %} · {% trans "Room" %} {{ t.room.number }}{% endif %}<div class="muted" style="font-size:11px">{{ t.building.name }}</div></td>
       <td class="num">{{ t.members }}</td>
       <td class="num">{% if t.per_head is not None %}{{ t.per_head|floatformat:0 }}{% else %}—{% endif %}</td>
       <td class="num">{{ t.monthly_rent|floatformat:0 }}{% if t.rent_differs %}

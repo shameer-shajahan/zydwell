@@ -184,9 +184,9 @@ def owner_dashboard(request):
     team_summary = live_summary(TeamLet.objects.filter(tenant=tenant))
     if team_summary['count']:
         team_summary['pending'] = with_balance(open_invoices.filter(
-            tenancy__room__isnull=True)).aggregate(s=Sum('due_balance'))['s'] or Decimal('0')
+            tenancy__teamlet__isnull=False)).aggregate(s=Sum('due_balance'))['s'] or Decimal('0')
         team_summary['collected'] = payments.filter(
-            tenancy__room__isnull=True).aggregate(s=Sum('amount'))['s'] or Decimal('0')
+            tenancy__teamlet__isnull=False).aggregate(s=Sum('amount'))['s'] or Decimal('0')
 
     return render(request, 'reports/dashboard.html', {
         'teams': team_summary,
@@ -473,7 +473,7 @@ def export_rent_roll(request):
     data = [[
         t.guest.full_name, t.guest.mobile, t.building.name, t.floor.name,
         t.apartment.name if t.apartment_id else '', t.room.number if t.room_id else '',
-        t.bed.label if t.bed_id else (_('Whole unit') if t.room_id else _('Team')),
+        t.bed.label if t.bed_id else (_('Team') if t.is_team_let else _('Whole unit')),
         t.check_in_date,
         float(t.monthly_rent), float(t.deposit_held_total), float(t.outstanding_total),
     ] for t in rows]

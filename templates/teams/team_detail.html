@@ -5,7 +5,7 @@
 <div class="crumbs"><a href="{% url 'teams:team_list' %}">{% trans "Teams" %}</a> <span>/</span> <span>{{ team.team_name }}</span></div>
 <div class="page-head">
   <div><h1>{{ team.team_name }}</h1>
-    <div class="sub">{{ team.guest.full_name }} · {{ team.building.name }} / {{ team.floor.name }} / {% trans "Flat" %} {{ team.apartment.name }}
+    <div class="sub">{{ team.guest.full_name }} · {{ team.building.name }} / {{ team.floor.name }} / {% trans "Flat" %} {{ team.apartment.name }}{% if team.room_id %} / {% trans "Room" %} {{ team.room.number }}{% endif %}
       {% include "partials/_status.html" with status=team.status %}</div></div>
   <div class="actions">
     <a class="btn" href="{% url 'messaging:send_manual' %}?guest={{ team.guest_id }}">{% trans "WhatsApp" %}</a>
@@ -28,7 +28,7 @@
     <div class="hint">{% trans "invoiced on day" %} {{ team.billing_day }}</div></div>
   <div class="kpi navy"><div class="label">{% trans "Members" %}</div><div class="value">{{ team.members }}</div>
     <div class="hint">{% if team.per_head is not None %}{{ currency }} {{ team.per_head|floatformat:0 }} {% trans "per head" %}{% endif %}
-      · {{ beds }} {% trans "beds in the flat" %}</div></div>
+      · {{ beds }} {% trans "beds in this space" %}</div></div>
   <div class="kpi {% if outstanding > 0 %}red{% else %}green{% endif %}"><div class="label">{% trans "Pending" %}</div><div class="value">{{ currency }} {{ outstanding|floatformat:2 }}</div></div>
   <div class="kpi slate"><div class="label">{% trans "Deposit held" %}</div><div class="value">{{ currency }} {{ deposit_held|floatformat:0 }}</div>
     <div class="hint">{% trans "Agreed" %} {{ currency }} {{ team.deposit_amount|floatformat:0 }}</div></div>
@@ -80,7 +80,7 @@
       <div class="body"><dl class="kv">
         <dt>{% trans "Company" %}</dt><dd><a href="{% url 'guests:guest_detail' team.guest_id %}">{{ team.guest.full_name }}</a></dd>
         <dt>{% trans "Collector" %}</dt><dd>{{ team.guest.contact_person|default:"—" }} <span class="mono">{{ team.guest.mobile }}</span></dd>
-        <dt>{% trans "Flat" %}</dt><dd><a href="{% url 'properties:building_detail' team.building_id %}">{{ team.building.name }} · {{ team.floor.name }} · {{ team.apartment.name }}</a></dd>
+        <dt>{% trans "Location" %}</dt><dd><a href="{% url 'properties:building_detail' team.building_id %}">{{ team.building.name }} · {{ team.floor.name }} · {{ team.apartment.name }}{% if team.room_id %} · {% trans "Room" %} {{ team.room.number }}{% endif %}</a></dd>
         <dt>{% trans "Joined" %}</dt><dd>{{ team.joining_date|date:"d M Y"|default:"—" }}</dd>
         <dt>{% trans "Billed from" %}</dt><dd>{{ team.check_in_date|date:"d M Y" }}</dd>
         <dt>{% trans "Notice given" %}</dt><dd>{{ team.notice_given_on|date:"d M Y"|default:"—" }}</dd>

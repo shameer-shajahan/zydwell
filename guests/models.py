@@ -305,14 +305,21 @@ class Tenancy(TenantScopedModel):
         """The room (and bed) on a receipt, or the flat for a team let."""
         if not self.room_id:
             return f'{_("Flat")} {self.apartment.name}' if self.apartment_id else ''
+        if self.is_team_let:
+            return f'{self.apartment.name} · {_("Room")} {self.room.number}'
         if self.bed_id:
             return f'{self.room.number} · {_("bed")} {self.bed.label}'
         return self.room.number
 
     @property
     def is_team_let(self):
-        """A team let is the only kind of stay without a room: it takes the flat."""
-        return self.room_id is None
+        """A TeamLet child can cover a whole flat or just one room."""
+        if self._meta.model_name == 'teamlet' or self.room_id is None:
+            return True
+        try:
+            return self.teamlet is not None
+        except AttributeError:
+            return False
 
     @property
     def team_title(self):

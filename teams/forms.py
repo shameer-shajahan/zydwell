@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django import forms
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.utils.translation import gettext_lazy as _
 
 from guests.models import Guest, Tenancy
@@ -10,6 +10,16 @@ from properties.models import Apartment, Room
 from .models import TeamLet
 
 DATE = forms.DateInput(attrs={'type': 'date'})
+
+
+class TeamRoomSelect(forms.Select):
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index,
+                                       subindex=subindex, attrs=attrs)
+        room = getattr(value, 'instance', None)
+        if room is not None:
+            option['attrs']['data-apartment'] = str(room.apartment_id)
+        return option
 
 
 class TeamLetForm(forms.Form):
@@ -23,7 +33,14 @@ class TeamLetForm(forms.Form):
     collector_name = forms.CharField(label=_('Collector name'), max_length=150, required=False)
     collector_mobile = forms.CharField(label=_('Collector mobile'), max_length=32,
                                        required=False)
+    space = forms.ChoiceField(
+        label=_('Team location'),
+        choices=[('apartment', _('Whole apartment')), ('room', _('One room'))],
+        initial='apartment', required=False,
+    )
     apartment = forms.ModelChoiceField(label=_('Apartment'), queryset=Apartment.objects.none())
+    room = forms.ModelChoiceField(label=_('Room'), queryset=Room.objects.none(), required=False,
+                                  widget=TeamRoomSelect())
     team_name = forms.CharField(label=_('Team name'), max_length=150)
     joining_date = forms.DateField(label=_('Joining date'), required=False, widget=DATE,
                                    help_text=_('Leave empty when not known.'))
@@ -61,6 +78,18 @@ class TeamLetForm(forms.Form):
         self.fields['apartment'].label_from_instance = (
             lambda flat: f'{flat.floor.building.name} · {flat.floor.name} · {flat.name}'
             f' — {_("Rooms")}: {", ".join(room.number for room in flat.rooms.all()) or "—"}')
+        rooms = Room.objects.filter(tenant=tenant, is_archived=False,
+                                    apartment__in=flats).select_related(
+                                        'apartment__floor__building')
+        self.fields['room'].queryset = rooms
+        self.fields['room'].label_from_instance = (
+            lambda room: f'{room.apartment.floor.building.name} · '
+            f'{room.apartment.floor.name} · {room.apartment.name} · '
+            f'{_("Room")} {room.number}')
+        self.fields['apartment'].widget.attrs['data-team-apartment'] = '1'
+        self.fields['space'].widget.attrs['data-team-space'] = '1'
+        self.fields['room'].widget.attrs.update({
+            'data-team-room': '1', 'data-team-apartment-source': '1'})
         self.fields['per_head'].widget.attrs['data-team-per-head'] = '1'
         self.fields['members'].widget.attrs['data-team-members'] = '1'
         self.fields['monthly_rent'].widget.attrs['data-team-rent'] = '1'
@@ -86,6 +115,7 @@ class TeamLetForm(forms.Form):
     def initial_for(cls, team):
         return {
             'company': team.guest_id, 'apartment': team.apartment_id,
+            'room': team.room_id, 'space': 'room' if team.room_id else 'apartment',
             'team_name': team.team_name, 'joining_date': team.joining_date,
             'billing_day': team.billing_day, 'members': team.members,
             'per_head': team.per_head, 'monthly_rent': team.monthly_rent,
@@ -97,18 +127,44 @@ class TeamLetForm(forms.Form):
         data = super().clean()
         if not data.get('company') and not (data.get('company_name') or '').strip():
             self.add_error('company_name', _('Pick a company above or type a new one here.'))
-        flat = data.get('apartment')
-        if flat is not None and (self.team is None or flat.pk != self.team.apartment_id):
-            busy = Tenancy.objects.filter(
-                apartment=flat, room__isnull=False,
-                status__code__in=Tenancy.LIVE_STATUS_CODES).select_related('guest').first()
+        flat, room = data.get('apartment'), data.get('room')
+        space = data.get('space') or 'apartment'
+        data['space'] = space
+        if space == 'room' and room is None:
+            self.add_error('room', _('Choose the room the team will take.'))
+        if space != 'room':
+            data['room'] = room = None
+        elif room is not None and flat is not None and room.apartment_id != flat.pk:
+            self.add_error('room', _('Choose a room inside the selected apartment.'))
+        location_changed = self.team is None or (
+            (flat.pk if flat else None) != self.team.apartment_id
+            or (room.pk if room else None) != self.team.room_id)
+        if flat is not None and location_changed:
+            if room is None:
+                busy_rows = Tenancy.objects.filter(
+                    apartment=flat, room__isnull=False,
+                    status__code__in=Tenancy.LIVE_STATUS_CODES)
+            else:
+                busy_rows = Tenancy.objects.filter(
+                    Q(room=room) | Q(apartment=flat, room__isnull=True),
+                    status__code__in=Tenancy.LIVE_STATUS_CODES)
+            if self.team is not None:
+                busy_rows = busy_rows.exclude(pk=self.team.pk)
+            busy = busy_rows.select_related('guest').first()
             if busy:
-                self.add_error('apartment', _(
-                    '%(name)s is still checked in to this flat one by one. Check them out '
-                    'or move them first.') % {'name': busy.guest.full_name})
+                field = 'room' if room is not None else 'apartment'
+                if room is None:
+                    error = _('%(name)s is still checked in to this flat one by one. '
+                              'Check them out or move them first.') % {
+                                  'name': busy.guest.full_name}
+                else:
+                    error = _('Room %(room)s already has %(name)s checked in.') % {
+                        'room': room.number, 'name': busy.guest.full_name}
+                self.add_error(field, error)
         if flat is not None and data.get('team_name'):
-            same = TeamLet.objects.live().filter(apartment=flat,
-                                                 team_name__iexact=data['team_name'].strip())
+            same = TeamLet.objects.live().filter(
+                apartment=flat, room=room,
+                team_name__iexact=data['team_name'].strip())
             if self.team is not None:
                 same = same.exclude(pk=self.team.pk)
             if same.exists():

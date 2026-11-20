@@ -204,7 +204,8 @@ def expiring_documents(request):
 def tenancy_list(request):
     location = LocationFilter(request)
     # Team lets have their own list (Teams); this one is guests in rooms and beds.
-    rows = location.apply(_scoped_tenancies(request).filter(room__isnull=False))
+    rows = location.apply(_scoped_tenancies(request).filter(
+        room__isnull=False, teamlet__isnull=True))
     state = request.GET.get('state', 'live')
     if state == 'live':
         rows = rows.filter(status__code__in=Tenancy.LIVE_STATUS_CODES)

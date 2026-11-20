@@ -185,12 +185,13 @@ def _plan_blocks(floors):
         flats = []
         for apartment in floor.apartments.all():
             teams = teams_by_flat.get(apartment.pk, [])
-            # Every bed of a team flat belongs to the team, so it links there.
-            team = teams[0] if teams else None
+            # A whole-flat team owns every bed; a room team owns only its room.
+            whole_team = next((t for t in teams if not t.room_id), None)
             rows = []
             for room in apartment.rooms.all():
                 beds = sorted(room.beds.all(), key=lambda bed: _natural_label_key(bed.label))
                 live = stays.get(room.pk, {})
+                team = whole_team or next((t for t in teams if t.room_id == room.pk), None)
                 rows.append({
                     'obj': room,
                     'beds': [{'obj': bed, 'tenancy': live.get(bed.pk), 'team': team}
