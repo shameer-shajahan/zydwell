@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
 
 from core import audit
-from core.constants import MODULE_PROPERTIES, MODULE_SETTINGS
+from core.constants import MODULE_GUESTS, MODULE_PROPERTIES, MODULE_SETTINGS
 from core.filters import BED_PATHS, LocationFilter
 from core.models import AuditLog, Status
 from core.permissions import admin_required, require_module
