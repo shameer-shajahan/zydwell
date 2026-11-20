@@ -4105,8 +4105,8 @@ msgid ""
 msgstr ""
 
 #: templates/billing/overdue.html:8
-msgid "Total pending"
-msgstr "إجمالي المستحق"
+msgid "Total overdue"
+msgstr "إجمالي المتأخرات"
 
 #: templates/billing/overdue.html:9 templates/guests/expiring_documents.html:10
 #: templates/guests/expiring_documents.html:11

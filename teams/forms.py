@@ -1,10 +1,11 @@
 from decimal import Decimal
 
 from django import forms
+from django.db.models import Prefetch
 from django.utils.translation import gettext_lazy as _
 
 from guests.models import Guest, Tenancy
-from properties.models import Apartment
+from properties.models import Apartment, Room
 
 from .models import TeamLet
 
@@ -51,13 +52,15 @@ class TeamLetForm(forms.Form):
         self.tenant, self.team = tenant, team
         self.fields['company'].queryset = Guest.objects.filter(tenant=tenant, is_company=True)
         flats = Apartment.objects.filter(tenant=tenant, is_archived=False).select_related(
-            'floor', 'floor__building')
+            'floor', 'floor__building').prefetch_related(Prefetch(
+                'rooms', queryset=Room.objects.filter(is_archived=False)))
         if user is not None and user.is_staff_member:
             flats = user.scope_queryset(flats, building_field='floor__building',
                                         floor_field='floor', apartment_field='pk')
         self.fields['apartment'].queryset = flats
         self.fields['apartment'].label_from_instance = (
-            lambda flat: f'{flat.floor.building.name} · {flat.floor.name} · {flat.name}')
+            lambda flat: f'{flat.floor.building.name} · {flat.floor.name} · {flat.name}'
+            f' — {_("Rooms")}: {", ".join(room.number for room in flat.rooms.all()) or "—"}')
         self.fields['per_head'].widget.attrs['data-team-per-head'] = '1'
         self.fields['members'].widget.attrs['data-team-members'] = '1'
         self.fields['monthly_rent'].widget.attrs['data-team-rent'] = '1'
