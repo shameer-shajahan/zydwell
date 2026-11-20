@@ -74,7 +74,9 @@ class Guest(TenantScopedModel):
         from billing.models import Payment
 
         total = Payment.objects.filter(
-            tenancy__guest=self, invoice__isnull=True, is_reversed=False
+            tenancy__guest=self, invoice__isnull=True, is_reversed=False,
+            allocations__isnull=True,
+            approval__in=[Payment.APPROVAL_NOT_REQUIRED, Payment.APPROVAL_APPROVED],
         ).aggregate(s=models.Sum('amount'))['s'] or Decimal('0')
         used = Payment.objects.filter(
             tenancy__guest=self, is_reversed=False, from_credit=True

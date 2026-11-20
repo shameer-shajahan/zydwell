@@ -299,6 +299,8 @@ def _raise_first_invoice(request, tenancy):
         rent_amount=tenancy.first_invoice_amount, prorata=prorata,
         period_days=tenancy.period_length(period_start),
     )
+    from billing.services import apply_guest_credit
+    apply_guest_credit(guest=tenancy.guest, user=request.user)
     messages.info(request, _('Invoice %(no)s raised for %(amount)s.') % {
         'no': invoice.number, 'amount': invoice.total})
     return invoice

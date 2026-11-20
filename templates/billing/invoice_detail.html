@@ -63,7 +63,7 @@
           <tr {% if p.is_reversed %}style="opacity:.5"{% endif %}>
             <td><a class="mono" href="{% url 'billing:receipt' p.pk %}">{{ p.receipt_number }}</a>
               <div class="muted" style="font-size:11px">{{ p.paid_on|date:"d M Y" }} · {{ p.mode|default:"—" }}{% if p.is_reversed %} · {% trans "reversed" %}{% endif %}</div></td>
-            <td class="num">{{ currency }} {{ p.amount|floatformat:2 }}</td></tr>
+            <td class="num">{{ currency }} {% if p.invoice_id == invoice.pk %}{{ p.amount|floatformat:2 }}{% else %}{% for allocation in p.allocations.all %}{% if allocation.invoice_id == invoice.pk %}{{ allocation.amount|floatformat:2 }}{% endif %}{% endfor %}{% endif %}</td></tr>
         {% empty %}<tr><td class="muted" style="padding:16px">{% trans "Nothing collected yet." %}</td></tr>{% endfor %}</tbody>
       </table></div>
     </div>

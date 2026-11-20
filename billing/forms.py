@@ -12,6 +12,17 @@ from .models import (
 )
 
 
+class InvoiceMultiSelect(forms.SelectMultiple):
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index,
+                                       subindex=subindex, attrs=attrs)
+        invoice = getattr(value, 'instance', None)
+        if invoice is not None:
+            option['attrs']['data-tenancy'] = str(invoice.tenancy_id)
+            option['attrs']['data-balance'] = str(invoice.balance)
+        return option
+
+
 class InvoiceForm(forms.Form):
     tenancy = forms.ModelChoiceField(label=_('Tenancy'), queryset=Tenancy.objects.none())
     period_start = forms.DateField(label=_('Period from'),
@@ -64,9 +75,18 @@ class DiscountForm(forms.Form):
 
 
 class PaymentForm(forms.ModelForm):
+    invoices = forms.ModelMultipleChoiceField(
+        label=_('Invoice(s)'), queryset=Invoice.objects.none(), required=False,
+        widget=InvoiceMultiSelect(attrs={'size': 7, 'data-invoice-picker': '1'}),
+        help_text=_('Select one or more open invoices for this tenancy.'))
+
+    # Keep accepting old links and forms which post a single invoice id.
+    invoice = forms.ModelChoiceField(queryset=Invoice.objects.none(), required=False,
+                                     widget=forms.HiddenInput)
+
     class Meta:
         model = Payment
-        fields = ['tenancy', 'invoice', 'amount', 'mode', 'reference', 'cheque_due_date',
+        fields = ['tenancy', 'invoice', 'invoices', 'amount', 'mode', 'reference', 'cheque_due_date',
                   'paid_on', 'note']
         widgets = {
             'paid_on': forms.DateInput(attrs={'type': 'date'}),
@@ -79,17 +99,21 @@ class PaymentForm(forms.ModelForm):
         tenancies = Tenancy.objects.filter(tenant=tenant).select_related('guest', 'room')
         if user is not None:
             tenancies = user.scope_queryset(tenancies)
-        self.fields['tenancy'].queryset = tenancies.filter(
-            status__code__in=Tenancy.LIVE_STATUS_CODES
-        )
+        tenancies = tenancies.filter(status__code__in=Tenancy.LIVE_STATUS_CODES)
+        self.fields['tenancy'].queryset = tenancies
+        self.fields['tenancy'].widget.attrs['data-invoice-tenancy'] = '1'
         invoices = Invoice.objects.filter(tenant=tenant).exclude(
             status__counts_as_settled=True
         ).select_related('tenancy__guest')
         self.fields['invoice'].queryset = invoices
-        self.fields['invoice'].required = False
-        self.fields['invoice'].help_text = _('Leave empty to hold the money as advance credit.')
+        self.fields['invoices'].queryset = invoices.filter(tenancy__in=tenancies)
+        self.fields['invoices'].label_from_instance = (
+            lambda inv: f'{inv.number} · {inv.period_label()} · {inv.balance:,.2f}')
+        self.fields['invoices'].help_text = _(
+            'Leave empty to hold the money as advance credit.')
+        if self.initial.get('invoice') and not self.initial.get('invoices'):
+            self.initial['invoices'] = [self.initial['invoice']]
         self.fields['paid_on'].initial = timezone.localdate()
-        self.fields['invoice'].widget.attrs['data-balance-source'] = '#id_amount'
         self.fields['mode'].queryset = PaymentMode.objects.filter(
             tenant=tenant, is_active=True)
         self.fields['mode'].empty_label = None
@@ -99,9 +123,13 @@ class PaymentForm(forms.ModelForm):
 
     def clean(self):
         data = super().clean()
-        invoice, tenancy = data.get('invoice'), data.get('tenancy')
-        if invoice and tenancy and invoice.tenancy_id != tenancy.id:
-            self.add_error('invoice', _('That invoice belongs to a different guest.'))
+        selected = list(data.get('invoices') or [])
+        legacy_invoice, tenancy = data.get('invoice'), data.get('tenancy')
+        if not selected and legacy_invoice:
+            selected = [legacy_invoice]
+        data['invoices'] = selected
+        if selected and tenancy and any(inv.tenancy_id != tenancy.pk for inv in selected):
+            self.add_error('invoices', _('Select invoices for this same tenancy.'))
         mode = data.get('mode')
         if mode and mode.needs_reference and not data.get('reference'):
             self.add_error('reference', _('Add the %(mode)s reference.') % {
@@ -109,11 +137,16 @@ class PaymentForm(forms.ModelForm):
         if mode and mode.needs_due_date and not data.get('cheque_due_date'):
             self.add_error('cheque_due_date', _('Record when it falls due.'))
         amount = data.get('amount') or Decimal('0')
-        if invoice and amount > invoice.balance:
+        available = sum((inv.balance for inv in selected), Decimal('0'))
+        if selected and amount > available:
             self.add_error('amount', _(
-                'That is more than the %(bal)s outstanding on this invoice. '
-                'Record the excess as a separate advance payment.'
-            ) % {'bal': invoice.balance})
+                'That is more than the %(bal)s outstanding on the selected invoices.'
+            ) % {'bal': available})
+        if mode and mode.settles_from_credit:
+            if not selected:
+                self.add_error('invoices', _('Select invoices to apply advance credit to.'))
+            elif tenancy and amount > tenancy.guest.advance_credit():
+                self.add_error('amount', _('The tenant does not have that much advance credit.'))
         return data
 
 

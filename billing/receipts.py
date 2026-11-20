@@ -27,6 +27,7 @@ def receipt_lines(payment, printer=None, *, copy_label=''):
     guest = tenancy.guest
     currency = payment.tenant.currency
     invoice = payment.invoice
+    allocations = list(payment.allocations.select_related('invoice'))
 
     out = []
     add = out.append
@@ -50,6 +51,10 @@ def receipt_lines(payment, printer=None, *, copy_label=''):
     add(_pair(_('Date'), timezone.localtime(payment.created_at).strftime('%d-%m-%Y %H:%M'), width))
     if invoice:
         add(_pair(_('Invoice'), invoice.number, width))
+    elif allocations:
+        for allocation in allocations:
+            add(_pair(allocation.invoice.number,
+                      _money(allocation.amount, currency), width))
     add(_pair(_('Guest'), guest.full_name, width))
     add(_pair(_('Mobile'), guest.mobile, width))
     add(_pair(_('Floor'), tenancy.floor.name, width))
@@ -75,8 +80,12 @@ def receipt_lines(payment, printer=None, *, copy_label=''):
             add(_pair(_('Discount'), '-' + _money(invoice.discount_amount, currency), width))
         add(_pair(_('Invoice total'), _money(invoice.total, currency), width))
     add(_pair(_('AMOUNT PAID'), _money(payment.amount, currency), width))
-    balance = invoice.balance if invoice else Decimal('0')
-    add(_pair(_('Balance'), _money(balance, currency), width))
+    if invoice:
+        balance = invoice.balance
+        add(_pair(_('Balance'), _money(balance, currency), width))
+    elif allocations:
+        balance = sum((allocation.invoice.balance for allocation in allocations), Decimal('0'))
+        add(_pair(_('Balance on selected invoices'), _money(balance, currency), width))
     add('-' * width)
     add(_pair(_('Mode'), str(payment.mode or '—'), width))
     if payment.reference:

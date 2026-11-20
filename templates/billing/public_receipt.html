@@ -25,6 +25,8 @@
     {% if invoice %}
       <dt>{% trans "For" %}</dt><dd>{{ invoice.period_label }}</dd>
       <dt>{% trans "Invoice" %}</dt><dd class="mono">{{ invoice.number }}</dd>
+    {% elif allocations %}
+      <dt>{% trans "Invoices" %}</dt><dd>{% for allocation in allocations %}<div class="mono">{{ allocation.invoice.number }} · {{ org_currency }}{{ allocation.amount|floatformat:2 }}</div>{% endfor %}</dd>
     {% endif %}
     <dt>{% trans "Paid by" %}</dt><dd>{{ payment.mode|default:"—" }}</dd>
     {% if payment.reference %}<dt>{% trans "Reference" %}</dt><dd class="mono">{{ payment.reference }}</dd>{% endif %}
@@ -34,6 +36,11 @@
   {% if invoice %}
     <div class="slip-total">
       <span>{% trans "Still to pay on this invoice" %}</span>
+      <b {% if balance > 0 %}class="due"{% endif %}>{{ org_currency }}{{ balance|floatformat:2 }}</b>
+    </div>
+  {% elif allocations %}
+    <div class="slip-total">
+      <span>{% trans "Still due on these invoices" %}</span>
       <b {% if balance > 0 %}class="due"{% endif %}>{{ org_currency }}{{ balance|floatformat:2 }}</b>
     </div>
   {% endif %}

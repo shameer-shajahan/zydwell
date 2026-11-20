@@ -13,7 +13,9 @@ from core import audit
 from core.models import Status
 from guests.models import Tenancy
 
-from .models import Invoice, InvoiceLine, LateFeeRule, Payment, PaymentMode
+from .models import (
+    Invoice, InvoiceLine, LateFeeRule, Payment, PaymentAllocation, PaymentMode,
+)
 
 TWOPLACES = Decimal('0.01')
 
@@ -295,6 +297,7 @@ def generate_due_invoices(tenant, on_date=None, user=None, only=None):
 
         created.append(build_invoice(
             tenancy, user=user, **period_terms(tenancy, period_start, period_end)))
+        apply_guest_credit(guest=tenancy.guest, user=user)
     return created
 
 
@@ -325,7 +328,7 @@ def record_payment(*, tenant, user, tenancy, amount, mode=None, invoice=None,
     from .models import PaymentMode
 
     mode = resolve_mode(tenant, mode)
-    provisional = needs_approval(user)
+    provisional = needs_approval(user) and not (mode and mode.settles_from_credit)
     payment = Payment(
         tenant=tenant,
         tenancy=tenancy,
@@ -347,6 +350,43 @@ def record_payment(*, tenant, user, tenancy, amount, mode=None, invoice=None,
                   'no': payment.receipt_number, 'amount': payment.amount,
                   'guest': tenancy.guest.full_name, 'mode': payment.mode or '—',
                   'flag': _(' (awaiting approval)') if provisional else ''})
+    return payment
+
+
+@transaction.atomic
+def record_multi_invoice_payment(*, tenant, user, tenancy, invoices, amount, mode=None,
+                                 reference='', paid_on=None, note='', cheque_due_date=None):
+    """Record one receipt and allocate it across open invoices for one tenancy."""
+    requested_ids = {invoice.pk for invoice in invoices}
+    invoices = list(Invoice.objects.select_for_update().filter(
+        pk__in=requested_ids, tenant=tenant,
+        tenancy=tenancy,
+    ).exclude(status__counts_as_settled=True).order_by('due_date', 'period_start', 'pk'))
+    if not invoices or len(invoices) != len(requested_ids):
+        raise ValueError('Select at least one open invoice for this tenancy.')
+    total_balance = sum((invoice.balance for invoice in invoices), Decimal('0'))
+    amount = Decimal(amount).quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+    if amount <= 0 or amount > total_balance:
+        raise ValueError('Payment amount exceeds the selected invoice balances.')
+    mode = resolve_mode(tenant, mode)
+    if mode and mode.settles_from_credit and amount > tenancy.guest.advance_credit():
+        raise ValueError('There is not enough advance credit for this payment.')
+
+    payment = record_payment(
+        tenant=tenant, user=user, tenancy=tenancy, amount=amount, mode=mode,
+        reference=reference, paid_on=paid_on, note=note,
+        cheque_due_date=cheque_due_date,
+    )
+    remaining = amount
+    for invoice in invoices:
+        allocated = min(remaining, invoice.balance)
+        if allocated > 0:
+            PaymentAllocation.objects.create(payment=payment, invoice=invoice,
+                                             amount=allocated)
+            invoice.recalculate()
+            remaining -= allocated
+        if remaining <= 0:
+            break
     return payment
 
 
@@ -385,6 +425,10 @@ def reject_payment(*, payment, user, reason):
 @transaction.atomic
 def reverse_payment(*, payment, user, reason):
     """Admin-only. Keeps the receipt number retired and unwinds the ledger."""
+    if payment.invoice_id is None and not payment.from_credit and not payment.is_reversed \
+            and not payment.awaits_approval:
+        if payment.tenancy.guest.advance_credit() - payment.amount < 0:
+            raise ValueError(_('Apply reversals to the credit-funded invoices first.'))
     before = audit.snapshot(payment, ['is_reversed', 'amount'])
     payment.reverse(user, reason)
     audit.log(audit.AuditLog.ACTION_REVERSE, payment, tenant=payment.tenant,
@@ -401,12 +445,15 @@ def delete_payment(*, payment, user):
     advance that has already been spent from credit cannot go — delete the
     credit settlements first.
     """
-    if payment.invoice_id is None and not payment.is_reversed:
+    if payment.invoice_id is None and not payment.allocations.exists() \
+            and not payment.is_reversed:
         credit = payment.tenancy.guest.advance_credit()
         if credit - payment.amount < 0:
             return False, _('Part of this advance has already been used as credit. '
                             'Delete those credit payments first.')
-    invoice = payment.invoice
+    invoice_ids = set(payment.allocations.values_list('invoice_id', flat=True))
+    if payment.invoice_id:
+        invoice_ids.add(payment.invoice_id)
     with transaction.atomic():
         audit.log(audit.AuditLog.ACTION_DELETE, payment, tenant=payment.tenant,
                   summary=_('Deleted receipt %(no)s (%(amount)s)') % {
@@ -416,14 +463,14 @@ def delete_payment(*, payment, user):
             source_id=str(payment.pk),
         ).delete()
         payment.delete()
-        if invoice is not None:
+        for invoice in Invoice.objects.filter(pk__in=invoice_ids):
             invoice.recalculate()
     return True, ''
 
 
 def delete_invoice(*, invoice, user):
     """Admin-only hard delete. Returns ``(done, reason)``."""
-    if invoice.payments.exists():
+    if invoice.payments.exists() or invoice.payment_allocations.exists():
         return False, _('This invoice has payments against it. Delete those payments first.')
     with transaction.atomic():
         audit.log(audit.AuditLog.ACTION_DELETE, invoice, tenant=invoice.tenant,
@@ -451,6 +498,21 @@ def settle_from_credit(*, invoice, user):
               summary=_('Applied %(amount)s advance credit to %(no)s') % {
                   'amount': amount, 'no': invoice.number})
     return payment
+
+
+@transaction.atomic
+def apply_guest_credit(*, guest, user):
+    """Use available advance credit against the guest's oldest open rent first."""
+    invoices = Invoice.objects.filter(tenancy__guest=guest).exclude(
+        status__counts_as_settled=True).order_by('due_date', 'period_start', 'pk')
+    applied = []
+    for invoice in invoices:
+        if guest.advance_credit() <= 0:
+            break
+        payment = settle_from_credit(invoice=invoice, user=user)
+        if payment:
+            applied.append(payment)
+    return applied
 
 
 def apply_late_fees(tenant, on_date=None):

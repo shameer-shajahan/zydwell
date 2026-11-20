@@ -190,9 +190,11 @@ class Invoice(TenantScopedModel):
 
     def recalculate(self, save=True):
         self.extras_total = sum((l.amount for l in self.lines.all()), Decimal('0'))
-        self.paid_amount = sum(
-            (p.amount for p in self.payments.filter(is_reversed=False)), Decimal('0')
-        )
+        directly_paid = self.payments.filter(is_reversed=False).aggregate(
+            s=models.Sum('amount'))['s'] or Decimal('0')
+        allocated = self.payment_allocations.filter(payment__is_reversed=False).aggregate(
+            s=models.Sum('amount'))['s'] or Decimal('0')
+        self.paid_amount = directly_paid + allocated
         self.total = (
             self.rent_amount + self.extras_total + self.late_fee - self.discount_amount
         ).quantize(TWOPLACES)
@@ -351,6 +353,9 @@ class Payment(TenantScopedModel):
             super().save(*args, **kwargs)
             if self.invoice_id:
                 self.invoice.recalculate()
+            if not new:
+                for invoice_id in self.allocations.values_list('invoice_id', flat=True).distinct():
+                    Invoice.objects.get(pk=invoice_id).recalculate()
             self._sync_ledger(created=new)
 
     def _sync_ledger(self, created=False):
@@ -401,7 +406,33 @@ class Payment(TenantScopedModel):
         self.reversed_by = user
         self.reversal_reason = reason
         self.save()
+        for invoice in self.allocations.values_list('invoice_id', flat=True).distinct():
+            Invoice.objects.get(pk=invoice).recalculate()
         return self
+
+
+class PaymentAllocation(models.Model):
+    """Part of one receipt assigned to an invoice for the same tenancy."""
+
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='allocations')
+    invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT,
+                                related_name='payment_allocations')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['payment', 'invoice'],
+                                    name='uniq_payment_invoice_allocation'),
+            models.CheckConstraint(condition=models.Q(amount__gt=0),
+                                   name='payment_allocation_amount_positive'),
+        ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.payment_id and self.invoice_id \
+                and self.payment.tenancy_id != self.invoice.tenancy_id:
+            raise ValidationError({'invoice': _('Choose an invoice for this tenancy.')})
 
 
 class CashHandover(TenantScopedModel):

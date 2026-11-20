@@ -160,6 +160,28 @@
     }
   });
 
+  /* A receipt may cover several invoices, but only within one tenancy. */
+  document.addEventListener('change', function (event) {
+    var tenancy = event.target.closest('[data-invoice-tenancy]');
+    var invoices = document.querySelector('[data-invoice-picker]');
+    if (tenancy && invoices) {
+      Array.prototype.forEach.call(invoices.options, function (option) {
+        var allowed = !option.value || option.getAttribute('data-tenancy') === tenancy.value;
+        option.hidden = !allowed;
+        if (!allowed) { option.selected = false; }
+      });
+    }
+    var picker = event.target.closest('[data-invoice-picker]');
+    if (!picker) { return; }
+    var amount = document.querySelector('#id_amount');
+    if (!amount) { return; }
+    var total = 0;
+    Array.prototype.forEach.call(picker.selectedOptions, function (option) {
+      total += parseFloat(option.getAttribute('data-balance')) || 0;
+    });
+    amount.value = total.toFixed(2);
+  });
+
   /* ---------------- Sign in ---------------- */
 
   /* Reveal the password. Staff type these on a phone, in a corridor. */

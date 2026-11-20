@@ -95,6 +95,7 @@ def invoice_create(request):
             due_date=data['due_date'], user=request.user, rent_amount=data['rent_amount'],
             extras=extras, notes=data['notes'],
         )
+        services.apply_guest_credit(guest=data['tenancy'].guest, user=request.user)
         messages.success(request, _('Invoice %(no)s created.') % {'no': invoice.number})
         return redirect_back(request, 'billing:invoice_detail', pk=invoice.pk, made=invoice)
     return render(request, 'billing/invoice_form.html', {'form': form})
@@ -127,7 +128,9 @@ def invoice_detail(request, pk):
     return render(request, 'billing/invoice_detail.html', {
         'invoice': invoice,
         'lines': invoice.lines.select_related('category'),
-        'payments': invoice.payments.select_related('collected_by'),
+        'payments': Payment.objects.filter(
+            Q(invoice=invoice) | Q(allocations__invoice=invoice)
+        ).distinct().select_related('collected_by').prefetch_related('allocations'),
         'discount_form': discount_form,
         'is_admin': is_admin,
         'can_collect': request.user.can(MODULE_BILLING, 'create'),
@@ -225,7 +228,8 @@ def payment_create(request):
     if invoice_id:
         invoice = Invoice.objects.filter(pk=invoice_id, tenant=request.tenant).first()
         if invoice:
-            initial = {'invoice': invoice.pk, 'tenancy': invoice.tenancy_id,
+            initial = {'invoice': invoice.pk, 'invoices': [invoice.pk],
+                       'tenancy': invoice.tenancy_id,
                        'amount': invoice.balance}
     elif tenancy_id:
         initial = {'tenancy': tenancy_id}
@@ -234,12 +238,25 @@ def payment_create(request):
                        initial=initial)
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
-        payment = services.record_payment(
-            tenant=request.tenant, user=request.user, tenancy=data['tenancy'],
-            amount=data['amount'], mode=data['mode'], invoice=data['invoice'],
-            reference=data['reference'], paid_on=data['paid_on'], note=data['note'],
-            cheque_due_date=data['cheque_due_date'],
-        )
+        selected = data['invoices']
+        common = {
+            'tenant': request.tenant, 'user': request.user, 'tenancy': data['tenancy'],
+            'amount': data['amount'], 'mode': data['mode'],
+            'reference': data['reference'], 'paid_on': data['paid_on'],
+            'note': data['note'], 'cheque_due_date': data['cheque_due_date'],
+        }
+        if len(selected) > 1:
+            payment = services.record_multi_invoice_payment(
+                **common, invoices=selected)
+        else:
+            payment = services.record_payment(
+                **common, invoice=selected[0] if selected else None)
+            if not selected and not payment.from_credit and not payment.awaits_approval:
+                applied = services.apply_guest_credit(
+                    guest=data['tenancy'].guest, user=request.user)
+                if applied:
+                    messages.info(request, _(
+                        'Advance credit was applied to the oldest unpaid invoices.'))
         if payment.awaits_approval:
             messages.success(request, _(
                 'Receipt %(no)s recorded. It is waiting for the owner to approve it.'
@@ -302,6 +319,7 @@ def payment_detail(request, pk):
     payment = get_object_or_404(_scoped_payments(request), pk=pk)
     return render(request, 'billing/payment_detail.html', {
         'payment': payment,
+        'allocations': payment.allocations.select_related('invoice'),
         'reversal_form': ReversalForm(),
         'is_admin': request.user.is_admin or request.user.is_super_admin,
     })
@@ -312,8 +330,12 @@ def payment_reverse(request, pk):
     payment = get_object_or_404(Payment, pk=pk, tenant=request.tenant)
     form = ReversalForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        services.reverse_payment(payment=payment, user=request.user,
-                                 reason=form.cleaned_data['reason'])
+        try:
+            services.reverse_payment(payment=payment, user=request.user,
+                                     reason=form.cleaned_data['reason'])
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return redirect('billing:payment_detail', pk=payment.pk)
         messages.success(request, _('Payment reversed. The receipt number stays retired.'))
         return redirect('billing:payment_detail', pk=payment.pk)
     return render(request, 'billing/payment_reverse.html', {'payment': payment, 'form': form})
@@ -322,6 +344,9 @@ def payment_reverse(request, pk):
 @admin_required
 def payment_edit(request, pk):
     payment = get_object_or_404(Payment, pk=pk, tenant=request.tenant)
+    if payment.allocations.exists():
+        messages.info(request, _('A receipt allocated to several invoices cannot be edited.'))
+        return redirect('billing:payment_detail', pk=payment.pk)
     tracked = PaymentEditForm.Meta.fields
     before = audit.snapshot(payment, tracked)
     form = PaymentEditForm(request.POST or None, instance=payment)
@@ -346,7 +371,8 @@ def payment_delete(request, pk):
     payment = get_object_or_404(Payment, pk=pk, tenant=request.tenant)
     if request.method != 'POST':
         return redirect('billing:payment_detail', pk=payment.pk)
-    invoice_id = payment.invoice_id
+    invoice_id = payment.invoice_id or payment.allocations.values_list(
+        'invoice_id', flat=True).first()
     done, reason = services.delete_payment(payment=payment, user=request.user)
     if not done:
         messages.error(request, reason)
@@ -512,13 +538,16 @@ def receipt_view_context(payment):
     return {
         'payment': payment,
         'invoice': invoice,
+        'allocations': payment.allocations.select_related('invoice'),
         'tenancy': payment.tenancy,
         'guest': payment.tenancy.guest,
         'building': payment.tenancy.building,
         'org_name': payment.tenant.name,
         'org_currency': f'{payment.tenant.currency} ',
         'lines': invoice.lines.select_related('category') if invoice else [],
-        'balance': invoice.balance if invoice else None,
+        'balance': invoice.balance if invoice else sum(
+            (row.invoice.balance for row in payment.allocations.select_related('invoice')),
+            Decimal('0')) if payment.allocations.exists() else None,
     }
 
 
@@ -650,6 +679,8 @@ def payment_decide(request, pk, verdict):
     if verdict == 'approve':
         services.approve_payment(payment=payment, user=request.user,
                                  note=request.POST.get('note', ''))
+        if payment.invoice_id is None and not payment.from_credit:
+            services.apply_guest_credit(guest=payment.tenancy.guest, user=request.user)
         messages.success(request, _('Receipt %(no)s approved.') % {
             'no': payment.receipt_number})
     else:
