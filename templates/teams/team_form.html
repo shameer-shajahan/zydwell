@@ -4,7 +4,7 @@
 {% block content %}
 <div class="crumbs"><a href="{% url 'teams:team_list' %}">{% trans "Teams" %}</a>{% if team %} <span>/</span> <a href="{% url 'teams:team_detail' team.pk %}">{{ team.team_name }}</a>{% endif %}</div>
 <div class="page-head"><div><h1>{% if team %}{% trans "Edit team let" %}{% else %}{% trans "New team let" %}{% endif %}</h1>
-  <div class="sub">{% trans "Let the team take the whole apartment or one room. The selected space is marked occupied and cannot be booked separately." %}</div></div></div>
+  <div class="sub">{% trans "Select an apartment, then optionally select one of its rooms. Leave the room blank to let the whole apartment." %}</div></div></div>
 
 <form method="post" data-submit-once>{% csrf_token %}
 {% if form.non_field_errors %}<div class="flash error">{{ form.non_field_errors }}</div>{% endif %}

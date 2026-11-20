@@ -10,7 +10,7 @@
   <div class="actions">
     <a class="btn" href="{% url 'messaging:send_manual' %}?guest={{ team.guest_id }}">{% trans "WhatsApp" %}</a>
     {% if can_bill %}
-      <a class="btn accent" href="{% url 'billing:payment_create' %}?tenancy={{ team.pk }}&amp;{% return_here %}">{% trans "Record payment" %}</a>
+      <a class="btn accent" href="{% url 'billing:payment_create' %}?tenancy={{ team.pk }}&amp;collect=all&amp;{% return_here %}">{% trans "Collect all rent" %}</a>
       <a class="btn" href="{% url 'billing:invoice_create' %}?tenancy={{ team.pk }}&amp;{% return_here %}">{% trans "Raise invoice" %}</a>
     {% endif %}
     {% if can_edit %}

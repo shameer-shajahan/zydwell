@@ -64,7 +64,7 @@ def _save_form(request, form, team=None):
         'agreement_note': data['agreement_note'],
         'prorate_first_period': data['prorate_first_period'],
     }
-    room = data['room'] if data['space'] == 'room' else None
+    room = data['room']
     if team is None:
         return services.create_team_let(
             tenant=request.tenant, user=request.user, company=company,

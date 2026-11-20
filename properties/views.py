@@ -125,6 +125,7 @@ def bed_board(request):
     return render(request, 'properties/bed_board.html', {
         'blocks': blocks,
         'location': location,
+        'can_check_in': request.user.can(MODULE_GUESTS, 'create'),
         'statuses': Status.objects.filter(tenant=request.tenant, kind=Status.KIND_BED),
         'overall': occupancy_for(location.apply(
             visible_beds(request.user, request.tenant), paths=BED_PATHS)),

@@ -33,14 +33,10 @@ class TeamLetForm(forms.Form):
     collector_name = forms.CharField(label=_('Collector name'), max_length=150, required=False)
     collector_mobile = forms.CharField(label=_('Collector mobile'), max_length=32,
                                        required=False)
-    space = forms.ChoiceField(
-        label=_('Team location'),
-        choices=[('apartment', _('Whole apartment')), ('room', _('One room'))],
-        initial='apartment', required=False,
-    )
     apartment = forms.ModelChoiceField(label=_('Apartment'), queryset=Apartment.objects.none())
     room = forms.ModelChoiceField(label=_('Room'), queryset=Room.objects.none(), required=False,
-                                  widget=TeamRoomSelect())
+                                  widget=TeamRoomSelect(),
+                                  help_text=_('Leave blank to let the whole apartment.'))
     team_name = forms.CharField(label=_('Team name'), max_length=150)
     joining_date = forms.DateField(label=_('Joining date'), required=False, widget=DATE,
                                    help_text=_('Leave empty when not known.'))
@@ -87,7 +83,6 @@ class TeamLetForm(forms.Form):
             f'{room.apartment.floor.name} · {room.apartment.name} · '
             f'{_("Room")} {room.number}')
         self.fields['apartment'].widget.attrs['data-team-apartment'] = '1'
-        self.fields['space'].widget.attrs['data-team-space'] = '1'
         self.fields['room'].widget.attrs.update({
             'data-team-room': '1', 'data-team-apartment-source': '1'})
         self.fields['per_head'].widget.attrs['data-team-per-head'] = '1'
@@ -115,7 +110,7 @@ class TeamLetForm(forms.Form):
     def initial_for(cls, team):
         return {
             'company': team.guest_id, 'apartment': team.apartment_id,
-            'room': team.room_id, 'space': 'room' if team.room_id else 'apartment',
+            'room': team.room_id,
             'team_name': team.team_name, 'joining_date': team.joining_date,
             'billing_day': team.billing_day, 'members': team.members,
             'per_head': team.per_head, 'monthly_rent': team.monthly_rent,
@@ -128,13 +123,7 @@ class TeamLetForm(forms.Form):
         if not data.get('company') and not (data.get('company_name') or '').strip():
             self.add_error('company_name', _('Pick a company above or type a new one here.'))
         flat, room = data.get('apartment'), data.get('room')
-        space = data.get('space') or 'apartment'
-        data['space'] = space
-        if space == 'room' and room is None:
-            self.add_error('room', _('Choose the room the team will take.'))
-        if space != 'room':
-            data['room'] = room = None
-        elif room is not None and flat is not None and room.apartment_id != flat.pk:
+        if room is not None and flat is not None and room.apartment_id != flat.pk:
             self.add_error('room', _('Choose a room inside the selected apartment.'))
         location_changed = self.team is None or (
             (flat.pk if flat else None) != self.team.apartment_id

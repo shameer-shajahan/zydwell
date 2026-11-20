@@ -225,6 +225,7 @@ def payment_create(request):
     initial = {}
     tenancy_id = request.GET.get('tenancy')
     invoice_id = request.GET.get('invoice')
+    collect_all = request.GET.get('collect') == 'all'
     if invoice_id:
         invoice = Invoice.objects.filter(pk=invoice_id, tenant=request.tenant).first()
         if invoice:
@@ -233,6 +234,17 @@ def payment_create(request):
                        'amount': invoice.balance}
     elif tenancy_id:
         initial = {'tenancy': tenancy_id}
+        if collect_all:
+            tenancies = request.user.scope_queryset(Tenancy.objects.filter(
+                tenant=request.tenant))
+            open_invoices = services.owing(Invoice.objects.filter(
+                tenant=request.tenant, tenancy_id=tenancy_id,
+                tenancy__in=tenancies)).order_by('due_date', 'period_start', 'pk')
+            open_invoices = list(open_invoices)
+            invoice_ids = [inv.pk for inv in open_invoices]
+            if invoice_ids:
+                initial['invoices'] = invoice_ids
+                initial['amount'] = sum((inv.balance for inv in open_invoices), Decimal('0'))
 
     form = PaymentForm(request.POST or None, tenant=request.tenant, user=request.user,
                        initial=initial)
@@ -423,7 +435,8 @@ def overdue(request):
         'aging_rows': [(label, buckets[label]) for label in
                        ('current', '0-30', '31-60', '60+')],
         'recent_due': buckets['0-30'],
-        'total_due': items.aggregate(s=Sum('due_balance'))['s'] or Decimal('0'),
+        'total_due': sum((buckets[key] for key in ('current', '0-30', '31-60', '60+')),
+                         Decimal('0')),
         'cheques': paginate(request, cheques, 10, param='cheque_page'),
         'shortfalls': paginate(request, shortfalls, 10, param='shortfall_page'),
         'offenders': offenders,

@@ -13,7 +13,7 @@
 </form>
 
 <div class="grid k4" style="margin-bottom:16px">
-  <div class="kpi red"><div class="label">{% trans "Total overdue" %}</div><div class="value">{{ currency }} {{ total_due|floatformat:2 }}</div></div>
+  <div class="kpi red"><div class="label">{% trans "Total pending" %}</div><div class="value">{{ currency }} {{ total_due|floatformat:2 }}</div></div>
   <div class="kpi amber"><div class="label">0–30 {% trans "days" %}</div><div class="value">{{ currency }} {{ recent_due|floatformat:0 }}</div></div>
   <div class="kpi navy"><div class="label">{% trans "Cheques due" %}</div><div class="value">{{ cheques.paginator.count }}</div></div>
   <div class="kpi slate"><div class="label">{% trans "Deposit shortfalls" %}</div><div class="value">{{ shortfalls.paginator.count }}</div></div>

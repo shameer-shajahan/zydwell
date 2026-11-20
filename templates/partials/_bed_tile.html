@@ -1,6 +1,6 @@
-{% load i18n %}
+{% load i18n return_links %}
 {% with c=item.obj.status.color|default:"#64748b" %}
-<a class="bed-tile{% if item.team %} team{% endif %}" href="{% if item.tenancy %}{% url 'guests:tenancy_detail' item.tenancy.pk %}{% elif item.team %}{% url 'teams:team_detail' item.team.pk %}{% else %}{% url 'properties:room_detail' item.obj.room_id %}{% endif %}"
+<a class="bed-tile{% if item.team %} team{% endif %}" href="{% if item.tenancy %}{% url 'guests:tenancy_detail' item.tenancy.pk %}{% elif item.team %}{% url 'teams:team_detail' item.team.pk %}{% elif item.obj.is_available and can_check_in %}{% url 'guests:check_in' %}?bed={{ item.obj.pk }}&amp;{% return_here %}{% else %}{% url 'properties:room_detail' item.obj.room_id %}{% endif %}"
    style="border-color:{{ c }}59;background:{{ c }}14;color:{{ c }}"
    title="{{ item.obj.full_label }} — {{ item.obj.status.name|default:_('No status') }}{% if item.tenancy %} · {{ item.tenancy.guest.full_name }}{% elif item.team %} · {% trans "Team" %}: {{ item.team.team_name }}{% endif %}">
   {% include "partials/_icon_bed.html" %}

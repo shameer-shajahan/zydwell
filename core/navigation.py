@@ -48,8 +48,15 @@ def allowed_items(user, tenant, path=''):
             'label': label,
             'url': url,
             'icon': icon,
-            'active': path == url or (url != '/' and path.startswith(url)),
+            'active': False,
         })
+    matches = [item for item in items if path == item['url'] or (
+        item['url'] != '/' and path.startswith(item['url'].rstrip('/') + '/'))]
+    if matches:
+        # Parent links such as /guests/ also prefix /guests/tenancies/.
+        # Highlight only the most specific matching destination.
+        active = max(matches, key=lambda item: len(item['url']))
+        active['active'] = True
     return items
 
 
