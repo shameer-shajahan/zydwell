@@ -1,0 +1,120 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{{ team.team_name }}{% endblock %}
+{% block topbar_title %}{% trans "Team" %}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="{% url 'teams:team_list' %}">{% trans "Teams" %}</a> <span>/</span> <span>{{ team.team_name }}</span></div>
+<div class="page-head">
+  <div><h1>{{ team.team_name }}</h1>
+    <div class="sub">{{ team.guest.full_name }} · {{ team.building.name }} / {{ team.floor.name }} / {% trans "Flat" %} {{ team.apartment.name }}
+      {% include "partials/_status.html" with status=team.status %}</div></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'messaging:send_manual' %}?guest={{ team.guest_id }}">{% trans "WhatsApp" %}</a>
+    {% if can_bill %}
+      <a class="btn accent" href="{% url 'billing:payment_create' %}?tenancy={{ team.pk }}&amp;{% return_here %}">{% trans "Record payment" %}</a>
+      <a class="btn" href="{% url 'billing:invoice_create' %}?tenancy={{ team.pk }}&amp;{% return_here %}">{% trans "Raise invoice" %}</a>
+    {% endif %}
+    {% if can_edit %}
+      <a class="btn" href="{% url 'teams:team_edit' team.pk %}">{% trans "Edit" %}</a>
+      {% if team.is_live %}
+        <a class="btn" href="{% url 'guests:give_notice' team.pk %}">{% trans "Record notice" %}</a>
+        <a class="btn danger" href="{% url 'guests:check_out' team.pk %}">{% trans "Vacate" %}</a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi teal"><div class="label">{% trans "Monthly rent" %}</div><div class="value">{{ currency }} {{ team.monthly_rent|floatformat:0 }}</div>
+    <div class="hint">{% trans "invoiced on day" %} {{ team.billing_day }}</div></div>
+  <div class="kpi navy"><div class="label">{% trans "Members" %}</div><div class="value">{{ team.members }}</div>
+    <div class="hint">{% if team.per_head is not None %}{{ currency }} {{ team.per_head|floatformat:0 }} {% trans "per head" %}{% endif %}
+      · {{ beds }} {% trans "beds in the flat" %}</div></div>
+  <div class="kpi {% if outstanding > 0 %}red{% else %}green{% endif %}"><div class="label">{% trans "Pending" %}</div><div class="value">{{ currency }} {{ outstanding|floatformat:2 }}</div></div>
+  <div class="kpi slate"><div class="label">{% trans "Deposit held" %}</div><div class="value">{{ currency }} {{ deposit_held|floatformat:0 }}</div>
+    <div class="hint">{% trans "Agreed" %} {{ currency }} {{ team.deposit_amount|floatformat:0 }}</div></div>
+</div>
+
+{% if team.rent_differs %}
+<div class="flash warning">{% blocktrans with n=team.members rate=team.per_head|floatformat:0 calc=team.headcount_rent|floatformat:0 rent=team.monthly_rent|floatformat:0 %}{{ n }} members × {{ rate }} = {{ calc }}, but the agreed rent is {{ rent }}. The agreed rent is what is billed.{% endblocktrans %}</div>
+{% endif %}
+
+<div class="grid split">
+  <div>
+    <div class="card">
+      <header><h2>{% trans "Invoices" %}</h2></header>
+      <div class="body tight"><div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>{% trans "Invoice" %}</th><th>{% trans "Period" %}</th><th>{% trans "Due" %}</th>
+        <th class="num">{% trans "Total" %}</th><th class="num">{% trans "Balance" %}</th><th>{% trans "Status" %}</th></tr></thead>
+        <tbody>{% for i in invoices %}
+          <tr><td><a class="mono" href="{% url 'billing:invoice_detail' i.pk %}">{{ i.number }}</a></td>
+            <td class="nowrap">{{ i.period_label }}</td><td class="nowrap">{{ i.due_date|date:"d M Y" }}</td>
+            <td class="num">{{ i.total|floatformat:2 }}</td><td class="num">{{ i.balance|floatformat:2 }}</td>
+            <td>{% include "partials/_status.html" with status=i.status %}</td></tr>
+        {% empty %}<tr><td colspan="6">{% include "partials/_empty.html" with message=_("No invoices yet. Use “Raise this month's invoices” on the Teams page, or wait for the nightly run.") %}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+{% include "partials/_pager.html" with page=invoices %}
+    </div>
+
+    <div class="card">
+      <header><h2>{% trans "Payments" %}</h2></header>
+      <div class="body tight"><div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>{% trans "Receipt" %}</th><th>{% trans "Date" %}</th><th class="num">{% trans "Amount" %}</th>
+        <th>{% trans "Mode" %}</th><th>{% trans "Collected by" %}</th><th></th></tr></thead>
+        <tbody>{% for p in payments %}
+          <tr {% if p.is_reversed %}style="opacity:.55;text-decoration:line-through"{% endif %}>
+            <td class="mono">{{ p.receipt_number }}</td><td class="nowrap">{{ p.paid_on|date:"d M Y" }}</td>
+            <td class="num">{{ currency }} {{ p.amount|floatformat:2 }}</td>
+            <td>{{ p.mode|default:"—" }}</td><td>{{ p.collected_by_name|default:"—" }}</td>
+            <td class="right"><a class="btn sm" href="{% url 'billing:receipt' p.pk %}">{% trans "Receipt" %}</a></td></tr>
+        {% empty %}<tr><td colspan="6">{% include "partials/_empty.html" with message=_("Nothing collected yet.") %}</td></tr>{% endfor %}</tbody>
+      </table></div></div>
+{% include "partials/_pager.html" with page=payments %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <header><h3>{% trans "Team let" %}</h3></header>
+      <div class="body"><dl class="kv">
+        <dt>{% trans "Company" %}</dt><dd><a href="{% url 'guests:guest_detail' team.guest_id %}">{{ team.guest.full_name }}</a></dd>
+        <dt>{% trans "Collector" %}</dt><dd>{{ team.guest.contact_person|default:"—" }} <span class="mono">{{ team.guest.mobile }}</span></dd>
+        <dt>{% trans "Flat" %}</dt><dd><a href="{% url 'properties:building_detail' team.building_id %}">{{ team.building.name }} · {{ team.floor.name }} · {{ team.apartment.name }}</a></dd>
+        <dt>{% trans "Joined" %}</dt><dd>{{ team.joining_date|date:"d M Y"|default:"—" }}</dd>
+        <dt>{% trans "Billed from" %}</dt><dd>{{ team.check_in_date|date:"d M Y" }}</dd>
+        <dt>{% trans "Notice given" %}</dt><dd>{{ team.notice_given_on|date:"d M Y"|default:"—" }}</dd>
+        <dt>{% trans "Vacated" %}</dt><dd>{{ team.actual_check_out|date:"d M Y"|default:"—" }}</dd>
+        <dt>{% trans "Opened by" %}</dt><dd>{{ team.created_by.display_name|default:"—" }}</dd>
+      </dl>
+      {% if team.agreement_note %}<p class="muted" style="margin-top:12px">{{ team.agreement_note }}</p>{% endif %}
+      {% if others %}
+        <p style="margin-top:12px;font-size:13px">{% trans "Also in this flat:" %}
+          {% for o in others %}<a href="{% url 'teams:team_detail' o.pk %}">{{ o.team_name }}</a> ({{ o.members }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
+      {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <header><h3>{% trans "Deposit" %}</h3></header>
+      <div class="body">
+        <table class="data" style="margin:-16px -16px 10px;width:calc(100% + 32px)">
+          <tbody>{% for d in deposits %}
+            <tr><td>{{ d.get_kind_display }}
+                <div class="muted" style="font-size:11px">{{ d.happened_on|date:"d M Y" }}
+                  · <span class="mono">{{ d.receipt_number }}</span> {{ d.reason }}</div></td>
+              <td class="num">{% if d.is_money_in %}+{% else %}−{% endif %}{{ d.amount|floatformat:2 }}</td>
+              <td class="right"><a class="btn sm" href="{% url 'guests:deposit_receipt' d.pk %}">{% trans "Receipt" %}</a></td></tr>
+          {% empty %}<tr><td class="muted" style="padding:14px">{% trans "No deposit movements." %}</td></tr>{% endfor %}</tbody>
+        </table>
+        {% if can_edit and team.is_live %}
+        <form method="post" action="{% url 'guests:add_deposit' team.pk %}">{% csrf_token %}
+          {% include "partials/_form.html" with form=deposit_form one_column=1 %}
+          <button class="btn" type="submit" style="margin-top:10px">{% trans "Record deposit" %}</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

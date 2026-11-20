@@ -1,10 +1,12 @@
+import re
+
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import HttpResponse
-from django.urls import include, path
+from django.urls import include, path, re_path
 
 from billing import views as billing_views
+from core import media
 from guests import views as guest_views
 
 
@@ -35,14 +37,20 @@ urlpatterns = [
     path('platform/', include('core.urls', namespace='platform')),
     path('properties/', include('properties.urls', namespace='properties')),
     path('guests/', include('guests.urls', namespace='guests')),
+    path('teams/', include('teams.urls', namespace='teams')),
     path('billing/', include('billing.urls', namespace='billing')),
     path('accounting/', include('accounting.urls', namespace='accounting')),
     path('messaging/', include('messaging.urls', namespace='messaging')),
 ]
 
 # User uploads (logos, guest photos and documents) are stored under MEDIA_ROOT.
-# Unlike collected static assets, they need a runtime route in production too.
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Unlike collected static assets they need a runtime route in production too.
+# static() does nothing once DEBUG is off, so the route is our own, and it
+# checks who may open each file — most are ID scans.
+urlpatterns += [
+    re_path(r'^%s(?P<path>.+)$' % re.escape(settings.MEDIA_URL.lstrip('/')), media.media,
+            name='media'),
+]
 
 if settings.DEBUG:
     # Error pages only render when DEBUG is off, which makes them awkward to

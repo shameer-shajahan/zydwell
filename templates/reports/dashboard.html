@@ -42,6 +42,17 @@
     <div class="hint">{% trans "Income" %} − {% trans "expense" %}</div></div>
 </div>
 
+{% if teams.count %}
+<a class="card team-strip" href="{% url 'teams:team_list' %}">
+  <span class="badge team-badge"><b>{% trans "TEAMS" %}</b></span>
+  <span><strong>{{ teams.count }}</strong> {% trans "team lets" %} · <strong>{{ teams.members }}</strong> {% trans "members" %}</span>
+  <span>{% trans "Rent" %} <strong>{{ currency }} {{ teams.rent|floatformat:0 }}</strong>/{% trans "mo" %}</span>
+  <span>{% trans "Collected" %} <strong>{{ currency }} {{ teams.collected|floatformat:0 }}</strong></span>
+  <span>{% trans "Pending" %} <strong>{{ currency }} {{ teams.pending|floatformat:0 }}</strong></span>
+  <span class="muted" style="font-size:12px">{% trans "Included in the totals above" %}</span>
+</a>
+{% endif %}
+
 <div class="grid split">
   <div>
     <div class="card">

@@ -215,6 +215,109 @@
 
 
   /* =====================================================================
+     Page loader
+
+     A thin bar at the top starts the moment a link or form is used, so a tap
+     on a slow site connection is never met with nothing. Past half a second a
+     "Loading…" pill joins it. The new page replaces both; a page that stays
+     (a download, WhatsApp opening in its app, Back from the cache) clears
+     them itself. Links and forms opt out with data-no-loader.
+     ===================================================================== */
+  var loaderScript = document.currentScript;
+  var loader = null, loaderPill = null, pillTimer = null, giveUpTimer = null;
+  // Responses that are files, not pages: the browser downloads and stays.
+  var DOWNLOAD = /\/(export|escpos)\/|\.(pdf|csv|xlsx|zip|txt|bin)$/i;
+
+  function buildLoader() {
+    if (loader || !document.body) { return; }
+    var label = (loaderScript && loaderScript.getAttribute('data-loading-label')) || 'Loading…';
+    loader = document.createElement('div');
+    loader.className = 'page-loader no-print';
+    loader.setAttribute('aria-hidden', 'true');
+    loader.innerHTML = '<div class="bar"></div>';
+    loaderPill = document.createElement('div');
+    loaderPill.className = 'page-loader-pill no-print';
+    loaderPill.setAttribute('role', 'status');
+    loaderPill.innerHTML = '<span class="spin" aria-hidden="true"></span><span></span>';
+    loaderPill.lastChild.textContent = label;
+    document.body.appendChild(loader);
+    document.body.appendChild(loaderPill);
+  }
+
+  function startLoader() {
+    buildLoader();
+    if (!loader) { return; }
+    stopLoader();
+    // Read layout so the bar starts from zero before it grows.
+    void loader.offsetWidth;
+    loader.classList.add('on');
+    pillTimer = window.setTimeout(function () { loaderPill.classList.add('on'); }, 500);
+    // Never leave it spinning over a page that is still usable.
+    giveUpTimer = window.setTimeout(stopLoader, 45000);
+  }
+
+  function stopLoader() {
+    window.clearTimeout(pillTimer);
+    window.clearTimeout(giveUpTimer);
+    if (loader) { loader.classList.remove('on'); }
+    if (loaderPill) { loaderPill.classList.remove('on'); }
+  }
+
+  function leavesThePage(url, target) {
+    if (target && target !== '_self') { return false; }
+    if (url.origin !== window.location.origin) { return false; }
+    if (DOWNLOAD.test(url.pathname)) { return false; }
+    var here = window.location;
+    // Only the #fragment changes: the browser scrolls, nothing loads.
+    if (url.hash && url.pathname === here.pathname && url.search === here.search) {
+      return false;
+    }
+    return true;
+  }
+
+  // On window, so it runs after every handler that may cancel the event.
+  window.addEventListener('click', function (event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
+        event.shiftKey || event.altKey) { return; }
+    var link = event.target.closest && event.target.closest('a[href]');
+    if (!link || link.hasAttribute('download') || link.closest('[data-no-loader]')) { return; }
+    var href = link.getAttribute('href');
+    if (!href || href.charAt(0) === '#') { return; }
+    var url;
+    try { url = new URL(link.href, window.location.href); } catch (err) { return; }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') { return; }
+    if (leavesThePage(url, link.getAttribute('target'))) { startLoader(); }
+  });
+
+  window.addEventListener('submit', function (event) {
+    if (event.defaultPrevented) { return; }
+    var form = event.target;
+    var submitter = event.submitter;
+    if (form.closest('[data-no-loader]') || (submitter && submitter.hasAttribute('data-no-loader'))) {
+      return;
+    }
+    var action = (submitter && submitter.getAttribute('formaction')) ||
+                 form.getAttribute('action') || window.location.href;
+    var target = (submitter && submitter.getAttribute('formtarget')) || form.getAttribute('target');
+    var url;
+    try { url = new URL(action, window.location.href); } catch (err) { return; }
+    // Submitting the page's own address with a #fragment still loads it.
+    url.hash = '';
+    if (leavesThePage(url, target)) { startLoader(); }
+  });
+
+  // Back/Forward from the cache, or returning from WhatsApp or a download.
+  // Only a page restored from the cache: the first pageshow comes with the
+  // load event, which on a slow line can follow a tap already on its way.
+  window.addEventListener('pageshow', function (event) {
+    if (event.persisted) { stopLoader(); }
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') { stopLoader(); }
+  });
+
+
+  /* =====================================================================
      Searchable select
 
      Every <select> is upgraded into a combobox you can type into. The native
@@ -506,6 +609,37 @@
   function enhanceAll(root) {
     (root || document).querySelectorAll('select').forEach(enhance);
   }
+
+  /* A field the figures on the page are worked out from, such as a check-out
+     date: reload with the new value so the server redoes the sums. */
+  document.addEventListener('change', function (event) {
+    var field = event.target.closest('[data-reload-with]');
+    if (!field || !field.value) { return; }
+    var url = new URL(window.location.href);
+    url.searchParams.set(field.getAttribute('data-reload-with'), field.value);
+    startLoader();
+    window.location.assign(url.toString());
+  });
+
+  /* Team let form: members × per head beside the agreed rent. A different
+     rent is allowed — it is only pointed out. */
+  document.addEventListener('input', function (event) {
+    if (!event.target.closest('[data-team-members], [data-team-per-head], [data-team-rent]')) {
+      return;
+    }
+    var form = event.target.form;
+    var note = form && form.querySelector('[data-team-calc]');
+    if (!note) { return; }
+    var members = parseFloat((form.querySelector('[data-team-members]') || {}).value);
+    var rate = parseFloat((form.querySelector('[data-team-per-head]') || {}).value);
+    var rent = parseFloat((form.querySelector('[data-team-rent]') || {}).value);
+    var calc = members * rate;
+    var show = isFinite(calc) && !(isFinite(rent) && Math.abs(calc - rent) < 0.005);
+    note.style.display = show ? '' : 'none';
+    if (show) {
+      note.textContent = note.getAttribute('data-template').replace('{calc}', calc.toFixed(2));
+    }
+  });
 
   /* Auto-submitting filter bars, without inline javascript. */
   document.addEventListener('change', function (event) {

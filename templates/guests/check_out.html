@@ -8,17 +8,57 @@
 {% if outstanding > 0 %}
   <div class="banner danger">{% blocktrans %}This guest still owes {{ currency }} {{ outstanding }}. Settle or write it off before releasing the deposit.{% endblocktrans %}</div>
 {% endif %}
+{% if final.later_invoices %}
+  <div class="banner">{% blocktrans count n=final.later_invoices|length %}An invoice is already raised for a period after this check-out date:{% plural %}{{ n }} invoices are already raised for periods after this check-out date:{% endblocktrans %}
+    {% for inv in final.later_invoices %}<a href="{% url 'billing:invoice_detail' inv.pk %}">{{ inv.number }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.
+    {% trans "Check-out does not change them." %}</div>
+{% endif %}
 
+<form method="post" data-submit-once>{% csrf_token %}
+{% if form.non_field_errors %}<div class="flash error">{{ form.non_field_errors }}</div>{% endif %}
 <div class="grid split">
-  <div class="card"><div class="body">
-    <form method="post">{% csrf_token %}
-      {% include "partials/_form.html" with form=form wide_fields="note" %}
+  <div>
+    <div class="card" style="margin-bottom:16px"><div class="body">
+      {% include "partials/_form.html" with form=None fields=form.date_fields %}
+      {% if final and not form.is_bound %}<div class="help" style="margin-top:6px">{% trans "Changing the date works the final rent out again." %}</div>{% endif %}
+    </div></div>
+    {% if final %}
+    <div class="card" style="margin-bottom:16px"><header><h3>{% trans "Final period rent" %}</h3></header>
+      <div class="body tight"><div class="table-wrap">
+      <table class="data"><tbody>
+        <tr><td>{% trans "Stayed" %}</td><td class="num">{{ final.period_start|date:"d M" }} – {{ final.period_end|date:"d M Y" }}</td></tr>
+        <tr><td>{% trans "Days" %}</td><td class="num">{% blocktrans with d=final.days p=final.period_days %}{{ d }} of {{ p }}{% endblocktrans %}</td></tr>
+        <tr><td>{% trans "Full rent" %}</td><td class="num">{{ currency }} {{ tenancy.monthly_rent|floatformat:2 }}</td></tr>
+        <tr><td>{% trans "For the days stayed" %}</td><td class="num"><strong>{{ currency }} {{ final.prorata_rent|floatformat:2 }}</strong></td></tr>
+        {% if final.invoice %}
+        <tr><td>{% trans "Already billed" %} · <a href="{% url 'billing:invoice_detail' final.invoice.pk %}">{{ final.invoice.number }}</a></td>
+          <td class="num">{{ currency }} {{ final.invoice.total|floatformat:2 }}</td></tr>
+        <tr><td>{% trans "Paid on it" %}</td><td class="num">{{ currency }} {{ final.invoice.paid_amount|floatformat:2 }}</td></tr>
+        {% if final.paid_over %}
+        <tr><td colspan="2" class="muted">{% blocktrans with amount=final.paid_over|floatformat:2 %}{{ currency }} {{ amount }} more than the days stayed is already paid. Give it back with the refund below.{% endblocktrans %}</td></tr>
+        {% endif %}
+        {% elif final.clash %}
+        <tr><td colspan="2" class="muted">{% trans "More than one invoice covers this period — correct them on the invoice pages." %}</td></tr>
+        {% else %}
+        <tr><td>{% trans "Already billed" %}</td><td class="num muted">{% trans "Nothing yet" %}</td></tr>
+        {% endif %}
+      </tbody></table>
+      </div></div>
+      <div class="body">
+        {% include "partials/_form.html" with form=None fields=form.rent_fields %}
+        <div class="help" style="margin-top:10px">{% trans "The final invoice is cut to the days stayed and the amount you choose. Money collected here gets its own receipt; staff receipts still wait for the owner to approve them." %}</div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="card"><div class="body">
+      {% include "partials/_form.html" with form=None fields=form.deposit_fields wide_fields="note" %}
       <div class="btn-row" style="margin-top:16px">
-        <button class="btn danger" type="submit">{% trans "Confirm check-out" %}</button>
+        <button class="btn danger" type="submit" data-busy-label="{% trans 'Checking out…' %}">{% trans "Confirm check-out" %}</button>
+        {% if final %}<button class="btn" type="submit" name="and_print" value="1">{% trans "Check out and print receipt" %}</button>{% endif %}
         <a class="btn" href="{% url 'guests:tenancy_detail' tenancy.pk %}">{% trans "Cancel" %}</a>
       </div>
-    </form>
-  </div></div>
+    </div></div>
+  </div>
   <div class="card"><header><h3>{% trans "Settlement" %}</h3></header><div class="body">
     <dl class="kv">
       <dt>{% trans "Deposit agreed" %}</dt><dd>{{ currency }} {{ tenancy.deposit_amount|floatformat:2 }}</dd>
@@ -28,4 +68,5 @@
     <p class="muted" style="margin-top:14px;font-size:12.5px">{% trans "Deductions need a reason and stay on the record. Whatever is left can be refunded; the bed is released automatically." %}</p>
   </div></div>
 </div>
+</form>
 {% endblock %}

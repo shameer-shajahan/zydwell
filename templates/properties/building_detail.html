@@ -60,6 +60,7 @@
           <span class="apt-badge">{% trans "Apartment" %} {{ flat.apartment.name }}</span>
           <span class="badge soft-teal">{{ flat.occupancy.occupied }}/{{ flat.occupancy.total }} {% trans "beds" %}</span>
           <span class="badge soft-green">{{ flat.occupancy.available }} {% trans "free" %}</span>
+          {% if flat.teams %}<a class="badge team-badge" href="{% if flat.teams|length == 1 %}{% url 'teams:team_detail' flat.teams.0.pk %}{% else %}{% url 'teams:team_list' %}?apartment={{ flat.apartment.pk }}&amp;floor={{ flat.apartment.floor_id }}&amp;building={{ block.floor.building_id }}{% endif %}" title="{% trans 'Occupied – Team' %}: {{ flat.team_label }}"><b>{% trans "TEAM" %}</b> {{ flat.team_label }} · {{ flat.team_members }} {% trans "members" %}</a>{% endif %}
           {% if flat.apartment.notes %}<span class="muted" style="font-size:12px">{{ flat.apartment.notes }}</span>{% endif %}
           {% if can_edit %}
             <span style="margin-inline-start:auto" class="btn-row">

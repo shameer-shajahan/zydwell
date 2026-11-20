@@ -36,7 +36,7 @@
         <div class="muted mono" style="font-size:11px">{{ t.guest.mobile }}</div></td>
       <td>{{ t.building.name }}</td><td>{{ t.floor.name }}</td>
       <td>{{ t.apartment.name|default:"—" }}</td>
-      <td>{{ t.room.number }}{% if t.bed %} · {{ t.bed.label }}{% endif %}</td>
+      <td>{{ t.unit_label }}{% if t.is_team_let %} · <span class="badge soft-teal">{% trans "Team" %}</span>{% endif %}</td>
       <td class="nowrap">{{ t.check_in_date|date:"d M Y" }}</td>
       <td class="num">{{ t.monthly_rent|floatformat:2 }}</td>
       <td class="num">{{ t.deposit_held_total|floatformat:2 }}</td>

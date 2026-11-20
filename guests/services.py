@@ -379,20 +379,53 @@ def purge_guest(*, guest, user):
     return removed
 
 
-def _occupy(tenancy):
+def _beds_of(tenancy):
+    """The beds a stay holds: its bed, its whole room, or a team's whole flat."""
+    from properties.models import Bed
+
     if tenancy.bed_id:
-        tenancy.bed.set_status_code('occupied')
-    else:
-        for bed in tenancy.room.beds.filter(is_archived=False):
-            bed.set_status_code('occupied')
+        return [tenancy.bed]
+    if tenancy.room_id:
+        return list(tenancy.room.beds.filter(is_archived=False))
+    return list(Bed.objects.filter(room__apartment_id=tenancy.apartment_id, is_archived=False))
+
+
+def _occupy(tenancy):
+    for bed in _beds_of(tenancy):
+        bed.set_status_code('occupied')
 
 
 def _release(tenancy):
-    if tenancy.bed_id:
-        tenancy.bed.set_status_code('available')
-    else:
-        for bed in tenancy.room.beds.filter(is_archived=False):
-            bed.set_status_code('available')
+    if tenancy.is_team_let and Tenancy.objects.filter(
+        apartment_id=tenancy.apartment_id, room__isnull=True,
+        status__code__in=Tenancy.LIVE_STATUS_CODES,
+    ).exclude(pk=tenancy.pk).exists():
+        # Another team still has the flat.
+        return
+    for bed in _beds_of(tenancy):
+        bed.set_status_code('available')
+
+
+def team_lets_in(apartment_ids):
+    """Live team lets for these apartments, as ``{apartment_id: [TeamLet, ...]}``."""
+    from teams.models import TeamLet
+
+    grouped = {}
+    for team in TeamLet.objects.live().filter(apartment_id__in=apartment_ids).select_related(
+            'guest').order_by('team_name'):
+        grouped.setdefault(team.apartment_id, []).append(team)
+    return grouped
+
+
+def team_let_blocking(room=None, apartment=None):
+    """The live team let holding this room's flat, if any — it cannot be booked."""
+    from teams.models import TeamLet
+
+    apartment_id = apartment.pk if apartment is not None else (
+        room.apartment_id if room is not None else None)
+    if apartment_id is None:
+        return None
+    return TeamLet.objects.live().filter(apartment_id=apartment_id).first()
 
 
 # --- Money per tenancy, for whole lists in one query -------------------------

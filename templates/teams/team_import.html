@@ -1,0 +1,83 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Import team lets" %}{% endblock %}
+{% block topbar_title %}{% trans "Import CSV" %}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="{% url 'teams:team_list' %}">{% trans "Teams" %}</a> <span>/</span> <span>{% trans "Import CSV" %}</span></div>
+<div class="page-head"><div><h1>{% trans "Import team lets" %}</h1>
+  <div class="sub">{% trans "Upload the team sheet. Every row is checked and shown below before anything is saved." %}</div></div></div>
+
+{% if not plan %}
+<div class="grid split">
+  <div class="card"><div class="body">
+    <form method="post" enctype="multipart/form-data" data-submit-once>{% csrf_token %}
+      {% include "partials/_form.html" with form=form one_column=1 %}
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn primary" type="submit" data-busy-label="{% trans 'Checking…' %}">{% trans "Check the file" %}</button>
+        <a class="btn" href="{% url 'teams:team_list' %}">{% trans "Cancel" %}</a>
+      </div>
+    </form>
+  </div></div>
+  <div class="card"><header><h3>{% trans "Columns" %}</h3></header><div class="body">
+    <p class="mono" style="font-size:12px;word-break:break-all">{{ columns|join:"," }}</p>
+    <ul class="muted" style="font-size:12.5px;padding-inline-start:18px;margin-top:10px;line-height:1.6">
+      <li>{% trans "Building and apartment are matched by name. Leave floor empty unless a flat number repeats on another floor." %}</li>
+      <li>{% trans "Dates are YYYY-MM-DD. The rent day is the day of rent_date; an empty joining_date is fine." %}</li>
+      <li>{% trans "A company is matched by collector mobile, then by name. Optional columns:" %} <span class="mono">{{ optional|join:", " }}</span>.</li>
+      <li>{% trans "Received and pending are not imported. Invoices are not raised — use “Raise this month's invoices” afterwards." %}</li>
+      <li>{% trans "Uploading the same file again changes nothing: a row matches the team with the same company, flat and team name." %}</li>
+    </ul>
+  </div></div>
+</div>
+{% else %}
+
+{% for e in plan.file_errors %}<div class="flash error">{{ e }}</div>{% endfor %}
+
+{% if plan.rows %}
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi green"><div class="label">{% trans "New" %}</div><div class="value">{{ plan.count_create }}</div></div>
+  <div class="kpi teal"><div class="label">{% trans "Updated" %}</div><div class="value">{{ plan.count_update }}</div>
+    <div class="hint">{{ plan.count_unchanged }} {% trans "unchanged" %}</div></div>
+  <div class="kpi {% if plan.count_error %}red{% else %}slate{% endif %}"><div class="label">{% trans "Errors" %}</div><div class="value">{{ plan.count_error }}</div></div>
+  <div class="kpi navy"><div class="label">{% trans "In this file" %}</div><div class="value">{{ plan.totals.members }} {% trans "members" %}</div>
+    <div class="hint">{{ currency }} {{ plan.totals.rent|floatformat:0 }} {% trans "rent" %} · {{ currency }} {{ plan.totals.deposit|floatformat:0 }} {% trans "deposits" %}</div></div>
+</div>
+
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "Line" %}</th><th>{% trans "Action" %}</th><th>{% trans "Team" %}</th><th>{% trans "Flat" %}</th>
+    <th class="num">{% trans "Members" %}</th><th class="num">{% trans "Rent" %}</th><th class="num">{% trans "Deposit" %}</th>
+    <th>{% trans "Notes" %}</th></tr></thead>
+  <tbody>{% for r in plan.rows %}
+    <tr><td class="mono">{{ r.line }}</td>
+      <td>{% if r.action == 'create' %}<span class="badge soft-green">{% trans "create" %}</span>
+          {% elif r.action == 'update' %}<span class="badge soft-teal">{% trans "update" %}</span>
+          {% elif r.action == 'unchanged' %}<span class="badge soft-slate">{% trans "unchanged" %}</span>
+          {% else %}<span class="badge soft-red">{% trans "error" %}</span>{% endif %}</td>
+      <td><strong>{{ r.label }}</strong><div class="muted mono" style="font-size:11px">{{ r.raw.collector_mobile }}</div></td>
+      <td class="nowrap">{{ r.raw.apartment }}<div class="muted" style="font-size:11px">{{ r.raw.building }}</div></td>
+      <td class="num">{{ r.values.members|default:"—" }}</td>
+      <td class="num">{{ r.values.monthly_rent|floatformat:0|default:"—" }}</td>
+      <td class="num">{{ r.values.deposit_amount|floatformat:0|default:"—" }}</td>
+      <td style="font-size:12.5px">
+        {% for e in r.errors %}<div style="color:var(--bad-fg)">{{ e }}</div>{% endfor %}
+        {% for name, old, new in r.changes %}<div>{{ name }}: {{ old|default:"—" }} → {{ new|default:"—" }}</div>{% endfor %}
+        {% for w in r.warnings %}<div class="muted">{{ w }}</div>{% endfor %}</td></tr>
+  {% endfor %}</tbody>
+</table></div></div></div>
+{% endif %}
+
+<div class="btn-row" style="margin-top:16px">
+  {% if plan.ok %}
+  <form method="post" style="display:inline" data-submit-once>{% csrf_token %}
+    <textarea name="csv_text" hidden>{{ csv_text }}</textarea>
+    <input type="hidden" name="apply" value="1">
+    <button class="btn primary" type="submit" data-busy-label="{% trans 'Saving…' %}"
+      {% if not plan.count_create and not plan.count_update %}disabled{% endif %}>{% trans "Save these team lets" %}</button>
+  </form>
+  {% else %}
+  <span class="muted" style="align-self:center">{% trans "Fix the rows marked as errors and upload the file again. Nothing has been saved." %}</span>
+  {% endif %}
+  <a class="btn" href="{% url 'teams:team_import' %}">{% trans "Upload another file" %}</a>
+</div>
+{% endif %}
+{% endblock %}

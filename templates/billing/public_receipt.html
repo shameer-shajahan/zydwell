@@ -21,7 +21,7 @@
     <dt>{% trans "Guest" %}</dt><dd>{{ guest.full_name }}</dd>
     <dt>{% trans "Building" %}</dt><dd>{{ building.name }}</dd>
     <dt>{% trans "Room" %}</dt>
-    <dd>{{ tenancy.room.number }}{% if tenancy.bed %} · {% trans "bed" %} {{ tenancy.bed.label }}{% endif %}</dd>
+    <dd>{{ tenancy.unit_label }}{% if tenancy.is_team_let %} · {% trans "Team" %} {{ tenancy.team_title }}{% endif %}</dd>
     {% if invoice %}
       <dt>{% trans "For" %}</dt><dd>{{ invoice.period_label }}</dd>
       <dt>{% trans "Invoice" %}</dt><dd class="mono">{{ invoice.number }}</dd>

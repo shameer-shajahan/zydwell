@@ -1345,3 +1345,72 @@ body.picker-open { overflow: hidden; }
 #permission-grid thead input[type=checkbox]::after { width: 18px; height: 18px; }
 #permission-grid thead input[type=checkbox]:checked::after { transform: translateX(16px); }
 [dir="rtl"] #permission-grid thead input[type=checkbox]:checked::after { transform: translateX(-16px); }
+
+/* --- Team lets: whole flats let to a company --- */
+.badge.team-badge { background: var(--warn-bg); color: var(--warn-fg); max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+.badge.team-badge b { font-weight: 800; letter-spacing: .04em; margin-inline-end: 3px; }
+.badge.team-badge:hover { text-decoration: none; filter: brightness(.97); }
+.bed-tile.team { border-style: dashed; }
+table.data tfoot td { font-weight: 700; border-top: 1px solid var(--separator);
+  background: var(--fill-2); padding: 11px 18px; }
+.card.team-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
+  padding: 12px 16px; margin-bottom: 18px; color: var(--label); font-size: 13.5px; text-decoration: none; }
+.card.team-strip:hover { text-decoration: none; }
+
+
+/* =====================================================================
+   Page loader — a bar under the status bar while the next page comes in,
+   and a pill once it is taking a while. Built by app.js; taps go through.
+   ===================================================================== */
+.page-loader {
+  position: fixed; top: env(safe-area-inset-top, 0px); inset-inline: 0; z-index: 95;
+  height: 3px; pointer-events: none; opacity: 0; transition: opacity .25s ease;
+}
+.page-loader .bar {
+  height: 100%; background: var(--tint); border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--tint) 55%, transparent);
+  transform: scaleX(0); transform-origin: left center;
+}
+[dir="rtl"] .page-loader .bar { transform-origin: right center; border-radius: 3px 0 0 3px; }
+.page-loader.on { opacity: 1; }
+/* Quick at first, then a slow crawl: it never claims to be done before it is. */
+.page-loader.on .bar { transform: scaleX(.92); transition: transform 12s cubic-bezier(.08, .75, .12, 1); }
+
+.page-loader-pill {
+  position: fixed; z-index: 95; left: 50%; top: 50%;
+  display: flex; align-items: center; gap: 10px;
+  max-width: calc(100vw - 32px); padding: 12px 18px;
+  background: var(--chrome); color: var(--label);
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border: .5px solid var(--separator); border-radius: 999px; box-shadow: var(--shadow-float);
+  font-size: 15px; font-weight: 500; white-space: nowrap;
+  pointer-events: none; opacity: 0; visibility: hidden;
+  transform: translate(-50%, -50%) scale(.94);
+  transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+}
+.page-loader-pill.on {
+  opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.page-loader-pill .spin {
+  flex: none; width: 18px; height: 18px; border-radius: 50%;
+  border: 2.25px solid var(--fill); border-top-color: var(--tint);
+  animation: loader-spin .8s linear infinite;
+}
+@keyframes loader-spin { to { transform: rotate(360deg); } }
+
+/* Phones: sit above the tab bar, where the thumb and eye already are. */
+@media (max-width: 900px) {
+  .page-loader-pill {
+    top: auto; bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    transform: translate(-50%, 8px) scale(.96); font-size: 14px; padding: 10px 16px;
+  }
+  .page-loader-pill.on { transform: translate(-50%, 0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* No crawl or spin: a still bar and the words say the same. */
+  .page-loader.on .bar { transform: scaleX(.6); }
+  .page-loader-pill .spin { border-top-color: var(--fill); background: var(--tint-soft); }
+}
+@media print { .page-loader, .page-loader-pill { display: none !important; } }

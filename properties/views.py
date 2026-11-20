@@ -175,23 +175,34 @@ def _plan_blocks(floors):
         room_id__in=room_ids, status__code__in=Tenancy.LIVE_STATUS_CODES,
     ).select_related('guest'):
         stays.setdefault(tenancy.room_id, {})[tenancy.bed_id] = tenancy
+    from guests.services import team_lets_in
+
+    teams_by_flat = team_lets_in([flat.pk for floor in floors
+                                  for flat in floor.apartments.all()])
 
     blocks = []
     for floor in floors:
         flats = []
         for apartment in floor.apartments.all():
+            teams = teams_by_flat.get(apartment.pk, [])
+            # Every bed of a team flat belongs to the team, so it links there.
+            team = teams[0] if teams else None
             rows = []
             for room in apartment.rooms.all():
                 beds = sorted(room.beds.all(), key=lambda bed: _natural_label_key(bed.label))
                 live = stays.get(room.pk, {})
                 rows.append({
                     'obj': room,
-                    'beds': [{'obj': bed, 'tenancy': live.get(bed.pk)} for bed in beds],
+                    'beds': [{'obj': bed, 'tenancy': live.get(bed.pk), 'team': team}
+                             for bed in beds],
                     'unit_tenancy': live.get(None),
                     'occupancy': occupancy_of(beds),
                 })
             flats.append({'apartment': apartment, 'rooms': rows,
-                          'occupancy': by_flat.get(apartment.pk, EMPTY)})
+                          'occupancy': by_flat.get(apartment.pk, EMPTY),
+                          'teams': teams,
+                          'team_label': ', '.join(t.team_name for t in teams),
+                          'team_members': sum(t.members for t in teams)})
         blocks.append({'floor': floor, 'apartments': flats,
                        'occupancy': by_floor.get(floor.pk, EMPTY)})
     return blocks

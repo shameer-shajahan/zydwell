@@ -53,7 +53,7 @@
           <td class="mono">{{ d.receipt_number }}</td>
           <td class="nowrap">{{ d.happened_on|date:"d M Y" }}</td>
           <td><a href="{% url 'guests:tenancy_detail' d.tenancy_id %}">{{ d.tenancy.guest.full_name }}</a>
-            <div class="muted" style="font-size:11px">{{ d.tenancy.building.name }} · {{ d.tenancy.room.number }}</div></td>
+            <div class="muted" style="font-size:11px">{{ d.tenancy.building.name }} · {{ d.tenancy.unit_label }}</div></td>
           <td>{% if d.kind == 'hold' %}<span class="badge soft-green">{{ d.get_kind_display }}</span>
             {% elif d.kind == 'deduct' %}<span class="badge soft-amber">{{ d.get_kind_display }}</span>
             {% else %}<span class="badge soft-slate">{{ d.get_kind_display }}</span>{% endif %}

@@ -407,3 +407,25 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f'{self.created_at:%Y-%m-%d %H:%M} {self.actor_label} {self.action} {self.object_label}'
+
+
+class StoredFile(models.Model):
+    """An uploaded file kept in the database.
+
+    The app's server keeps no files between deploys and the database (Neon) is
+    the one store that lasts, so photos, logos and scans are saved here.
+    ``name`` is exactly what the FileField holds, e.g. ``documents/a.jpg``.
+    Who may read a file is decided by ``core.media``, not here.
+    """
+
+    name = models.CharField(max_length=255, unique=True)
+    content = models.BinaryField()
+    size = models.PositiveIntegerField(default=0)
+    content_type = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('stored file')
+
+    def __str__(self):
+        return self.name

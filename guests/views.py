@@ -3,11 +3,13 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Count, Prefetch, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.utils.translation import gettext as _
 
 from core import audit
@@ -39,7 +41,7 @@ def _live_stays():
 @require_module(MODULE_GUESTS)
 def guest_list(request):
     location = LocationFilter(request)
-    rows = Guest.objects.filter(tenant=request.tenant)
+    rows = Guest.objects.filter(tenant=request.tenant, is_company=False)
     query = request.GET.get('q', '').strip()
     if query:
         # Subqueries rather than joins: no duplicate rows, so no DISTINCT.
@@ -201,7 +203,8 @@ def expiring_documents(request):
 @require_module(MODULE_GUESTS)
 def tenancy_list(request):
     location = LocationFilter(request)
-    rows = location.apply(_scoped_tenancies(request))
+    # Team lets have their own list (Teams); this one is guests in rooms and beds.
+    rows = location.apply(_scoped_tenancies(request).filter(room__isnull=False))
     state = request.GET.get('state', 'live')
     if state == 'live':
         rows = rows.filter(status__code__in=Tenancy.LIVE_STATUS_CODES)
@@ -221,6 +224,8 @@ def tenancy_list(request):
 @require_module(MODULE_GUESTS)
 def tenancy_detail(request, pk):
     tenancy = get_object_or_404(_scoped_tenancies(request), pk=pk)
+    if tenancy.is_team_let:
+        return redirect('teams:team_detail', pk=tenancy.pk)
     from billing.models import Invoice, Payment
 
     return render(request, 'guests/tenancy_detail.html', {
@@ -302,30 +307,93 @@ def _raise_first_invoice(request, tenancy):
 @require_module(MODULE_GUESTS, 'edit')
 def check_out(request, pk):
     tenancy = get_object_or_404(_scoped_tenancies(request), pk=pk)
-    form = CheckOutForm(request.POST or None, tenancy=tenancy)
+    if not tenancy.is_live:
+        messages.info(request, _('%(name)s has already checked out.') % {
+            'name': tenancy.guest.full_name})
+        return redirect('guests:tenancy_detail', pk=tenancy.pk)
+    can_bill = request.user.can(MODULE_BILLING, 'create')
+    initial = {}
+    try:
+        picked = parse_date(request.GET.get('date') or '')
+    except ValueError:
+        picked = None
+    if picked:
+        initial['check_out_date'] = picked
+    form = CheckOutForm(request.POST or None, tenancy=tenancy, can_bill=can_bill,
+                        initial=initial)
+    if can_bill and not form.is_bound:
+        # The final-rent figures follow the date, so a new date reloads them.
+        form.fields['check_out_date'].widget.attrs['data-reload-with'] = 'date'
     if request.method == 'POST' and form.is_valid():
+        from billing import services as billing
+
         data = form.cleaned_data
         deductions = []
         if data.get('deduction_amount'):
             deductions.append({'amount': data['deduction_amount'],
                                'reason': data['deduction_reason']})
-        services.check_out(
-            tenancy=tenancy, user=request.user, check_out_date=data['check_out_date'],
-            deductions=deductions, refund_amount=data.get('refund_amount') or Decimal('0'),
-            note=data.get('note', ''),
-        )
+        payment = None
+        with transaction.atomic():
+            if can_bill:
+                _invoice, payment = billing.settle_final_period(
+                    tenant=request.tenant, user=request.user, tenancy=tenancy,
+                    leaving_on=data['check_out_date'], rent_amount=data.get('final_rent'),
+                    collect_amount=data.get('collect_amount'), mode=data.get('collect_mode'),
+                    reference=data.get('collect_reference') or '',
+                    note=_('Final rent on check-out'),
+                )
+            services.check_out(
+                tenancy=tenancy, user=request.user, check_out_date=data['check_out_date'],
+                deductions=deductions, refund_amount=data.get('refund_amount') or Decimal('0'),
+                note=data.get('note', ''),
+            )
         messages.success(request, _('%(name)s checked out.') % {'name': tenancy.guest.full_name})
+        if payment is not None:
+            if payment.awaits_approval:
+                messages.info(request, _(
+                    'Receipt %(no)s recorded for the final rent. It is waiting for the owner '
+                    'to approve it.') % {'no': payment.receipt_number})
+            else:
+                messages.info(request, _('Receipt %(no)s recorded for the final rent.') % {
+                    'no': payment.receipt_number})
+            if request.POST.get('and_print'):
+                return redirect('billing:receipt', pk=payment.pk)
         return redirect('guests:tenancy_detail', pk=tenancy.pk)
+
+    leaving = (form.cleaned_data.get('check_out_date') if form.is_bound
+               else picked) or timezone.localdate()
+    final = None
+    if can_bill and leaving >= tenancy.check_in_date:
+        from billing import services as billing
+
+        final = form.final or billing.final_period(tenancy, leaving)
+        final['paid_over'] = max(
+            billing.final_invoice_floor(final['invoice']) - final['prorata_rent'], Decimal('0'))
+        if not form.is_bound:
+            form.fields['final_charge'].initial = _default_final_charge(final)
     return render(request, 'guests/check_out.html', {
         'form': form, 'tenancy': tenancy,
         'deposit_held': tenancy.deposit_held(),
         'outstanding': tenancy.outstanding(),
+        'final': final,
+        'leaving': leaving,
     })
+
+
+def _default_final_charge(final):
+    """Charge only the days stayed, unless that cannot be done here: more than
+    one invoice covers the period, or more than the days' rent is already paid
+    (the difference goes back from the deposit instead)."""
+    if final['clash'] or final['paid_over'] > 0:
+        return CheckOutForm.FINAL_KEEP
+    return CheckOutForm.FINAL_PRORATA
 
 
 @require_module(MODULE_GUESTS, 'edit')
 def transfer(request, pk):
     tenancy = get_object_or_404(_scoped_tenancies(request), pk=pk)
+    if tenancy.is_team_let:
+        return redirect('teams:team_edit', pk=tenancy.pk)
     form = TransferForm(request.POST or None, tenancy=tenancy, user=request.user)
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
@@ -357,6 +425,8 @@ def give_notice(request, pk):
 @require_module(MODULE_GUESTS, 'edit')
 def tenancy_edit(request, pk):
     tenancy = get_object_or_404(_scoped_tenancies(request), pk=pk)
+    if tenancy.is_team_let:
+        return redirect('teams:team_edit', pk=tenancy.pk)
     is_admin = request.user.is_admin or request.user.is_super_admin
     # Snapshot before the form binds — a ModelForm mutates its instance in is_valid().
     audited = ['monthly_rent', 'billing_day', 'deposit_amount', 'expected_check_out',

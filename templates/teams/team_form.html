@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% load i18n return_links %}
+{% block title %}{% if team %}{% trans "Edit team let" %}{% else %}{% trans "New team let" %}{% endif %}{% endblock %}
+{% block topbar_title %}{% trans "Team let" %}{% endblock %}
+{% block content %}
+<div class="crumbs"><a href="{% url 'teams:team_list' %}">{% trans "Teams" %}</a>{% if team %} <span>/</span> <a href="{% url 'teams:team_detail' team.pk %}">{{ team.team_name }}</a>{% endif %}</div>
+<div class="page-head"><div><h1>{% if team %}{% trans "Edit team let" %}{% else %}{% trans "New team let" %}{% endif %}</h1>
+  <div class="sub">{% trans "A company takes the whole flat. Its beds show as occupied by the team and cannot be booked one by one." %}</div></div></div>
+
+<form method="post" data-submit-once>{% csrf_token %}
+{% if form.non_field_errors %}<div class="flash error">{{ form.non_field_errors }}</div>{% endif %}
+<div class="grid split">
+  <div>
+    <div class="card" style="margin-bottom:16px"><header><h3>{% trans "Team and flat" %}</h3></header><div class="body">
+      {% include "partials/_form.html" with form=None fields=form.place_fields wide_fields="agreement_note" %}
+    </div></div>
+    <div class="card"><header><h3>{% trans "Rent and deposit" %}</h3></header><div class="body">
+      {% include "partials/_form.html" with form=None fields=form.money_fields %}
+      <div class="flash warning" data-team-calc data-template="{% trans 'Members × per head = {calc}. The agreed rent is what is billed.' %}"
+           style="margin-top:12px{% if not form.headcount_note %};display:none{% endif %}">{% if form.headcount_note %}{% blocktrans with calc=form.headcount_note %}Members × per head = {{ calc }}. The agreed rent is what is billed.{% endblocktrans %}{% endif %}</div>
+    </div></div>
+  </div>
+  <div class="card"><header><h3>{% trans "Company" %}</h3></header><div class="body">
+    {% include "partials/_form.html" with form=None fields=form.company_fields one_column=1 %}
+    <p class="muted" style="font-size:12.5px;margin-top:12px">{% trans "Pick a company already on file, or leave it on “New company” and type its name and the collector's mobile. One company can have several teams." %}</p>
+  </div></div>
+</div>
+<div class="btn-row" style="margin-top:16px">
+  <button class="btn primary" type="submit" data-busy-label="{% trans 'Saving…' %}">{% if team %}{% trans "Save changes" %}{% else %}{% trans "Let the flat" %}{% endif %}</button>
+  <a class="btn" href="{% if team %}{% url 'teams:team_detail' team.pk %}{% else %}{% back_or 'teams:team_list' %}{% endif %}">{% trans "Cancel" %}</a>
+</div>
+</form>
+{% endblock %}

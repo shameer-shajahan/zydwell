@@ -55,7 +55,10 @@ def receipt_lines(payment, printer=None, *, copy_label=''):
     add(_pair(_('Floor'), tenancy.floor.name, width))
     if tenancy.apartment_id:
         add(_pair(_('Apartment'), tenancy.apartment.name, width))
-    add(_pair(_('Room'), tenancy.room.number, width))
+    if tenancy.room_id:
+        add(_pair(_('Room'), tenancy.room.number, width))
+    else:
+        add(_pair(_('Team'), tenancy.team_title, width))
     if tenancy.bed_id:
         add(_pair(_('Bed'), tenancy.bed.label, width))
     if invoice:
@@ -123,7 +126,10 @@ def deposit_receipt_lines(entry, printer=None, *, copy_label=''):
     add(_pair(_('Floor'), tenancy.floor.name, width))
     if tenancy.apartment_id:
         add(_pair(_('Apartment'), tenancy.apartment.name, width))
-    add(_pair(_('Room'), tenancy.room.number, width))
+    if tenancy.room_id:
+        add(_pair(_('Room'), tenancy.room.number, width))
+    else:
+        add(_pair(_('Team'), tenancy.team_title, width))
     if tenancy.bed_id:
         add(_pair(_('Bed'), tenancy.bed.label, width))
     add('-' * width)

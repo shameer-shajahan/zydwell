@@ -1,0 +1,81 @@
+{% extends "base.html" %}{% load i18n listing return_links %}
+{% block title %}{% trans "Teams" %}{% endblock %}
+{% block topbar_title %}{% trans "Teams" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Teams" %}</h1>
+  <div class="sub">{% trans "Whole flats let to companies. One rent per team, collected through one contact." %}</div></div>
+  <div class="actions">
+    {% if can_bill %}
+    <form method="post" action="{% url 'teams:raise_invoices' %}" style="display:inline" data-submit-once
+          data-confirm="{% trans "Raise this period's invoice for every live team that does not have one yet?" %}">{% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <button class="btn" type="submit">{% trans "Raise this month's invoices" %}</button>
+    </form>
+    {% endif %}
+    {% if can_create %}
+    <a class="btn" href="{% url 'teams:team_import' %}">{% trans "Import CSV" %}</a>
+    <a class="btn accent" href="{% url 'teams:team_create' %}?{% return_here %}">+ {% trans "Team let" %}</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid k4" style="margin-bottom:16px">
+  <div class="kpi navy"><div class="label">{% trans "Teams" %}</div><div class="value">{{ totals.count }}</div>
+    <div class="hint">{{ totals.members }} {% trans "members" %}</div></div>
+  <div class="kpi teal"><div class="label">{% trans "Monthly rent" %}</div><div class="value">{{ currency }} {{ totals.rent|floatformat:0 }}</div></div>
+  <div class="kpi green"><div class="label">{% blocktrans %}Received in {{ month_label }}{% endblocktrans %}</div><div class="value">{{ currency }} {{ totals.received|floatformat:0 }}</div></div>
+  <div class="kpi {% if totals.pending > 0 %}red{% else %}slate{% endif %}"><div class="label">{% trans "Pending" %}</div><div class="value">{{ currency }} {{ totals.pending|floatformat:0 }}</div>
+    <div class="hint">{% trans "Deposits held" %} {{ currency }} {{ totals.deposit|floatformat:0 }}</div></div>
+</div>
+
+<form method="get" class="filterbar">
+  <div class="fb-line">
+    <div class="fb-scroll" data-fb-scroll>
+      <input class="fb-search" type="search" name="q" value="{{ query }}" enterkeyhint="search"
+             aria-label="{% trans 'Search' %}" placeholder="{% trans 'Search' %}"
+             data-hint="{% trans 'Search team, company, mobile or flat…' %}" title="{% trans 'Search team, company, mobile or flat…' %}">
+      <input type="hidden" name="state" value="{{ state }}">
+      <div class="seg">
+        <a class="{% if state == 'live' %}on{% endif %}" href="{% query state='live' %}">{% trans "Live" %}</a>
+        <a class="{% if state == 'vacated' %}on{% endif %}" href="{% query state='vacated' %}">{% trans "Vacated" %}</a>
+        <a class="{% if state == 'all' %}on{% endif %}" href="{% query state='all' %}">{% trans "All" %}</a>
+      </div>
+      {% include "partials/_location_filter.html" %}
+    </div>
+    <div class="fb-actions"><button class="btn primary" type="submit">{% trans "Search" %}</button></div>
+  </div>
+</form>
+
+<div class="card"><div class="body tight"><div class="table-wrap">
+<table class="data">
+  <thead><tr><th>{% trans "Team" %}</th><th>{% trans "Company" %}</th><th>{% trans "Flat" %}</th>
+    <th class="num">{% trans "Members" %}</th><th class="num">{% trans "Per head" %}</th>
+    <th class="num">{% trans "Rent" %}</th><th class="num">{% trans "Deposit" %}</th>
+    <th class="num">{% trans "Received" %}</th><th class="num">{% trans "Pending" %}</th>
+    <th>{% trans "Status" %}</th></tr></thead>
+  <tbody>{% for t in rows %}
+    <tr><td><a href="{% url 'teams:team_detail' t.pk %}"><strong>{{ t.team_name }}</strong></a>
+        {% if t.joining_date %}<div class="muted" style="font-size:11px">{% trans "since" %} {{ t.joining_date|date:"d M Y" }}</div>{% endif %}</td>
+      <td>{{ t.guest.full_name }}<div class="muted mono" style="font-size:11px">{{ t.guest.mobile }}</div></td>
+      <td class="nowrap">{{ t.apartment.name }}<div class="muted" style="font-size:11px">{{ t.building.name }}</div></td>
+      <td class="num">{{ t.members }}</td>
+      <td class="num">{% if t.per_head is not None %}{{ t.per_head|floatformat:0 }}{% else %}—{% endif %}</td>
+      <td class="num">{{ t.monthly_rent|floatformat:0 }}{% if t.rent_differs %}
+        <div title="{% blocktrans with calc=t.headcount_rent|floatformat:0 %}Members × per head = {{ calc }}{% endblocktrans %}"><span class="badge soft-amber">≠ {{ t.headcount_rent|floatformat:0 }}</span></div>{% endif %}</td>
+      <td class="num">{{ t.deposit_held_total|floatformat:0 }}{% if t.deposit_held_total != t.deposit_amount %}
+        <div class="muted" style="font-size:11px">{% trans "agreed" %} {{ t.deposit_amount|floatformat:0 }}</div>{% endif %}</td>
+      <td class="num">{{ t.received_month|floatformat:0 }}</td>
+      <td class="num">{% if t.outstanding_total > 0 %}<strong>{{ t.outstanding_total|floatformat:0 }}</strong>{% else %}0{% endif %}</td>
+      <td>{% include "partials/_status.html" with status=t.status %}</td></tr>
+  {% empty %}<tr><td colspan="10">{% include "partials/_empty.html" with message=_("No team lets here yet.") %}</td></tr>{% endfor %}</tbody>
+  {% if rows %}
+  <tfoot><tr><td colspan="3">{% trans "Total" %} · {{ totals.count }} {% trans "teams" %}</td>
+    <td class="num">{{ totals.members }}</td><td></td>
+    <td class="num">{{ currency }} {{ totals.rent|floatformat:0 }}</td>
+    <td class="num">{{ totals.deposit|floatformat:0 }}</td>
+    <td class="num">{{ totals.received|floatformat:0 }}</td>
+    <td class="num">{{ totals.pending|floatformat:0 }}</td><td></td></tr></tfoot>
+  {% endif %}
+</table></div></div></div>
+<p class="muted" style="font-size:12.5px;margin-top:10px">{% blocktrans %}Received is rent collected in {{ month_label }}. Pending is everything still owed on the team's invoices.{% endblocktrans %}</p>
+{% endblock %}
