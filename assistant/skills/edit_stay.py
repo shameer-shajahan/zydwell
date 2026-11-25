@@ -101,18 +101,27 @@ class EditCheckIn(Skill):
         rows = [(_('Guest'), stay.guest.full_name),
                 (_('Bed'), stay_place(stay)),
                 (_('Check-in date'), f'{day(stay.check_in_date)} → {day(when)}')]
-        invoice, start, rent, reason = services.plan_first_invoice(stay, stay.check_in_date, when)
+        plan = services.plan_first_invoice(stay, stay.check_in_date, when)
+        invoice, can_bill = plan['invoice'], ctx.allowed(MODULE_BILLING, 'edit')
+        moves = plan['billing_day'] != stay.billing_day and (
+            invoice is None or plan['rent'] is not None)
+        if moves:
+            rows.append((_('Bill day'), _('day %(old)s → day %(new)s of each month') % {
+                'old': stay.billing_day, 'new': plan['billing_day']} if can_bill
+                else _('stays day %(day)s (changing it needs billing rights)') % {
+                    'day': stay.billing_day}))
         if invoice is not None:
-            if rent is None:
-                rows.append((_('First invoice'), reason))
-            elif not ctx.allowed(MODULE_BILLING, 'edit'):
+            if plan['rent'] is None:
+                rows.append((_('First invoice'), plan['reason']))
+            elif not can_bill:
                 rows.append((_('First invoice'), _('%(no)s stays as it is (changing invoices '
                                                    'needs billing rights)') % {
                     'no': invoice.number}))
             else:
-                rows.append((_('First invoice'), _('%(no)s will run from %(date)s: rent %(amount)s')
-                             % {'no': invoice.number, 'date': day(start),
-                                'amount': ctx.money(rent)}))
+                rows.append((_('First invoice'), _('%(no)s will run %(start)s – %(end)s: rent '
+                                                   '%(amount)s') % {
+                    'no': invoice.number, 'start': day(plan['start']), 'end': day(plan['end']),
+                    'amount': ctx.money(plan['rent'])}))
         return say(_('Change the check-in date?'), rows=rows,
                    buttons=confirm_buttons(_('Yes, change it')))
 

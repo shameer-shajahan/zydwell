@@ -282,23 +282,62 @@ def generate_due_invoices(tenant, on_date=None, user=None, only=None):
     if only is not None:
         tenancies = tenancies.filter(pk__in=only)
     for tenancy in tenancies:
-        period_start, period_end = tenancy.billing_period_for(on_date)
-        if period_end < tenancy.check_in_date:
-            continue
-        if tenancy.actual_check_out and period_start > tenancy.actual_check_out:
-            continue
-        # Match on any overlap. Checking the period's own start date misses an
-        # invoice stored under a mid-month check-in date, and bills them again
-        # on every run.
-        if Invoice.objects.filter(
-            tenancy=tenancy, period_start__lte=period_end, period_end__gte=period_start
-        ).exists():
-            continue
-
-        created.append(build_invoice(
-            tenancy, user=user, **period_terms(tenancy, period_start, period_end)))
-        apply_guest_credit(guest=tenancy.guest, user=user)
+        if Invoice.objects.filter(tenancy=tenancy).exists():
+            raised = _catch_up(tenancy, on_date, user)
+        else:
+            raised = _current_period(tenancy, on_date, user)
+        if raised:
+            created += raised
+            apply_guest_credit(guest=tenancy.guest, user=user)
     return created
+
+
+#: At most this many missed periods are billed for one stay in one run.
+CATCH_UP_LIMIT = 36
+
+
+def _catch_up(tenancy, on_date, user):
+    """Every period after the stay's last invoice that should have been billed by now.
+
+    A day the job did not run (no server cron, a holiday) would otherwise lose
+    that month for good: the run only ever looked at today's period. Each
+    missed period gets its invoice with its real due date. A stay with no
+    invoice at all is left to ``_current_period``, so a first invoice that was
+    deliberately not raised at check-in is not raised behind anyone's back.
+    """
+    raised = []
+    for _n in range(CATCH_UP_LIMIT):
+        terms = next_unbilled_period(tenancy)
+        # None once the stay has (or will have) ended before the next period.
+        if terms is None or terms['period_end'] < terms['period_start']:
+            break
+        # Billed as the period opens (in advance) or once it has ended (post-paid).
+        due_now = (terms['period_start'] <= on_date if tenancy.bills_in_advance
+                   else terms['period_end'] < on_date)
+        if not due_now:
+            break
+        raised.append(build_invoice(tenancy, user=user, **terms))
+    return raised
+
+
+def _current_period(tenancy, on_date, user):
+    """Today's period only — for a stay that has never been invoiced."""
+    period_start, period_end = tenancy.billing_period_for(on_date)
+    if period_end < tenancy.check_in_date:
+        return []
+    for leaving in (tenancy.actual_check_out, tenancy.expected_check_out):
+        # Gone (or due to be gone) before this period: nothing to bill — a
+        # leaving date in the past would otherwise make a negative invoice.
+        if leaving and period_start > leaving:
+            return []
+    # Match on any overlap. Checking the period's own start date misses an
+    # invoice stored under a mid-month check-in date, and bills them again
+    # on every run.
+    if Invoice.objects.filter(
+        tenancy=tenancy, period_start__lte=period_end, period_end__gte=period_start
+    ).exists():
+        return []
+    return [build_invoice(tenancy, user=user, **period_terms(tenancy, period_start, period_end))]
 
 
 @transaction.atomic

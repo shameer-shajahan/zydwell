@@ -33,6 +33,9 @@ class Tenant(TimeStampedModel):
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
 
     currency = models.CharField(max_length=8, default='AED')
+    #: The day rent was last billed for this account, by the nightly job or by
+    #: the first visit of the day (``billing.daily``), so it runs once a day.
+    billing_run_on = models.DateField(null=True, blank=True, editable=False)
     date_format = models.CharField(max_length=32, default='d M Y')
     tax_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 

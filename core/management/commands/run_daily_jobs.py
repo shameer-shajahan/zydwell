@@ -37,6 +37,9 @@ class Command(BaseCommand):
             self.stdout.write(self.style.MIGRATE_HEADING(f'— {tenant.name}'))
             invoices = generate_due_invoices(tenant, on_date=today)
             self.stdout.write(f'  invoices raised: {len(invoices)}')
+            if not options['dry_run'] and today == timezone.localdate():
+                # The first visit of the day need not bill again (billing.daily).
+                Tenant.objects.filter(pk=tenant.pk).update(billing_run_on=today)
 
             fees = apply_late_fees(tenant, on_date=today)
             self.stdout.write(f'  late fees updated: {len(fees)}')

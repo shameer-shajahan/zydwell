@@ -115,44 +115,86 @@ def check_in_date_problem(tenancy, new_date):
     return None
 
 
+def bill_day_for(check_in_date):
+    """The day of the month a stay is billed on: its check-in day.
+
+    Checked in on the 25th, billed every 25th. The 29th to the 31st do not
+    come every month, so those stays are billed on the 28th.
+    """
+    return min(check_in_date.day, 28)
+
+
+def _periods(tenancy, billing_day, on_date):
+    """The billing period around ``on_date`` if the stay were billed on ``billing_day``."""
+    kept = tenancy.billing_day
+    tenancy.billing_day = billing_day
+    try:
+        period = tenancy.period_for(on_date)
+        length = tenancy.period_length(period[0])
+    finally:
+        tenancy.billing_day = kept
+    return period, length
+
+
 def plan_first_invoice(tenancy, old_date, new_date):
     """What moving the check-in date does to the first invoice, without doing it.
 
-    Returns ``(invoice, start, rent, reason)``. ``rent`` is ``None`` when the
-    invoice stays as it is, and ``reason`` then says why: it has money on it,
-    or the new date falls in another billing period (the invoices of both
-    periods then need a look by hand).
+    A stay billed on its check-in day keeps that rule: moved from the 25th to
+    the 18th, it is billed on the 18th, and its first invoice runs from the
+    18th for a full period. The invoice is only changed while that is safe:
+    nothing is paid on it, and (when the bill day moves) no later invoice was
+    raised on the old day. Otherwise ``rent`` is ``None`` and ``reason`` says
+    why. Returns a dict: ``invoice, start, end, rent, billing_day, reason``.
     """
     from billing.models import Invoice, Payment, PaymentAllocation
 
+    follows = (tenancy.billing_cycle == Tenancy.CYCLE_MONTHLY
+               and tenancy.billing_day == bill_day_for(old_date))
+    billing_day = bill_day_for(new_date) if follows else tenancy.billing_day
+    plan = {'invoice': None, 'start': None, 'end': None, 'rent': None,
+            'billing_day': tenancy.billing_day, 'reason': ''}
     invoices = Invoice.objects.filter(tenancy=tenancy).exclude(status__code='cancelled')
     invoice = (invoices.filter(period_start=old_date).order_by('pk').first()
                or invoices.filter(period_start__lte=old_date, period_end__gte=old_date)
                .order_by('pk').first())
     if invoice is None:
-        return None, None, None, ''
+        # Nothing billed yet: the bill day can simply follow the date.
+        plan['billing_day'] = billing_day
+        return plan
+    plan['invoice'] = invoice
     paid = (invoice.paid_amount > 0
             or Payment.objects.filter(invoice=invoice, is_reversed=False).exists()
             or PaymentAllocation.objects.filter(invoice=invoice).exists())
     if paid:
-        return invoice, None, None, _(
+        plan['reason'] = _(
             'Invoice %(no)s already has money paid on it, so it was not changed. Correct it on '
             'the invoice page if the rent should change.') % {'no': invoice.number}
-    if tenancy.period_for(new_date) != tenancy.period_for(old_date):
-        return invoice, None, None, _(
+        return plan
+    if billing_day != tenancy.billing_day and invoices.filter(
+            period_start__gt=invoice.period_start).exists():
+        plan['reason'] = _(
+            'Later invoices were raised on day %(day)s, so invoice %(no)s and the bill day were '
+            'not changed. Check the invoices on the stay page.') % {
+            'day': tenancy.billing_day, 'no': invoice.number}
+        return plan
+    (period_start, period_end), length = _periods(tenancy, billing_day, new_date)
+    if billing_day == tenancy.billing_day and (period_start, period_end) != tenancy.period_for(
+            old_date):
+        plan['reason'] = _(
             'The new date is in another billing period, so invoice %(no)s was not changed. '
             'Check the invoices on the stay page.') % {'no': invoice.number}
-    period_start, _period_end = tenancy.period_for(new_date)
+        return plan
     start = max(period_start, new_date)
     prorata = start > period_start and tenancy.prorate_first_period
     if tenancy.first_invoice_amount is not None:
         rent = tenancy.first_invoice_amount
     elif prorata:
-        rent = tenancy.prorata((invoice.period_end - start).days + 1,
-                               period_days=tenancy.period_length(period_start))
+        rent = tenancy.prorata((period_end - start).days + 1, period_days=length)
     else:
         rent = tenancy.monthly_rent
-    return invoice, start, Decimal(rent).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP), ''
+    plan.update(start=start, end=period_end, billing_day=billing_day, prorata=prorata,
+                rent=Decimal(rent).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+    return plan
 
 
 @transaction.atomic
@@ -183,33 +225,49 @@ def change_check_in_date(*, tenancy, user, new_date, rebill=True):
 
 
 def rebill_first_invoice(*, tenancy, user, old_date, rebill=True):
-    """After the check-in date moved: cut the first invoice to the new date.
+    """After the check-in date moved: move the first invoice (and the bill day) with it.
 
     Returns a note for the user, or ``''`` when there was nothing to say.
     """
-    invoice, start, rent, reason = plan_first_invoice(tenancy, old_date, tenancy.check_in_date)
-    if invoice is None:
-        return ''
-    if rent is None:
-        return reason
+    plan = plan_first_invoice(tenancy, old_date, tenancy.check_in_date)
+    invoice = plan['invoice']
     if not rebill:
-        return _('Invoice %(no)s was not changed: changing invoices needs billing rights.') % {
-            'no': invoice.number}
-    tracked = ['period_start', 'rent_amount', 'total', 'due_date']
+        if invoice is None and plan['billing_day'] == tenancy.billing_day:
+            return ''
+        return _('Invoices and the bill day were not changed: that needs billing rights.')
+    notes = []
+    if plan['billing_day'] != tenancy.billing_day and (invoice is None or plan['rent'] is not None):
+        before = audit.snapshot(tenancy, ['billing_day'])
+        tenancy.billing_day = plan['billing_day']
+        tenancy.save(update_fields=['billing_day', 'updated_at'])
+        audit.log(audit.AuditLog.ACTION_UPDATE, tenancy, tenant=tenancy.tenant,
+                  summary=_('Bill day of %(guest)s moved to day %(day)s with the check-in '
+                            'date') % {'guest': tenancy.guest.full_name, 'day': tenancy.billing_day},
+                  changes=audit.diff(before, audit.snapshot(tenancy, ['billing_day'])))
+        notes.append(_('Rent is now billed on day %(day)s of each month.') % {
+            'day': tenancy.billing_day})
+    if invoice is None:
+        return ' '.join(notes)
+    if plan['rent'] is None:
+        return plan['reason']
+    tracked = ['period_start', 'period_end', 'rent_amount', 'total', 'due_date']
     before = audit.snapshot(invoice, tracked)
-    invoice.period_start = start
-    invoice.rent_amount = rent
-    invoice.is_prorata = start > tenancy.period_for(start)[0] and tenancy.prorate_first_period
-    invoice.due_date = tenancy.due_date_for(start, invoice.period_end)
-    invoice.save(update_fields=['period_start', 'rent_amount', 'is_prorata', 'due_date',
-                                'updated_at'])
+    invoice.period_start = plan['start']
+    invoice.period_end = plan['end']
+    invoice.rent_amount = plan['rent']
+    invoice.is_prorata = plan['prorata']
+    invoice.due_date = tenancy.due_date_for(plan['start'], plan['end'])
+    invoice.save(update_fields=['period_start', 'period_end', 'rent_amount', 'is_prorata',
+                                'due_date', 'updated_at'])
     invoice.recalculate()
     audit.log(audit.AuditLog.ACTION_UPDATE, invoice, tenant=tenancy.tenant,
               summary=_('Invoice %(no)s moved with the check-in date of %(guest)s') % {
                   'no': invoice.number, 'guest': tenancy.guest.full_name},
               changes=audit.diff(before, audit.snapshot(invoice, tracked)))
-    return _('Invoice %(no)s now runs from %(date)s: %(amount)s.') % {
-        'no': invoice.number, 'date': start.strftime('%d %b %Y'), 'amount': invoice.total}
+    notes.insert(0, _('Invoice %(no)s now runs from %(start)s to %(end)s: %(amount)s.') % {
+        'no': invoice.number, 'start': plan['start'].strftime('%d %b %Y'),
+        'end': plan['end'].strftime('%d %b %Y'), 'amount': invoice.total})
+    return ' '.join(notes)
 
 
 @transaction.atomic

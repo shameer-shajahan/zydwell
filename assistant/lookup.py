@@ -39,9 +39,10 @@ def _word_score(word, name_tokens):
         if len(word) >= 3 and token.startswith(word):
             best = max(best, 0.92)
         elif len(word) >= 3:
+            # A letter missing or swapped ("aksh" for "akash") still counts.
             ratio = difflib.SequenceMatcher(None, word, token).ratio()
             if ratio >= CLOSE:
-                best = max(best, ratio * 0.95)
+                best = max(best, ratio)
     return best
 
 

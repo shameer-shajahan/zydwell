@@ -170,7 +170,7 @@ class EditCheckInTests(FlatsLikeRealBuildingsCase):
         replies = self.say(f'change akash check in date to {new_day:%d/%m/%Y}')
         rows = self.rows(replies)
         self.assertIn('→', rows['Check-in date'])
-        self.assertIn('will run from', rows['First invoice'])
+        self.assertIn('will run', rows['First invoice'])
         self.say('yes')
         self.tenancy.refresh_from_db()
         self.assertEqual(self.tenancy.check_in_date, new_day)
@@ -246,3 +246,88 @@ class EditCheckInTests(FlatsLikeRealBuildingsCase):
         response = self.client.post(reverse('guests:tenancy_edit', args=[moved.pk]), data)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Before Him')
+
+
+class EditFormWithoutTheDateTests(FlatsLikeRealBuildingsCase):
+    def test_a_form_posted_without_the_date_keeps_it(self):
+        from django.urls import reverse
+        tenancy = self.stay(guest=self.akash, bed=self.a_beds['A1'])
+        data = {'monthly_rent': '900', 'rent_mode': tenancy.rent_mode, 'prorate_first_period': 'on',
+                'billing_cycle': 'monthly', 'billing_day': '1', 'expected_check_out': '',
+                'deposit_amount': '800', 'first_invoice_amount': '', 'agreement_note': ''}
+        response = self.client.post(reverse('guests:tenancy_edit', args=[tenancy.pk]), data)
+        self.assertEqual(response.status_code, 302)
+        tenancy.refresh_from_db()
+        self.assertEqual(tenancy.check_in_date, self.today)
+        self.assertEqual(tenancy.monthly_rent, 900)
+
+
+class BillDayTests(FlatsLikeRealBuildingsCase):
+    def test_chat_check_in_bills_on_the_check_in_day(self):
+        when = self.today.replace(day=25) if self.today.day <= 25 else self.today
+        replies = self.say(f'check in akash 117 a4 on {when:%d/%m/%Y}')
+        rows = self.rows(replies)
+        self.assertEqual(rows['Bill day'], f'day {when.day} of each month')
+        self.assertIn('To collect', rows)
+        self.say('yes')
+        tenancy = Tenancy.objects.get(guest=self.akash)
+        self.assertEqual(tenancy.billing_day, when.day)
+        invoice = tenancy.invoices.get()
+        self.assertEqual(invoice.period_start, when)
+        self.assertEqual(invoice.rent_amount, 650)            # a full month, not part of one
+
+    def test_the_29th_to_31st_bill_on_the_28th(self):
+        year = self.today.year + 1
+        self.say(f'check in akash 117 a4 on 31/01/{year}')
+        self.assertEqual(self.rows(self.say('yes') and self.say('akash'))['Bill day'],
+                         'day 28 of each month')
+
+    def test_the_form_suggests_the_check_in_day(self):
+        from django.urls import reverse
+        response = self.client.get(reverse('guests:check_in'))
+        self.assertEqual(response.context['form']['billing_day'].value(), min(self.today.day, 28))
+        self.assertContains(response, 'data-bill-day-of="check_in_date"')
+
+    def test_moving_the_check_in_moves_the_bill_day(self):
+        from guests import services as stays
+        if self.today.day < 4:
+            self.skipTest('needs room for an earlier day this month')
+        tenancy = stays.check_in(
+            tenant=self.tenant, user=self.owner, guest=self.akash, room=self.room_a,
+            bed=self.a_beds['A3'], check_in_date=self.today, monthly_rent=650,
+            billing_day=stays.bill_day_for(self.today))
+        invoice = stays.raise_first_invoice(tenancy=tenancy, user=self.owner)
+        new_day = self.today - timedelta(days=3)
+        note = stays.change_check_in_date(tenancy=tenancy, user=self.owner, new_date=new_day)
+        tenancy.refresh_from_db()
+        invoice.refresh_from_db()
+        self.assertEqual(tenancy.billing_day, min(new_day.day, 28))
+        self.assertEqual(invoice.period_start, new_day)
+        self.assertEqual(invoice.rent_amount, 650)
+        self.assertIn('billed on day', note)
+
+
+class RentQuestionTests(FlatsLikeRealBuildingsCase):
+    def setUp(self):
+        super().setUp()
+        self.tenancy = self.stay(guest=self.akash, bed=self.a_beds['A5'])
+
+    def test_how_much_rent_pending_on_a_guest(self):
+        replies = self.say('how much rent will pent on aksh')
+        self.assertIn('Akash owes', replies[-1]['text'])
+        labels = ' '.join(self.rows(replies))
+        self.assertIn(self.tenancy.invoices.first().number, labels)
+
+    def test_asking_by_bed(self):
+        replies = self.say('117 A A5')
+        self.assertIn('Akash', replies[-1]['text'])
+        self.assertIn('117 · A · A5', self.rows(replies)['Staying at'])
+
+    def test_a_free_bed_says_so(self):
+        replies = self.say('who is in 117 a2')
+        self.assertIn('is free', self.text(replies))
+        self.assertTrue(any(s.startswith('@start:check_in') for s in self.sends(replies)))
+
+    def test_rent_pending_on_a_name_is_not_the_whole_list(self):
+        replies = self.say('rent pending list for akash')
+        self.assertIn('Akash owes', replies[-1]['text'])

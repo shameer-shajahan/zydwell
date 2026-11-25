@@ -29,7 +29,8 @@
 </div>
 
 <div class="card">
-  <header><h2>{% trans "Overdue invoices" %}</h2></header>
+  <header><h2>{% trans "Unpaid rent" %}</h2>
+    <div class="sub muted">{% trans "Overdue first, then pending rent that is not late yet." %}</div></header>
   <div class="body tight"><div class="table-wrap">
   <table class="data">
     <thead><tr><th>{% trans "Guest" %}</th><th>{% trans "Location" %}</th><th>{% trans "Invoice" %}</th>
@@ -40,7 +41,7 @@
         <td class="muted" style="font-size:12px">{{ i.tenancy.location_label }}</td>
         <td class="mono"><a href="{% url 'billing:invoice_detail' i.pk %}">{{ i.number }}</a></td>
         <td class="nowrap">{{ i.due_date|date:"d M Y" }}</td>
-        <td class="num">{{ i.days_overdue }}</td>
+        <td class="num">{% if i.days_overdue %}{{ i.days_overdue }}{% elif i.due_date == today %}<span class="badge soft-amber">{% trans "Due today" %}</span>{% else %}<span class="badge soft-slate">{% trans "Pending" %}</span>{% endif %}</td>
         <td class="num"><strong>{{ currency }} {{ i.balance|floatformat:2 }}</strong></td>
         <td>{% if i.aging_bucket == '60+' %}<span class="badge soft-red">60+</span>
           {% elif i.aging_bucket == '31-60' %}<span class="badge soft-amber">31–60</span>
@@ -50,7 +51,7 @@
           <a class="btn sm"{% if chat_new_tab %} target="_blank" rel="noopener"{% endif %}
              href="{% url 'messaging:quick_send' %}?guest={{ i.tenancy.guest_id }}&invoice={{ i.pk }}&template=rent_overdue">{% trans "WhatsApp" %}</a>
           <a class="btn sm accent" href="{% url 'billing:payment_create' %}?invoice={{ i.pk }}&amp;{% return_here %}">{% trans "Collect" %}</a></td></tr>
-    {% empty %}<tr><td colspan="8">{% include "partials/_empty.html" with message=_("Nothing overdue. Everything is settled.") %}</td></tr>{% endfor %}</tbody>
+    {% empty %}<tr><td colspan="8">{% include "partials/_empty.html" with message=_("Nothing unpaid. Everything is settled.") %}</td></tr>{% endfor %}</tbody>
   </table></div></div>
   {% include "partials/_pager.html" with page=items %}
 </div>

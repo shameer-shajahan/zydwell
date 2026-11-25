@@ -123,6 +123,22 @@
     });
   });
 
+  /* ---------------- Bill day follows the check-in date ---------------- */
+  // A stay is billed on its check-in day (the 28th for the 29th to the 31st),
+  // so picking the date fills the invoice day — until someone types their own.
+  document.addEventListener('input', function (event) {
+    var field = event.target;
+    if (field.matches && field.matches('[data-bill-day-of]')) { field.dataset.typed = '1'; }
+  });
+  document.addEventListener('change', function (event) {
+    var input = event.target;
+    if (!input.name || !input.form || !input.value) { return; }
+    var billDay = input.form.querySelector('[data-bill-day-of="' + input.name + '"]');
+    if (!billDay || billDay.dataset.typed === '1') { return; }
+    var day = parseInt(input.value.split('-')[2], 10);       // yyyy-mm-dd
+    if (day) { billDay.value = String(Math.min(day, 28)); }
+  });
+
   /* ---------------- Confirm before a destructive submit ---------------- */
   document.addEventListener('submit', function (event) {
     var form = event.target.closest('[data-confirm]');

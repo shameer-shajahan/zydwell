@@ -107,3 +107,24 @@ class SubscriptionLockMiddleware:
                 'Subscription expired on %(date)s. Access continues until the grace period ends.'
             ) % {'date': subscription.expires_on})
         return self.get_response(request)
+
+
+class DailyBillingMiddleware:
+    """The first visit of the day bills the account (see ``billing.daily``).
+
+    Placed after the subscription lock, so a locked account is never billed
+    by a visit.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        tenant = getattr(request, 'tenant', None)
+        user = getattr(request, 'user', None)
+        if tenant is not None and tenant.is_usable and user is not None \
+                and user.is_authenticated:
+            from billing.daily import bill_today_quietly
+
+            bill_today_quietly(tenant)
+        return self.get_response(request)

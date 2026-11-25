@@ -18,7 +18,7 @@ from properties.models import occupancy_for, occupancy_grouped
 
 from .. import lookup
 from ..brain import parse
-from .base import Skill, day, link, say, start
+from .base import Finish, Handoff, Skill, day, link, say, start
 from .common import answer_guest, ask_guest, pick_guest, read, stay_place, take_guests
 
 LIST_LIMIT = 10
@@ -45,16 +45,40 @@ def _not_found(slots):
         'name': slots['unknown_place']} + ' '
 
 
+def _stay_in(ctx, kind, obj):
+    """The live stay in a bed (or a room let whole) this user may see."""
+    stays = lookup.live_stays(ctx)
+    return (stays.filter(bed=obj) if kind == 'bed'
+            else stays.filter(room=obj, bed__isnull=True)).first()
+
+
 class GuestInfo(Skill):
+    """A guest, or whoever is in a bed: where, since when, the rent and what is owed."""
+
     name = 'guest_info'
     module = MODULE_GUESTS
     confirm = False
     title = _('Guest details')
-    example = _('where is Ravi / Ravi balance')
+    example = _('how much rent is pending on Ravi / who is in 101 A A2')
 
     def start(self, ctx, text):
         slots = {}
-        take_guests(ctx, slots, read(ctx, text, building=True))
+        found = read(ctx, text, building=True, place='codes')
+        take_guests(ctx, slots, found)
+        if slots.get('guest') or slots.get('guest_options') or not found.get('codes'):
+            return slots
+        # No name, but a bed: "117 A A5", "how much pending on 103 a4".
+        places, _unused = lookup.match_places(ctx, found['codes'], found.get('building'))
+        stays = [(kind, obj, _stay_in(ctx, kind, obj)) for kind, obj in places[:8]]
+        taken = [(kind, obj, stay) for kind, obj, stay in stays if stay]
+        if len(taken) == 1:
+            slots['guest'] = taken[0][2].guest_id
+            slots.pop('who', None)
+        elif taken:
+            slots['guest_options'] = [stay.guest_id for _k, _o, stay in taken]
+        elif len(places) == 1:
+            kind, obj = places[0]
+            slots['free_place'] = f'{kind[0]}{obj.pk}'
         return slots
 
     def preset(self, ctx, values):
@@ -64,9 +88,34 @@ class GuestInfo(Skill):
         return slots
 
     def ask(self, ctx, slots):
-        return ask_guest(ctx, slots, _('Which guest? Type their name or mobile number.'))
+        token = slots.get('free_place')
+        if token:
+            kind = 'bed' if token[0] == 'b' else 'room'
+            obj = (lookup.bed if kind == 'bed' else lookup.room)(ctx, int(token[1:]))
+            if obj is not None:
+                buttons = []
+                if ctx.allowed(MODULE_GUESTS, 'create'):
+                    buttons.append(start(_('Check someone in'), 'check_in',
+                                         **{kind: obj.pk}))
+                text = _('%(place)s is free: nobody is staying there.') % {
+                    'place': lookup.place_label(kind, obj)}
+                status = getattr(obj, 'status', None)
+                if kind == 'bed' and status is not None and not status.counts_as_available:
+                    text = _('Nobody is staying in %(place)s, but the bed is marked "%(status)s".') % {
+                        'place': lookup.place_label(kind, obj), 'status': status.name}
+                    buttons = []
+                raise Finish([say(text, buttons=buttons)])
+        return ask_guest(ctx, slots, _('Which guest? Type their name, mobile number or bed '
+                                       '(like "101 A A2").'))
 
     def answer(self, ctx, slots, key, text):
+        found = read(ctx, text, building=True, place='codes')
+        if take_guests(ctx, slots, found):
+            return None
+        fresh = self.start(ctx, text)
+        if fresh.get('guest') or fresh.get('guest_options') or fresh.get('free_place'):
+            slots.update(fresh)
+            return None
         return answer_guest(ctx, slots, text)
 
     def pick(self, ctx, slots, key, value):
@@ -76,12 +125,13 @@ class GuestInfo(Skill):
         guest = lookup.guest(ctx, slots['guest'])
         stay = lookup.stay_of(ctx, guest)
         rows = [(_('Mobile'), guest.mobile)]
-        if guest.nationality:
-            rows.append((_('Nationality'), guest.nationality))
         if stay:
-            rows += [(_('Staying at'), stay.location_label()),
+            rows += [(_('Staying at'), stay_place(stay)),
                      (_('Since'), day(stay.check_in_date)),
-                     (_('Rent'), ctx.money(stay.monthly_rent))]
+                     (_('Monthly rent'), ctx.money(stay.monthly_rent))]
+            if stay.billing_cycle == stay.CYCLE_MONTHLY:
+                rows.append((_('Bill day'), _('day %(day)s of each month') % {
+                    'day': stay.billing_day}))
             if stay.status and stay.status.code == 'notice':
                 rows.append((_('Leaving on'), day(stay.expected_check_out) or _('not set')))
         else:
@@ -89,11 +139,20 @@ class GuestInfo(Skill):
                          else _('Not staying in your buildings')))
         can_bill = ctx.allowed(MODULE_BILLING)
         owed = guest.outstanding_balance() if can_bill else None
+        text = guest.full_name
         if can_bill:
+            text = (_('%(name)s owes %(amount)s.') if owed > 0 else
+                    _('%(name)s owes nothing.')) % {'name': guest.full_name,
+                                                   'amount': ctx.money(owed)}
             rows.append((_('Owes'), ctx.money(owed)))
+            rows += self._unpaid_rows(ctx, guest)
             credit = guest.advance_credit()
             if credit > 0:
                 rows.append((_('Advance credit'), ctx.money(credit)))
+            if stay and stay.is_live:
+                upcoming = self._next_rent(ctx, stay)
+                if upcoming:
+                    rows.append((_('Next rent'), upcoming))
         if stay:
             rows.append((_('Deposit held'), ctx.money(stay.deposit_held())))
         buttons = [link(_('Open guest'), reverse('guests:guest_detail', args=[guest.pk]))]
@@ -106,7 +165,30 @@ class GuestInfo(Skill):
             buttons.append(start(_('Change check-in date'), 'edit_check_in', tenancy=stay.pk))
         if not stay and ctx.allowed(MODULE_GUESTS, 'create'):
             buttons.append(start(_('Check in'), 'check_in', guest=guest.pk))
-        return [say(guest.full_name, rows=rows, buttons=buttons)]
+        return [say(text, rows=rows, buttons=buttons)]
+
+    def _unpaid_rows(self, ctx, guest):
+        """Each unpaid invoice: how much is left on it, and when it is or was due."""
+        invoices = billing.owing(Invoice.objects.filter(tenancy__guest=guest)).order_by(
+            'due_date', 'pk')
+        rows = []
+        for invoice in invoices[:4]:
+            late = (ctx.today - invoice.due_date).days
+            when = (_('%(days)s days late') % {'days': late} if late > 0 else
+                    _('due today') if late == 0 else
+                    _('due %(date)s') % {'date': day(invoice.due_date)})
+            rows.append((f'{invoice.number} · {invoice.period_label()}',
+                         f'{ctx.money(invoice.balance)} · {when}'))
+        return rows
+
+    def _next_rent(self, ctx, stay):
+        """The next rent not billed yet, and when it falls due."""
+        terms = billing.next_unbilled_period(stay)
+        if not terms:
+            return ''
+        return _('%(amount)s on %(date)s') % {
+            'amount': ctx.money(billing.rent_for_terms(stay, terms)),
+            'date': day(terms['due_date'])}
 
 
 class Beds(Skill):
@@ -181,6 +263,12 @@ class Overdue(Skill):
     example = _('who has not paid')
 
     def start(self, ctx, text):
+        # "rent pending on akash" or "pending on 117 a5" asks about one guest.
+        found = read(ctx, text, building=True, place='codes')
+        if lookup.find_guests(ctx, found['rest'], found.get('mobile', '')) or (
+                found.get('codes') and lookup.match_places(ctx, found['codes'],
+                                                           found.get('building'))[0]):
+            raise Handoff('guest_info')
         slots, _found = _place_slots(ctx, text)
         slots['this_month'] = parse.find_period(text, ctx.today)[2] == 'this month'
         return slots

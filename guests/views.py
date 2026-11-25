@@ -278,9 +278,19 @@ def check_in(request):
             prorate_first_period=prorate,
             first_invoice_amount=first_amount,
         )
+        invoice = None
         if data['raise_first_invoice']:
-            _raise_first_invoice(request, tenancy)
+            invoice = _raise_first_invoice(request, tenancy)
         messages.success(request, _('%(name)s checked in.') % {'name': tenancy.guest.full_name})
+        # Everything to collect from the new guest, in one line.
+        rent_due = invoice.balance if invoice is not None else Decimal('0')
+        deposit_due = max(tenancy.deposit_amount - tenancy.deposit_held(), Decimal('0'))
+        if rent_due or deposit_due:
+            messages.info(request, _(
+                'To collect: %(cur)s %(rent)s rent + %(cur)s %(deposit)s deposit = '
+                '%(cur)s %(total)s.') % {
+                'cur': request.tenant.currency, 'rent': f'{rent_due:,.2f}',
+                'deposit': f'{deposit_due:,.2f}', 'total': f'{rent_due + deposit_due:,.2f}'})
         return redirect_back(request, 'guests:tenancy_detail', pk=tenancy.pk, made=tenancy)
     return render(request, 'guests/check_in.html', {'form': form})
 

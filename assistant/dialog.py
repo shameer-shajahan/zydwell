@@ -174,7 +174,7 @@ def _fresh(ctx, text):
     info = SKILLS['guest_info']
     if ctx.allowed(info.module, info.action):
         slots = info.start(ctx, text)
-        if slots.get('guest_options'):
+        if slots.get('guest_options') or slots.get('free_place'):
             return _begin(ctx, info, text)
         if slots.get('guest'):
             card = _begin(ctx, info, text)

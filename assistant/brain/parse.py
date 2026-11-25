@@ -301,12 +301,15 @@ def place_codes(text):
             if (code, None) not in codes:
                 codes.append((code, None))
                 spans.append(match.span(group))
-    # Codes with a digit and no place word nearby: "117 a5".
+    # Codes with a digit and no place word nearby: "117 a5". A lone letter
+    # straight after a number is one too: the room in "101 a a3".
     taken = {span for span in spans}
     for i, word in enumerate(low):
         if tokens[i][1] in taken or word in _PLACE_WORDS:
             continue
-        if any(c.isdigit() for c in word) and _is_code(word):
+        after_number = (len(word) == 1 and i > 0 and any(c.isdigit() for c in low[i - 1])
+                        and _is_code(low[i - 1]))
+        if (any(c.isdigit() for c in word) and _is_code(word)) or after_number:
             codes.append((word, None))
             spans.append(tokens[i][1])
     return codes, spans

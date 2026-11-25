@@ -20,6 +20,15 @@ from .common import answer_guest, ask_guest, pick_guest, read, stay_place, take_
 TAGS = ('deposit_received', 'deposit', 'rent')
 
 
+def to_collect_note(money, tenancy, invoice):
+    """Everything still to collect from a new stay: the first rent and the deposit."""
+    deposit_due = max(tenancy.deposit_amount - tenancy.deposit_held(), Decimal('0'))
+    rent_due = invoice.balance if invoice is not None else Decimal('0')
+    return _('To collect: %(rent)s rent + %(deposit)s deposit = %(total)s.') % {
+        'rent': money(rent_due), 'deposit': money(deposit_due),
+        'total': money(rent_due + deposit_due)}
+
+
 def _taken_by(bed):
     stay = Tenancy.objects.filter(bed=bed, status__code__in=Tenancy.LIVE_STATUS_CODES).select_related(
         'guest').first()
@@ -271,8 +280,22 @@ class CheckIn(Skill):
             (_('Monthly rent'), ctx.money(slots['rent'])),
             (_('Deposit agreed'), ctx.money(slots.get('deposit') or 0)),
             (_('Deposit received now'), ctx.money(slots.get('deposit_received') or 0)),
-            (_('First invoice'), _('Full rent for the first period, raised now')),
         ]
+        bill_day = services.bill_day_for(when)
+        period_start, period_end = Tenancy(
+            billing_cycle=Tenancy.CYCLE_MONTHLY, billing_day=bill_day).period_for(when)
+        rows += [
+            (_('Bill day'), _('day %(day)s of each month') % {'day': bill_day}),
+            (_('First invoice'), _('Full rent for %(start)s – %(end)s, raised now') % {
+                'start': day(max(period_start, when)), 'end': day(period_end)}),
+        ]
+        rent = as_decimal(slots['rent']) or Decimal('0')
+        deposit_due = max((as_decimal(slots.get('deposit')) or Decimal('0'))
+                          - (as_decimal(slots.get('deposit_received')) or Decimal('0')),
+                          Decimal('0'))
+        rows.append((_('To collect'), _('%(rent)s rent + %(deposit)s deposit = %(total)s') % {
+            'rent': ctx.money(rent), 'deposit': ctx.money(deposit_due),
+            'total': ctx.money(rent + deposit_due)}))
         current = lookup.stay_of(ctx, guest)
         text = _('Please check the check-in. To change something, type it, for example '
                  '"rent 900", "date 1" or "deposit 500 paid".')
@@ -289,7 +312,8 @@ class CheckIn(Skill):
             'guest': slots['guest'], 'room': slots['room'], 'bed': slots.get('bed') or '',
             'check_in_date': when.isoformat(), 'expected_check_out': '',
             'monthly_rent': slots['rent'], 'billing_cycle': Tenancy.CYCLE_MONTHLY,
-            'billing_day': 1, 'rent_mode': Tenancy.MODE_ADVANCE, 'first_charge': 'full',
+            'billing_day': services.bill_day_for(when), 'rent_mode': Tenancy.MODE_ADVANCE,
+            'first_charge': 'full',
             'first_amount': '', 'deposit_amount': slots.get('deposit') or '0',
             'deposit_received': slots.get('deposit_received') or '0',
             'raise_first_invoice': 'on', 'agreement_note': '',
@@ -314,6 +338,7 @@ class CheckIn(Skill):
             'name': tenancy.guest.full_name, 'where': stay_place(tenancy)}
         text += ' ' + _('Invoice %(no)s raised for %(amount)s.') % {
             'no': invoice.number, 'amount': ctx.money(invoice.total)}
+        text += ' ' + to_collect_note(ctx.money, tenancy, invoice)
         buttons = [link(_('Open stay'), reverse('guests:tenancy_detail', args=[tenancy.pk]))]
         if ctx.allowed(MODULE_BILLING, 'create') and invoice.balance > 0:
             buttons.append(start(_('Collect rent now'), 'payment', tenancy=tenancy.pk,

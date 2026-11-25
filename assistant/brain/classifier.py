@@ -46,6 +46,10 @@ def words(text):
 
 def features(text):
     tokens = words(text)
+    # A lone letter ("a", or the "a" of "A5") says nothing — unless it is the
+    # whole reply ("y", "k").
+    if len(tokens) > 1:
+        tokens = [t for t in tokens if len(t) > 1]
     out = []
     for word in tokens:
         out.append('w:' + word)

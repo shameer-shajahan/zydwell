@@ -30,7 +30,8 @@ SPELLING = {
     'cheq': 'cheque', 'cheqe': 'cheque', 'chqe': 'cheque', 'bnk': 'bank', 'trnsfr': 'transfer',
     'trf': 'transfer', 'elec': 'electricity', 'electric': 'electricity', 'sal': 'salary',
     'mnth': 'month', 'mth': 'month', 'wk': 'week', 'yr': 'year', 'bal': 'balance',
-    'pndg': 'pending', 'pend': 'pending', 'ovrdue': 'overdue', 'dues': 'dues',
+    'pndg': 'pending', 'pend': 'pending', 'pent': 'pending', 'pendng': 'pending',
+    'pnding': 'pending', 'ovrdue': 'overdue', 'dues': 'dues',
 }
 #: Long command words a typo is matched to. Six letters or more on both sides,
 #: so a short name ("Akash") is never taken for a word ("cash").

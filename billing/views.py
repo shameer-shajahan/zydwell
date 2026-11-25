@@ -385,9 +385,9 @@ def overdue(request):
     location = LocationFilter(request)
     today = timezone.localdate()
     invoices = location.apply(_scoped_invoices(request), prefix='tenancy__')
-    # Keep not-yet-due balances in the aging summary's "Current" bucket, but
-    # do not list them as overdue invoices or include them in the overdue KPI.
-    items = services.owing(invoices).filter(due_date__lt=today)
+    # Every unpaid invoice: the late ones first (most overdue, then largest),
+    # then the pending ones not yet late — so the list adds up to "Total pending".
+    items = services.owing(invoices)
     buckets = services.aging_buckets(request.tenant, invoices=invoices)
 
     # A guest is flagged once two or more of their invoices were settled late, or
@@ -415,6 +415,7 @@ def overdue(request):
         shortfall__gt=0).order_by('-shortfall', 'pk')
 
     return render(request, 'billing/overdue.html', {
+        'today': today,
         'items': paginate(request, items, 30),
         'buckets': buckets,
         'aging_rows': [(label, buckets[label]) for label in

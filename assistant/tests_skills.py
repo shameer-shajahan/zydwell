@@ -314,7 +314,7 @@ class EngineTests(AssistantCase):
         self.grant(MODULE_GUESTS)
         self.client.force_login(self.staff)
         text = self.text(self.say('help'))
-        self.assertIn('where is Ravi', text)
+        self.assertIn('how much rent is pending on Ravi', text)
         self.assertNotIn('paid 800', text)
 
     def test_a_vanished_stay_restarts_cleanly(self):
