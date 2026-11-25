@@ -7,4 +7,5 @@ app_name = 'assistant'
 urlpatterns = [
     path('', views.chat, name='chat'),
     path('message/', views.message, name='message'),
+    path('opening/', views.opening, name='opening'),
 ]

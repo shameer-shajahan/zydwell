@@ -128,6 +128,53 @@ function json(replies) {
           doc.querySelector('.chat-msg.error').textContent.includes('Signed out'));
   }
 
+  // ---- 4. the round button and its pop-up --------------------------------
+  {
+    const dom = new JSDOM(`<!doctype html><html lang="en"><body>
+      <button class="chat-fab" data-chat-toggle aria-expanded="false">Chat</button>
+      <section class="chat-panel" id="chat-panel" hidden>
+        <button type="button" data-chat-toggle id="close">x</button>
+        <div class="chat" data-chat data-url="/assistant/message/" data-opening-url="/assistant/opening/"
+             data-error="No connection" data-retry="Try again" data-signed-out="Signed out">
+          <div class="chat-log" data-chat-log></div>
+          <form data-chat-form><input type="hidden" name="csrfmiddlewaretoken" value="t">
+            <input type="text" name="text" data-chat-input></form>
+        </div>
+      </section>
+      <script type="application/json" id="chat-opening">[{"text": "page opening, not for the pop-up"}]</script>
+    </body></html>`, { url: 'https://app.example/guests/', runScripts: 'outside-only',
+                       pretendToBeVisual: true, virtualConsole: new VirtualConsole() });
+    const win = dom.window, doc = win.document;
+    win.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {} });
+    win.scrollTo = () => {};
+    win.sent = [];
+    win.fetch = (url, options) => {
+      win.sent.push({ url, options });
+      return json([{ text: 'Hi from the pop-up' }]);
+    };
+    win.eval(SCRIPT);
+    doc.dispatchEvent(new win.Event('DOMContentLoaded'));
+    const panel = doc.getElementById('chat-panel');
+    const fab = doc.querySelector('.chat-fab');
+    const log = panel.querySelector('[data-chat-log]');
+
+    check('the pop-up starts closed and empty', panel.hidden && log.children.length === 0);
+    check('nothing is fetched before it opens', win.sent.length === 0);
+    fab.click();
+    check('the button opens the pop-up', !panel.hidden && fab.getAttribute('aria-expanded') === 'true');
+    check('opening fetches the first messages', win.sent.length === 1 &&
+          win.sent[0].url === '/assistant/opening/' && !win.sent[0].options.method);
+    await sleep(20);
+    check('the first messages show', log.textContent.includes('Hi from the pop-up') &&
+          !log.textContent.includes('page opening'));
+    doc.getElementById('close').click();
+    check('the close button closes it', panel.hidden && fab.getAttribute('aria-expanded') === 'false');
+    fab.click();
+    check('opening again does not fetch again', win.sent.length === 1);
+    doc.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    check('Escape closes it', panel.hidden);
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
 })();

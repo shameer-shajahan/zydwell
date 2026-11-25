@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.urls import reverse
 
 from . import navigation
 from .models import FeatureFlag, SystemNotice
@@ -18,6 +19,8 @@ def branding(request):
                 models_q(tenant)
             )[:3]
         )
+    nav_items = navigation.build(request)
+    assistant_url = reverse('assistant:chat')
     return {
         'tenant': tenant,
         'brand': brand,
@@ -28,7 +31,11 @@ def branding(request):
         'system_notices': notices,
         'currency': tenant.currency if tenant else settings.ZYDWELL['DEFAULT_CURRENCY'],
         'impersonating': bool(request.session.get('impersonator_id')) if hasattr(request, 'session') else False,
-        'nav_items': navigation.build(request),
+        'nav_items': nav_items,
+        # The floating chat button: for whoever may open the assistant, on
+        # every page but the assistant's own.
+        'assistant_launcher': request.path != assistant_url and any(
+            item['url'] == assistant_url for item in nav_items),
         # A phone hands off to the WhatsApp app and abandons the tab, so open
         # chats in place there and only use a new tab on a desktop.
         'chat_new_tab': _wants_new_tab(request),

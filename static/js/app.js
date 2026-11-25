@@ -837,22 +837,27 @@
   /* =====================================================================
      Assistant chat
 
-     The page carries the opening messages as JSON; every message typed (or
-     every reply button pressed) is POSTed and the replies come back as JSON.
-     All text goes in with textContent: guest names are typed by people, and
-     nothing they type may become markup.
+     Two places: the Assistant page, which carries its opening messages as
+     JSON, and the pop-up behind the round button on every other page, which
+     fetches them the first time it opens. Every message typed (or reply
+     button pressed) is POSTed and the replies come back as JSON. All text
+     goes in with textContent: guest names are typed by people, and nothing
+     they type may become markup.
      ===================================================================== */
-  function chat() {
-    var box = document.querySelector('[data-chat]');
-    if (!box) { return; }
+  function setupChat(box) {
+    if (box.chatReady) { return; }      // set up once, however often boot runs
+    box.chatReady = true;
     var log = box.querySelector('[data-chat-log]');
     var form = box.querySelector('[data-chat-form]');
     var input = box.querySelector('[data-chat-input]');
     var token = form.querySelector('input[name=csrfmiddlewaretoken]');
+    var inPanel = Boolean(box.closest('.chat-panel'));
     var busy = false;
 
     function scrollDown() {
-      if (typeof window.scrollTo === 'function') {
+      if (inPanel) {
+        log.scrollTop = log.scrollHeight;
+      } else if (typeof window.scrollTo === 'function') {
         try { window.scrollTo(0, document.documentElement.scrollHeight); } catch (err) { /* old engines */ }
       }
     }
@@ -989,11 +994,72 @@
       send(button.getAttribute('data-chat-send'), button.textContent);
     });
 
-    var opening = document.getElementById('chat-opening');
+    var openingUrl = box.getAttribute('data-opening-url');
+    var loaded = false;
+    // The pop-up asks for its first messages only when someone opens it, so
+    // the pages themselves do no extra work.
+    box.chatOpened = function () {
+      if (!openingUrl || loaded || busy) { return; }
+      loaded = true;
+      busy = true;
+      var wait = typing();
+      window.fetch(openingUrl, {
+        credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      }).then(function (response) {
+        var type = (response.headers && response.headers.get('content-type')) || '';
+        if (response.ok && type.indexOf('application/json') !== -1) { return response.json(); }
+        throw new Error('server');
+      }).then(function (data) {
+        (data.replies || []).forEach(botSays);
+      }).catch(function () {
+        loaded = false;               // the next open tries again
+        add('bot error', box.getAttribute('data-error'));
+      }).then(function () {
+        if (wait.parentNode) { wait.parentNode.removeChild(wait); }
+        busy = false;
+        scrollDown();
+      });
+    };
+
+    var opening = !openingUrl && document.getElementById('chat-opening');
     if (opening) {
       try { JSON.parse(opening.textContent).forEach(botSays); } catch (err) { /* page still works */ }
     }
     scrollDown();
+  }
+
+  function chat() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-chat]'), setupChat);
+    var panel = document.getElementById('chat-panel');
+    if (!panel || panel.chatReady) { return; }
+    panel.chatReady = true;
+    var fab = document.querySelector('.chat-fab');
+
+    function toggle(open) {
+      panel.hidden = !open;
+      if (fab) {
+        fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+        fab.classList.toggle('open', open);
+      }
+      var box = panel.querySelector('[data-chat]');
+      if (!open || !box) { return; }
+      if (box.chatOpened) { box.chatOpened(); }
+      // On a phone the keyboard would cover the chat at once; let them tap.
+      var input = box.querySelector('[data-chat-input]');
+      var mouse = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+      if (input && mouse) { input.focus(); }
+    }
+
+    document.addEventListener('click', function (event) {
+      if (!event.target.closest('[data-chat-toggle]')) { return; }
+      event.preventDefault();
+      toggle(panel.hidden);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || panel.hidden) { return; }
+      toggle(false);
+      if (fab) { fab.focus(); }
+    });
   }
 
   function boot() {

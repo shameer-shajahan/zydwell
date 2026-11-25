@@ -183,3 +183,41 @@ class ConversationTests(ZyDwellTestCase):
         self.say('add guest Ravi')
         response = self.client.get(reverse('assistant:chat'))
         self.assertContains(response, 'Welcome back')
+
+
+class LauncherTests(ZyDwellTestCase):
+    """The round chat button on every page, and the pop-up's first messages."""
+
+    def test_the_button_shows_on_other_pages(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse('guests:guest_list'))
+        self.assertContains(response, 'chat-fab')
+        self.assertContains(response, 'id="chat-panel"')
+        self.assertContains(response, reverse('assistant:opening'))
+
+    def test_but_not_on_the_assistant_page_itself(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse('assistant:chat'))
+        self.assertNotContains(response, 'chat-fab')
+        self.assertContains(response, 'class="chat" data-chat ', count=1)
+
+    def test_nor_for_staff_without_the_guests_module(self):
+        self.grant('billing')
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse('billing:invoice_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'chat-fab')
+
+    def test_staff_with_guests_get_it(self):
+        self.grant(MODULE_GUESTS)
+        self.client.force_login(self.staff)
+        self.assertContains(self.client.get(reverse('guests:guest_list')), 'chat-fab')
+
+    def test_the_opening_messages(self):
+        self.client.force_login(self.owner)
+        replies = self.client.get(reverse('assistant:opening')).json()['replies']
+        self.assertIn('add a guest', replies[0]['text'])
+        self.client.post(reverse('assistant:message'), {'text': 'add guest Ravi'})
+        replies = self.client.get(reverse('assistant:opening')).json()['replies']
+        self.assertIn('Welcome back', replies[0]['text'])
+        self.assertIn('mobile', replies[-1]['text'])
