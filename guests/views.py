@@ -3,7 +3,6 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.conf import settings
-from django.db import transaction
 from django.db.models import Count, Prefetch, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -287,21 +286,7 @@ def check_in(request):
 
 
 def _raise_first_invoice(request, tenancy):
-    from billing.services import build_invoice
-
-    period_start, period_end = tenancy.period_for(tenancy.check_in_date)
-    start = max(period_start, tenancy.check_in_date)
-    # Only split the month when the agreement says to; plenty of owners take the
-    # whole month's rent however late in the month the guest arrived.
-    prorata = start > period_start and tenancy.prorate_first_period
-    invoice = build_invoice(
-        tenancy, period_start=start, period_end=period_end,
-        due_date=tenancy.due_date_for(start, period_end), user=request.user,
-        rent_amount=tenancy.first_invoice_amount, prorata=prorata,
-        period_days=tenancy.period_length(period_start),
-    )
-    from billing.services import apply_guest_credit
-    apply_guest_credit(guest=tenancy.guest, user=request.user)
+    invoice = services.raise_first_invoice(tenancy=tenancy, user=request.user)
     messages.info(request, _('Invoice %(no)s raised for %(amount)s.') % {
         'no': invoice.number, 'amount': invoice.total})
     return invoice
@@ -328,28 +313,9 @@ def check_out(request, pk):
         # The final-rent figures follow the date, so a new date reloads them.
         form.fields['check_out_date'].widget.attrs['data-reload-with'] = 'date'
     if request.method == 'POST' and form.is_valid():
-        from billing import services as billing
-
-        data = form.cleaned_data
-        deductions = []
-        if data.get('deduction_amount'):
-            deductions.append({'amount': data['deduction_amount'],
-                               'reason': data['deduction_reason']})
-        payment = None
-        with transaction.atomic():
-            if can_bill:
-                _invoice, payment = billing.settle_final_period(
-                    tenant=request.tenant, user=request.user, tenancy=tenancy,
-                    leaving_on=data['check_out_date'], rent_amount=data.get('final_rent'),
-                    collect_amount=data.get('collect_amount'), mode=data.get('collect_mode'),
-                    reference=data.get('collect_reference') or '',
-                    note=_('Final rent on check-out'),
-                )
-            services.check_out(
-                tenancy=tenancy, user=request.user, check_out_date=data['check_out_date'],
-                deductions=deductions, refund_amount=data.get('refund_amount') or Decimal('0'),
-                note=data.get('note', ''),
-            )
+        payment = services.check_out_and_settle(
+            tenant=request.tenant, user=request.user, tenancy=tenancy,
+            data=form.cleaned_data, can_bill=can_bill)
         messages.success(request, _('%(name)s checked out.') % {'name': tenancy.guest.full_name})
         if payment is not None:
             if payment.awaits_approval:

@@ -249,26 +249,11 @@ def payment_create(request):
     form = PaymentForm(request.POST or None, tenant=request.tenant, user=request.user,
                        initial=initial)
     if request.method == 'POST' and form.is_valid():
-        data = form.cleaned_data
-        selected = data['invoices']
-        common = {
-            'tenant': request.tenant, 'user': request.user, 'tenancy': data['tenancy'],
-            'amount': data['amount'], 'mode': data['mode'],
-            'reference': data['reference'], 'paid_on': data['paid_on'],
-            'note': data['note'], 'cheque_due_date': data['cheque_due_date'],
-        }
-        if len(selected) > 1:
-            payment = services.record_multi_invoice_payment(
-                **common, invoices=selected)
-        else:
-            payment = services.record_payment(
-                **common, invoice=selected[0] if selected else None)
-            if not selected and not payment.from_credit and not payment.awaits_approval:
-                applied = services.apply_guest_credit(
-                    guest=data['tenancy'].guest, user=request.user)
-                if applied:
-                    messages.info(request, _(
-                        'Advance credit was applied to the oldest unpaid invoices.'))
+        payment, applied = services.save_payment(
+            tenant=request.tenant, user=request.user, data=form.cleaned_data)
+        if applied:
+            messages.info(request, _(
+                'Advance credit was applied to the oldest unpaid invoices.'))
         if payment.awaits_approval:
             messages.success(request, _(
                 'Receipt %(no)s recorded. It is waiting for the owner to approve it.'

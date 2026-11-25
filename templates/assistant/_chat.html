@@ -13,7 +13,7 @@
   <form class="chat-bar no-print" data-chat-form data-no-loader autocomplete="off">
     {% csrf_token %}
     <input class="chat-input" type="text" name="text" maxlength="500" data-chat-input
-           placeholder="{% trans 'e.g. add guest Ravi 0501234567' %}"
+           placeholder="{% trans 'e.g. Ravi paid 800 cash' %}"
            aria-label="{% trans 'Message' %}" enterkeyhint="send" autocapitalize="sentences">
     <button class="chat-send" type="submit" aria-label="{% trans 'Send' %}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>

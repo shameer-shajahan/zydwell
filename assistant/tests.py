@@ -118,8 +118,9 @@ class ConversationTests(ZyDwellTestCase):
         self.assertTrue(AuditLog.objects.filter(
             action=AuditLog.ACTION_CREATE, object_label='Ravi Kumar').exists())
         hrefs = [b.get('href') for b in replies[-1]['buttons']]
+        sends = [b.get('send') for b in replies[-1]['buttons']]
         self.assertIn(reverse('guests:guest_detail', args=[guest.pk]), hrefs)
-        self.assertIn(reverse('guests:check_in') + f'?guest={guest.pk}', hrefs)
+        self.assertIn(f'@start:check_in:guest={guest.pk}', sends)
         self.assertNotIn('assistant', self.client.session)
 
     def test_step_by_step(self):
@@ -216,7 +217,7 @@ class LauncherTests(ZyDwellTestCase):
     def test_the_opening_messages(self):
         self.client.force_login(self.owner)
         replies = self.client.get(reverse('assistant:opening')).json()['replies']
-        self.assertIn('add a guest', replies[0]['text'])
+        self.assertIn('who has not paid', replies[0]['text'])
         self.client.post(reverse('assistant:message'), {'text': 'add guest Ravi'})
         replies = self.client.get(reverse('assistant:opening')).json()['replies']
         self.assertIn('Welcome back', replies[0]['text'])

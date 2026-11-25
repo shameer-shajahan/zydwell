@@ -57,6 +57,55 @@ def check_in(*, tenant, user, guest, room, bed, check_in_date, monthly_rent,
     return tenancy
 
 
+def raise_first_invoice(*, tenancy, user):
+    """The invoice for a new stay's first period, with any advance credit applied."""
+    from billing.services import apply_guest_credit, build_invoice
+
+    period_start, period_end = tenancy.period_for(tenancy.check_in_date)
+    start = max(period_start, tenancy.check_in_date)
+    # Only split the month when the agreement says to; plenty of owners take the
+    # whole month's rent however late in the month the guest arrived.
+    prorata = start > period_start and tenancy.prorate_first_period
+    invoice = build_invoice(
+        tenancy, period_start=start, period_end=period_end,
+        due_date=tenancy.due_date_for(start, period_end), user=user,
+        rent_amount=tenancy.first_invoice_amount, prorata=prorata,
+        period_days=tenancy.period_length(period_start),
+    )
+    apply_guest_credit(guest=tenancy.guest, user=user)
+    return invoice
+
+
+@transaction.atomic
+def check_out_and_settle(*, tenant, user, tenancy, data, can_bill):
+    """Check-out as the check-out form asks for it: final rent, then the stay.
+
+    ``data`` is a valid ``CheckOutForm``'s ``cleaned_data``. Returns the
+    payment taken for the final rent, if any.
+    """
+    from billing import services as billing
+
+    deductions = []
+    if data.get('deduction_amount'):
+        deductions.append({'amount': data['deduction_amount'],
+                           'reason': data['deduction_reason']})
+    payment = None
+    if can_bill:
+        _invoice, payment = billing.settle_final_period(
+            tenant=tenant, user=user, tenancy=tenancy,
+            leaving_on=data['check_out_date'], rent_amount=data.get('final_rent'),
+            collect_amount=data.get('collect_amount'), mode=data.get('collect_mode'),
+            reference=data.get('collect_reference') or '',
+            note=_('Final rent on check-out'),
+        )
+    check_out(
+        tenancy=tenancy, user=user, check_out_date=data['check_out_date'],
+        deductions=deductions, refund_amount=data.get('refund_amount') or Decimal('0'),
+        note=data.get('note', ''),
+    )
+    return payment
+
+
 @transaction.atomic
 def check_out(*, tenancy, user, check_out_date=None, deductions=None, refund_amount=Decimal('0'),
               note=''):

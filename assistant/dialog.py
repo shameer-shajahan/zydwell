@@ -4,111 +4,39 @@
 show back, each ``{'text', 'rows'?, 'buttons'?}``. A button either sends a
 reply (``{'label', 'send'}``) or opens a page (``{'label', 'href'}``).
 
-Where we are in a conversation lives in the session, so it survives a page
-reload and needs no table:
+The model (``brain/classifier.py``) says what a message wants; the matching
+skill (``skills/``) does it. Where a conversation has got to lives in the
+session, so it survives a page reload and needs no table:
 
-    {'flow': 'add_guest', 'slots': {...}, 'awaiting': 'mobile'}
+    {'skill': 'payment', 'slots': {...}, 'awaiting': 'amount'}
 
-Nothing is saved until the user has seen every detail and said yes.
+Nothing is changed until the user has seen every detail and said yes.
+Buttons answer with tokens the user never types:
+
+    @pick:<question>:<value>      answers the open question
+    @start:<skill>:<k>=<v>,...    starts a skill with some details known
 """
+import copy
+import logging
 import re
 
-from django.urls import reverse
 from django.utils.translation import gettext as _
 
-from core import audit
-from core.constants import MODULE_GUESTS
-from core.models import AuditLog
-from guests.forms import GuestForm
-from guests.models import Guest
+from .brain import classifier
+from .skills import SKILLS
+from .skills.base import Ctx, Finish, NotDone, say, send
 
-from .brain import classifier, entities
+logger = logging.getLogger(__name__)
 
 SESSION_KEY = 'assistant'
 MAX_LENGTH = 500
+#: How sure the model must be before a new request replaces one in progress.
+SWITCH_CONFIDENCE = 0.9
+#: Questions answered with a name, where any words would do.
+FREE_TEXT = {'tenancy', 'guest'}
 
-#: Asked for, in this order, before a guest can be saved.
-REQUIRED = ['full_name', 'mobile']
-#: Everything the assistant can fill in, in the order the summary shows it.
-FIELDS = ['full_name', 'mobile', 'nationality', 'gender', 'email', 'employer']
-LIMITS = {'full_name': 150, 'mobile': 32, 'nationality': 80, 'email': 254, 'employer': 150}
-
-
-# ---------------------------------------------------------------- messages
-def _say(text, *, rows=None, buttons=None):
-    message = {'text': str(text)}
-    if rows:
-        message['rows'] = [[str(label), str(value)] for label, value in rows]
-    if buttons:
-        message['buttons'] = [b for b in buttons if b]
-    return message
-
-
-def _send(label, send):
-    return {'label': str(label), 'send': send}
-
-
-def _link(label, href):
-    return {'label': str(label), 'href': href}
-
-
-def _start_buttons():
-    return [_send(_('Add a guest'), 'add guest'), _send(_('What can you do?'), 'help')]
-
-
-def _greeting():
-    return _say(
-        _('Hi! I can add a guest for you. Type it the way you would say it, for example: '
-          '"add guest Ravi Kumar 0501234567 Indian".'),
-        buttons=_start_buttons())
-
-
-def _help():
-    return _say(_(
-        'I can add a guest. Try one of these:\n'
-        '• add guest Ravi Kumar 0501234567\n'
-        '• new tenant from India, name is Maria, mobile +971 55 111 2222\n'
-        '• register a guest who works at Emaar\n'
-        'I ask for anything missing and show you the details before saving. '
-        'Say "cancel" at any time to stop.'),
-        buttons=[_send(_('Add a guest'), 'add guest')])
-
-
-def _labels():
-    return {
-        'full_name': _('Name'), 'mobile': _('Mobile'), 'nationality': _('Nationality'),
-        'gender': _('Gender'), 'email': _('Email'), 'employer': _('Employer'),
-    }
-
-
-def _display(field, value):
-    if field == 'gender':
-        return dict(Guest._meta.get_field('gender').choices).get(value, value)
-    return value
-
-
-def _summary(slots):
-    labels = _labels()
-    rows = [(labels[f], _display(f, slots[f])) for f in FIELDS if slots.get(f)]
-    return _say(
-        _('Please check the details. To change something, type it, for example '
-          '"mobile is 0509876543".'),
-        rows=rows,
-        buttons=[_send(_('Yes, add guest'), 'yes'), _send(_('Cancel'), 'cancel')])
-
-
-def _question(field, slots, again=False):
-    cancel = [_send(_('Cancel'), 'cancel')]
-    if field == 'full_name':
-        if again:
-            return _say(_('Please type the guest\'s name, for example "Ravi Kumar".'),
-                        buttons=cancel)
-        return _say(_("What is the guest's full name?"), buttons=cancel)
-    if again:
-        return _say(_('I could not find a mobile number in that. Please type it like '
-                      '0501234567 or +971 50 123 4567.'), buttons=cancel)
-    return _say(_("What is %(name)s's mobile number?") % {'name': slots['full_name']},
-                buttons=cancel)
+_PICK = re.compile(r'^@pick:(\w+):(.{0,80})$')
+_START = re.compile(r'^@start:(\w+):(.{0,200})$')
 
 
 # ---------------------------------------------------------------- state
@@ -124,179 +52,209 @@ def _clear(request):
     request.session.pop(SESSION_KEY, None)
 
 
-def _clean(found):
-    """Only fields we know, trimmed to what the database takes."""
-    return {f: str(v).strip()[:LIMITS.get(f, 150)] for f, v in found.items()
-            if f in FIELDS and str(v).strip()}
+# ---------------------------------------------------------------- small talk
+def _usable(ctx):
+    return [s for s in SKILLS.values() if not s.module or ctx.allowed(s.module, s.action)]
 
 
-def _duplicate(request, mobile):
-    """A guest in this account who already has this mobile, written any way."""
-    tail = re.sub(r'\D', '', mobile)[-4:]
-    if not tail:
-        return None
-    rows = Guest.objects.filter(
-        tenant=request.tenant, is_company=False, mobile__contains=tail,
-    ).only('pk', 'full_name', 'mobile')
-    return next((g for g in rows if entities.same_mobile(g.mobile, mobile)), None)
+def _start_buttons(ctx):
+    buttons = []
+    if 'add_guest' in {s.name for s in _usable(ctx)}:
+        buttons.append(send(_('Add a guest'), 'add guest'))
+    buttons.append(send(_('What can you do?'), 'help'))
+    return buttons
+
+
+def _greeting(ctx):
+    return say(_('Hi! Tell me what to do in your own words, for example "Ravi paid 800 cash", '
+                 '"put Ravi in room 101 bed A" or "who has not paid". Type "help" to see '
+                 'everything I can do.'), buttons=_start_buttons(ctx))
+
+
+def _help(ctx):
+    skills = _usable(ctx)
+    jobs = [s for s in skills if s.confirm]
+    questions = [s for s in skills if not s.confirm]
+    lines = []
+    if jobs:
+        lines.append(_('Jobs I can do (I always show you the details before saving):'))
+        lines += [f'• {s.example}' for s in jobs]
+    if questions:
+        lines.append(_('Questions I can answer:'))
+        lines += [f'• {s.example}' for s in questions]
+    lines.append(_('Say "cancel" at any time to stop.'))
+    return say('\n'.join(lines))
 
 
 # ---------------------------------------------------------------- the API
 def opening(request):
-    """What the chat page shows when it opens: a greeting, or where we left off."""
+    """What the chat shows when it opens: a greeting, or where we left off."""
+    ctx = Ctx(request)
     state = _state(request)
-    if state.get('flow') == 'add_guest':
-        return [_say(_('Welcome back. We were adding a guest.'))] + _next(request, state)
-    return [_greeting()]
+    skill = SKILLS.get(state.get('skill'))
+    if skill is not None:
+        try:
+            return [say(_('Welcome back. We were in the middle of something.'))] + _advance(
+                ctx, skill, state)
+        except (Finish, NotDone, AttributeError, KeyError, TypeError, ValueError):
+            # The guest or bed behind it may be gone since: start afresh.
+            _clear(request)
+    return [_greeting(ctx)]
 
 
 def reply(request, text):
+    ctx = Ctx(request)
     text = (text or '').strip()[:MAX_LENGTH]
     if not text:
-        return [_say(_('Type a message, for example "add a guest".'))]
+        return [say(_('Type a message, for example "who has not paid".'))]
+    started = _START.match(text)
+    if started:
+        return _begin_preset(ctx, started.group(1), started.group(2))
     state = _state(request)
-    if state.get('flow') == 'add_guest':
-        return _continue(request, state, text)
-    return _fresh(request, text)
+    skill = SKILLS.get(state.get('skill'))
+    if skill is None:
+        _clear(request)
+        if _PICK.match(text):
+            return [say(_('That question is closed. What would you like to do?'),
+                        buttons=_start_buttons(ctx))]
+        return _fresh(ctx, text)
+    try:
+        return _continue(ctx, skill, state, text)
+    except Finish as done:
+        _clear(request)
+        return done.messages
+    except (AttributeError, KeyError, TypeError, ValueError):
+        # A record it relied on changed under it (checked out elsewhere,
+        # deleted). Say so and start afresh rather than fail the request.
+        logger.exception('Assistant conversation reset')
+        _clear(request)
+        return [say(_('Something changed while we were talking, so I have stopped. '
+                      'Please start again.'), buttons=_start_buttons(ctx))]
 
 
-def _fresh(request, text):
+def _fresh(ctx, text):
     intent, _confidence = classifier.predict(text)
-    if intent == 'add_guest':
-        return _start_add_guest(request, text)
+    skill = SKILLS.get(intent)
+    if skill is not None:
+        return _begin(ctx, skill, text)
     if intent == 'help':
-        return [_help()]
+        return [_help(ctx)]
     if intent == 'greet':
-        return [_greeting()]
+        return [_greeting(ctx)]
     if intent == 'thanks':
-        return [_say(_('You are welcome!'), buttons=[_send(_('Add a guest'), 'add guest')])]
+        return [say(_('You are welcome!'))]
     if intent in ('yes', 'no', 'cancel'):
-        return [_say(_('Nothing is in progress right now.'), buttons=_start_buttons())]
+        return [say(_('Nothing is in progress right now.'), buttons=_start_buttons(ctx))]
     if intent == 'other':
-        return [_say(_("I can't do that yet. For now I can add guests."),
-                     buttons=_start_buttons())]
-    return [_say(_('Sorry, I did not understand that. I can add guests. Try '
-                   '"add guest Ravi 0501234567".'), buttons=_start_buttons())]
+        return [say(_("I can't do that yet. Here is what I can do:")), _help(ctx)]
+    # Just a name? Show that guest.
+    info = SKILLS['guest_info']
+    if ctx.allowed(info.module, info.action):
+        slots = info.start(ctx, text)
+        if slots.get('guest') or slots.get('guest_options'):
+            return _begin(ctx, info, text)
+    return [say(_('Sorry, I did not understand that. Try "Ravi paid 800 cash" or '
+                  '"free beds", or type "help".'), buttons=_start_buttons(ctx))]
 
 
-# ---------------------------------------------------------------- add a guest
-def _start_add_guest(request, text):
-    if not request.user.can(MODULE_GUESTS, 'create'):
-        return [_say(_('You do not have permission to add guests. Ask your admin for access.'))]
-    slots = _clean(entities.extract(text, name='guess'))
-    state = {'flow': 'add_guest', 'slots': slots, 'awaiting': None}
-    lead = _say(_('Got it.') if slots else _("Sure, let's add a guest."))
-    return [lead] + _next(request, state)
+def _refuse(skill):
+    return [say(_('You do not have permission for that. Ask your admin for access.'))]
 
 
-def _next(request, state):
-    """Ask for the next missing detail, warn about a duplicate, or show the summary."""
-    slots = state['slots']
-    for field in REQUIRED:
-        if not slots.get(field):
-            state['awaiting'] = field
-            _keep(request, state)
-            return [_question(field, slots)]
+def _begin(ctx, skill, text):
+    if skill.module and not ctx.allowed(skill.module, skill.action):
+        return _refuse(skill)
+    state = {'skill': skill.name, 'slots': skill.start(ctx, text), 'awaiting': None}
+    try:
+        return _advance(ctx, skill, state)
+    except Finish as done:
+        _clear(ctx.request)
+        return done.messages
 
-    if not state.get('allow_duplicate'):
-        existing = _duplicate(request, slots['mobile'])
-        if existing:
-            state['awaiting'] = 'duplicate'
-            _keep(request, state)
-            return [_say(
-                _('%(name)s already has the mobile %(mobile)s. Add a new guest anyway?') % {
-                    'name': existing.full_name, 'mobile': existing.mobile},
-                buttons=[
-                    _send(_('Yes, add new guest'), 'yes'),
-                    _link(_('Open %(name)s') % {'name': existing.full_name},
-                          reverse('guests:guest_detail', args=[existing.pk])),
-                    _send(_('Cancel'), 'cancel'),
-                ])]
 
+def _begin_preset(ctx, name, raw):
+    skill = SKILLS.get(name)
+    if skill is None:
+        return [say(_('Sorry, I cannot do that.'))]
+    if skill.module and not ctx.allowed(skill.module, skill.action):
+        return _refuse(skill)
+    values = dict(part.split('=', 1) for part in raw.split(',') if '=' in part)
+    state = {'skill': skill.name, 'slots': skill.preset(ctx, values), 'awaiting': None}
+    try:
+        return _advance(ctx, skill, state)
+    except Finish as done:
+        _clear(ctx.request)
+        return done.messages
+
+
+def _advance(ctx, skill, state):
+    """Ask what is still missing, or show the summary, or (a question) answer."""
+    question = skill.ask(ctx, state['slots'])
+    if question:
+        state['awaiting'], message = question
+        _keep(ctx.request, state)
+        return [message]
+    if not skill.confirm:
+        _clear(ctx.request)
+        return skill.run(ctx, state['slots'])
     state['awaiting'] = 'confirm'
-    _keep(request, state)
-    return [_summary(slots)]
+    _keep(ctx.request, state)
+    return [skill.summary(ctx, state['slots'])]
 
 
-def _continue(request, state, text):
-    awaiting = state.get('awaiting')
-    intent, _confidence = classifier.predict(text)
+def _continue(ctx, skill, state, text):
+    slots, awaiting = state['slots'], state.get('awaiting')
+    picked = _PICK.match(text)
+    if picked:
+        skill.pick(ctx, slots, picked.group(1), picked.group(2))
+        return _advance(ctx, skill, state)
+
+    intent, confidence = classifier.predict(text)
     if intent == 'cancel':
-        _clear(request)
-        return [_say(_('Okay, cancelled. Nothing was saved.'),
-                     buttons=[_send(_('Add a guest'), 'add guest')])]
+        _clear(ctx.request)
+        return [say(_('Okay, cancelled. Nothing was saved.'), buttons=_start_buttons(ctx))]
     if intent == 'help':
-        return [_help()] + _next(request, state)
+        return [_help(ctx)] + _advance(ctx, skill, state)
+    other = SKILLS.get(intent)
+    switch = (other is not None and other.name != skill.name
+              and confidence >= SWITCH_CONFIDENCE)
 
-    slots = state['slots']
-    if awaiting in REQUIRED:
-        # Typing the whole thing again ("add guest ravi 050...") is read like a
-        # first message; otherwise the reply is the answer to the question.
-        if intent == 'add_guest':
-            mode = 'guess'
-        else:
-            mode = 'whole' if awaiting == 'full_name' else 'marker'
-        found = _clean(entities.extract(text, name=mode))
-        slots.update(found)
-        if awaiting not in found:
-            _keep(request, state)
-            return [_question(awaiting, slots, again=True)]
-        return _next(request, state)
+    def switch_over():
+        # A clear new request: drop the old one rather than read this as an answer.
+        _clear(ctx.request)
+        return [say(_('Okay, leaving that.'))] + _begin(ctx, other, text)
 
-    # A summary or a duplicate warning is waiting for an answer. A message
-    # that carries a detail ("mobile is 0509...") changes it.
-    found = _clean(entities.extract(text, name='marker'))
-    if found:
-        if found.get('mobile') and found['mobile'] != slots.get('mobile'):
-            state.pop('allow_duplicate', None)
-        slots.update(found)
-        return [_say(_('Updated.'))] + _next(request, state)
+    if awaiting != 'confirm':
+        # "Who?" takes any words as a name, so a clear new request goes first.
+        if switch and awaiting in FREE_TEXT:
+            return switch_over()
+        # Otherwise the message is tried as the answer, on a copy: "rent 900"
+        # answers "what rent?" even though it also sounds like a payment.
+        trial = copy.deepcopy(slots)
+        problem = skill.answer(ctx, trial, awaiting, text)
+        if problem and switch:
+            return switch_over()
+        if problem:
+            _keep(ctx.request, state)
+            return [problem]
+        state['slots'] = trial
+        return _advance(ctx, skill, state)
 
+    # The summary is waiting for yes. A message with details changes them.
+    if skill.change(ctx, slots, text):
+        return [say(_('Updated.'))] + _advance(ctx, skill, state)
+    if switch:
+        return switch_over()
     answer, _confidence = classifier.predict(text, among={'yes', 'no', 'cancel'})
-    if awaiting == 'duplicate':
-        if answer == 'yes':
-            state['allow_duplicate'] = True
-            return _next(request, state)
-        if answer == 'no':
-            _clear(request)
-            return [_say(_('Okay, not added.'), buttons=[_send(_('Add a guest'), 'add guest')])]
-        return [_say(_('Say "yes" to add a new guest with this mobile, type a different '
-                       'number, or say "cancel".'))]
-
     if answer == 'yes':
-        return _save(request, state)
+        try:
+            messages = skill.run(ctx, slots)
+        except NotDone as failed:
+            _keep(ctx.request, state)
+            return failed.messages
+        _clear(ctx.request)
+        return messages
     if answer == 'no':
-        return [_say(_('No problem. Tell me what to change, for example "name is Ravi Kumar" '
-                       'or "mobile is 0509876543". Or say "cancel".'))]
-    return [_say(_('Say "yes" to add the guest, type a change, or say "cancel".'),
-                 buttons=[_send(_('Yes, add guest'), 'yes'), _send(_('Cancel'), 'cancel')])]
-
-
-def _save(request, state):
-    if not request.user.can(MODULE_GUESTS, 'create'):
-        _clear(request)
-        return [_say(_('You do not have permission to add guests. Ask your admin for access.'))]
-    slots = state['slots']
-    # The same form as the New guest page, so the same checks apply.
-    form = GuestForm(data={f: slots.get(f, '') for f in FIELDS})
-    if not form.is_valid():
-        problems = []
-        for field, errors in form.errors.items():
-            label = form.fields[field].label if field in form.fields else ''
-            problems.append(f'{label}: {" ".join(errors)}' if label else ' '.join(errors))
-        return [_say(_('I could not save that: %(problems)s Type a correction or say "cancel".')
-                     % {'problems': ' '.join(problems)})]
-
-    guest = form.save(commit=False)
-    guest.tenant = request.tenant
-    guest.save()
-    audit.log(AuditLog.ACTION_CREATE, guest, actor=request.user, request=request,
-              summary=_('Guest %(name)s saved') % {'name': guest.full_name})
-    _clear(request)
-    return [_say(
-        _('Done! %(name)s has been added.') % {'name': guest.full_name},
-        buttons=[
-            _link(_('Open guest'), reverse('guests:guest_detail', args=[guest.pk])),
-            _link(_('Check in to a bed'), reverse('guests:check_in') + f'?guest={guest.pk}'),
-            _send(_('Add another'), 'add guest'),
-        ])]
+        return [say(_('No problem. Type what to change, or say "cancel".'))]
+    return [say(_('Say "yes" to save, type a change, or say "cancel".'),
+                buttons=[send(_('Yes'), 'yes'), send(_('Cancel'), 'cancel')])]

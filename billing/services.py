@@ -390,6 +390,30 @@ def record_multi_invoice_payment(*, tenant, user, tenancy, invoices, amount, mod
     return payment
 
 
+def save_payment(*, tenant, user, data):
+    """Record what a valid ``PaymentForm`` holds, the way the payment screen does.
+
+    One invoice or none is a plain receipt; several are allocated oldest
+    first. Money held as advance (no invoice) is spent on unpaid invoices at
+    once when it needs no approval. Returns ``(payment, credit_applied)``.
+    """
+    selected = data['invoices']
+    common = {
+        'tenant': tenant, 'user': user, 'tenancy': data['tenancy'],
+        'amount': data['amount'], 'mode': data['mode'],
+        'reference': data.get('reference') or '', 'paid_on': data.get('paid_on'),
+        'note': data.get('note') or '', 'cheque_due_date': data.get('cheque_due_date'),
+    }
+    applied = False
+    if len(selected) > 1:
+        payment = record_multi_invoice_payment(**common, invoices=selected)
+    else:
+        payment = record_payment(**common, invoice=selected[0] if selected else None)
+        if not selected and not payment.from_credit and not payment.awaits_approval:
+            applied = bool(apply_guest_credit(guest=data['tenancy'].guest, user=user))
+    return payment, applied
+
+
 @transaction.atomic
 def approve_payment(*, payment, user, note=''):
     payment.approval = Payment.APPROVAL_APPROVED
