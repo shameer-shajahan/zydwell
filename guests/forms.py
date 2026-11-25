@@ -56,8 +56,11 @@ class CheckInForm(forms.Form):
     monthly_rent = forms.DecimalField(label=_('Agreed monthly rent'), max_digits=10, decimal_places=2)
     billing_cycle = forms.ChoiceField(label=_('Billing cycle'), choices=Tenancy.CYCLE_CHOICES,
                                       initial=Tenancy.CYCLE_MONTHLY)
-    billing_day = forms.IntegerField(label=_('Invoice day of month'), min_value=1, max_value=28,
-                                     initial=1)
+    billing_day = forms.IntegerField(
+        label=_('Invoice day of month'), min_value=1, max_value=28,
+        initial=lambda: min(timezone.localdate().day, 28),
+        help_text=_('Follows the check-in date (the 28th for the 29th to the 31st). '
+                    'Change it if this guest pays on another day.'))
     rent_mode = forms.ChoiceField(
         label=_('Billing arrangement'), choices=Tenancy.RENT_MODE_CHOICES,
         initial=Tenancy.MODE_ADVANCE,
@@ -103,6 +106,9 @@ class CheckInForm(forms.Form):
         beds = visible_beds(user, tenant) if user else Bed.objects.filter(tenant=tenant)
         self.fields['bed'].queryset = beds
         self.fields['bed'].widget.attrs['data-parent-field'] = 'room'
+        # The bill day follows the check-in date as it is picked (app.js), until
+        # someone types their own.
+        self.fields['billing_day'].widget.attrs['data-bill-day-of'] = 'check_in_date'
 
     def clean(self):
         data = super().clean()
@@ -383,10 +389,15 @@ class TenancyEditForm(forms.ModelForm):
             'check_in_date': _('The first invoice moves with it when nothing is paid on it yet.'),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # A page opened before this field existed posts without it: keep the date.
+        self.fields['check_in_date'].required = False
+
     def clean_check_in_date(self):
         from .services import check_in_date_problem
 
-        new_date = self.cleaned_data['check_in_date']
+        new_date = self.cleaned_data.get('check_in_date') or self.instance.check_in_date
         if self.instance.pk and new_date != self.instance.check_in_date:
             problem = check_in_date_problem(self.instance, new_date)
             if problem:
