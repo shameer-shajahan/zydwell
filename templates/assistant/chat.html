@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Assistant" %}{% endblock %}
+{% block topbar_title %}{% trans "Assistant" %}{% endblock %}
+{% block content %}
+<div class="chat" data-chat data-url="{% url 'assistant:message' %}"
+     data-error="{% trans 'Could not reach the server. Check the connection and try again.' %}"
+     data-retry="{% trans 'Try again' %}"
+     data-signed-out="{% trans 'Your session has ended. Reload the page and sign in again.' %}">
+  <div class="chat-log" data-chat-log role="log" aria-live="polite"
+       aria-label="{% trans 'Conversation with the assistant' %}"></div>
+  <noscript>
+    <p class="chat-noscript">{% trans "The assistant needs JavaScript." %}
+      <a href="{% url 'guests:guest_create' %}">{% trans "Add a guest with the form instead" %}</a></p>
+  </noscript>
+  <form class="chat-bar no-print" data-chat-form data-no-loader autocomplete="off">
+    {% csrf_token %}
+    <input class="chat-input" type="text" name="text" maxlength="500" data-chat-input
+           placeholder="{% trans 'e.g. add guest Ravi 0501234567' %}"
+           aria-label="{% trans 'Message' %}" enterkeyhint="send" autocapitalize="sentences">
+    <button class="chat-send" type="submit" aria-label="{% trans 'Send' %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+  </form>
+</div>
+{{ opening|json_script:"chat-opening" }}
+{% endblock %}

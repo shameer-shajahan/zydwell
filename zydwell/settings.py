@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'accounting',
     'messaging',
     'reports',
+    'assistant',
 ]
 
 MIDDLEWARE = [

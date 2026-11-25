@@ -14,6 +14,7 @@ NAV_ITEMS = [
     (MODULE_PROPERTIES, 'properties:building_list', _('Buildings'), 'M3 21h18M5 21V7l7-4 7 4v14'),
     (MODULE_PROPERTIES, 'properties:bed_board', _('Bed board'), 'M3 18v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 18h18M7 10V7h10v3'),
     (MODULE_GUESTS, 'guests:guest_list', _('Guests'), 'M16 21v-2a4 4 0 00-8 0v2M12 11a4 4 0 100-8 4 4 0 000 8z'),
+    (MODULE_GUESTS, 'assistant:chat', _('Assistant'), 'M21 12a8 8 0 01-11.6 7.1L4 20l1-4.3A8 8 0 1121 12zM8.5 12h.01M12 12h.01M15.5 12h.01'),
     (MODULE_GUESTS, 'guests:tenancy_list', _('Tenancies'), 'M9 12h6m-6 4h6M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z'),
     (MODULE_GUESTS, 'teams:team_list', _('Teams'), 'M3 21V9l9-6 9 6v12M9 21v-6h6v6M8 11h.01M12 11h.01M16 11h.01'),
     (MODULE_BILLING, 'billing:invoice_list', _('Invoices'), 'M9 14l2 2 4-4M7 3h10a2 2 0 012 2v14l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 012-2z'),

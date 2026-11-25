@@ -41,6 +41,7 @@ urlpatterns = [
     path('billing/', include('billing.urls', namespace='billing')),
     path('accounting/', include('accounting.urls', namespace='accounting')),
     path('messaging/', include('messaging.urls', namespace='messaging')),
+    path('assistant/', include('assistant.urls', namespace='assistant')),
 ]
 
 # User uploads (logos, guest photos and documents) are stored under MEDIA_ROOT.

@@ -834,10 +834,173 @@
     });
   }
 
+  /* =====================================================================
+     Assistant chat
+
+     The page carries the opening messages as JSON; every message typed (or
+     every reply button pressed) is POSTed and the replies come back as JSON.
+     All text goes in with textContent: guest names are typed by people, and
+     nothing they type may become markup.
+     ===================================================================== */
+  function chat() {
+    var box = document.querySelector('[data-chat]');
+    if (!box) { return; }
+    var log = box.querySelector('[data-chat-log]');
+    var form = box.querySelector('[data-chat-form]');
+    var input = box.querySelector('[data-chat-input]');
+    var token = form.querySelector('input[name=csrfmiddlewaretoken]');
+    var busy = false;
+
+    function scrollDown() {
+      if (typeof window.scrollTo === 'function') {
+        try { window.scrollTo(0, document.documentElement.scrollHeight); } catch (err) { /* old engines */ }
+      }
+    }
+
+    function add(who, text) {
+      var row = document.createElement('div');
+      row.className = 'chat-msg ' + who;
+      var bubble = document.createElement('div');
+      bubble.className = 'chat-bubble';
+      bubble.textContent = text;
+      row.appendChild(bubble);
+      log.appendChild(row);
+      return row;
+    }
+
+    function botSays(message) {
+      var row = add('bot', message.text || '');
+      if (message.rows && message.rows.length) {
+        var list = document.createElement('dl');
+        list.className = 'chat-rows';
+        message.rows.forEach(function (pair) {
+          var term = document.createElement('dt');
+          var value = document.createElement('dd');
+          term.textContent = pair[0];
+          value.textContent = pair[1];
+          list.appendChild(term);
+          list.appendChild(value);
+        });
+        row.firstChild.appendChild(list);
+      }
+      if (message.buttons && message.buttons.length) {
+        var actions = document.createElement('div');
+        actions.className = 'chat-actions';
+        message.buttons.forEach(function (button) {
+          var el;
+          // Only pages of this site: a link the server sends always starts with /.
+          if (button.href && button.href.charAt(0) === '/' && button.href.charAt(1) !== '/') {
+            el = document.createElement('a');
+            el.href = button.href;
+          } else if (button.send) {
+            el = document.createElement('button');
+            el.type = 'button';
+            el.setAttribute('data-chat-send', button.send);
+          } else {
+            return;
+          }
+          el.className = 'chat-chip';
+          el.textContent = button.label;
+          actions.appendChild(el);
+        });
+        row.appendChild(actions);
+      }
+    }
+
+    function typing() {
+      var row = add('bot typing', '');
+      row.firstChild.setAttribute('aria-label', '…');
+      for (var i = 0; i < 3; i++) { row.firstChild.appendChild(document.createElement('i')); }
+      return row;
+    }
+
+    function failed(text, label, why) {
+      var row = add('bot error', why);
+      var actions = document.createElement('div');
+      actions.className = 'chat-actions';
+      if (why === box.getAttribute('data-error')) {
+        var again = document.createElement('button');
+        again.type = 'button';
+        again.className = 'chat-chip';
+        again.textContent = box.getAttribute('data-retry') || 'Try again';
+        again.addEventListener('click', function () {
+          row.parentNode.removeChild(row);
+          send(text, label, true);
+        });
+        actions.appendChild(again);
+        row.appendChild(actions);
+      }
+    }
+
+    function send(text, label, retry) {
+      text = (text || '').trim();
+      if (!text || busy) { return; }
+      // Answers to an earlier question must not be pressed later, out of turn.
+      Array.prototype.forEach.call(log.querySelectorAll('button[data-chat-send]'), function (b) {
+        b.disabled = true;
+      });
+      if (!retry) { add('me', label || text); }
+      busy = true;
+      box.classList.add('busy');
+      var wait = typing();
+      scrollDown();
+      var body = 'text=' + encodeURIComponent(text);
+      window.fetch(box.getAttribute('data-url'), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-CSRFToken': token ? token.value : '',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: body
+      }).then(function (response) {
+        var type = (response.headers && response.headers.get('content-type')) || '';
+        if (response.ok && type.indexOf('application/json') !== -1) { return response.json(); }
+        // Signed out: the login page comes back instead of JSON.
+        var gone = response.redirected || response.status === 403 ||
+                   (response.ok && type.indexOf('text/html') !== -1);
+        throw new Error(gone ? 'signed-out' : 'server');
+      }).then(function (data) {
+        wait.parentNode.removeChild(wait);
+        (data.replies || []).forEach(botSays);
+      }).catch(function (err) {
+        if (wait.parentNode) { wait.parentNode.removeChild(wait); }
+        failed(text, label, err && err.message === 'signed-out'
+          ? box.getAttribute('data-signed-out') : box.getAttribute('data-error'));
+      }).then(function () {
+        busy = false;
+        box.classList.remove('busy');
+        scrollDown();
+      });
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (busy || !input.value.trim()) { return; }
+      var text = input.value;
+      input.value = '';
+      send(text);
+    });
+
+    log.addEventListener('click', function (event) {
+      var button = event.target.closest('button[data-chat-send]');
+      if (!button || button.disabled) { return; }
+      send(button.getAttribute('data-chat-send'), button.textContent);
+    });
+
+    var opening = document.getElementById('chat-opening');
+    if (opening) {
+      try { JSON.parse(opening.textContent).forEach(botSays); } catch (err) { /* page still works */ }
+    }
+    scrollDown();
+  }
+
   function boot() {
     labelTables();
     enhanceAll();
     filterRows();
+    chat();
   }
 
   if (document.readyState === 'loading') {
