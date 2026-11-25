@@ -791,6 +791,31 @@ def late_fee_rule(request):
 
 
 @admin_required
+def bill_days(request):
+    """Move the guests staying from before onto their check-in day.
+
+    New check-ins are billed on their check-in day already. This lists every
+    live stay still on another day, with the short invoice that bridges it
+    to the new day, and moves them when the owner presses the button.
+    """
+    stays = request.user.scope_queryset(Tenancy.objects.filter(tenant=request.tenant))
+    if request.method == 'POST':
+        moved, finished = services.move_stays_within(
+            request.tenant, user=request.user, seconds=20, tenancies=stays)
+        if finished:
+            messages.success(request, _(
+                '%(n)d guest(s) moved to their check-in day. Press "Run billing now" to raise '
+                'the rent that follows.') % {'n': moved})
+            return redirect('billing:invoice_list')
+        messages.warning(request, _('%(n)d guest(s) moved so far. Press the button again to '
+                                    'carry on.') % {'n': moved})
+        return redirect('billing:bill_days')
+    return render(request, 'billing/bill_days.html', {
+        'rows': services.stays_to_move(request.tenant, stays),
+    })
+
+
+@admin_required
 def run_billing(request):
     """Raise today's invoices on demand, without waiting for the nightly job."""
     if request.method == 'POST':

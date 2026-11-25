@@ -10,6 +10,7 @@
       <form method="post" action="{% url 'billing:run_billing' %}" style="display:inline"
             data-confirm="{% trans 'Raise every invoice that falls due today?' %}">{% csrf_token %}
         <button class="btn" type="submit">{% trans "Run billing now" %}</button></form>
+      <a class="btn" href="{% url 'billing:bill_days' %}">{% trans "Move to check-in days" %}</a>
     {% endif %}
     {% if can_create %}<a class="btn primary" href="{% url 'billing:invoice_create' %}?{% return_here %}">+ {% trans "New invoice" %}</a>{% endif %}
   </div>

@@ -697,3 +697,107 @@ def outstanding_ledger_check(tenant):
     ).aggregate(s=Sum('amount'))['s'] or Decimal('0')
     taken = payments.aggregate(s=Sum('amount'))['s'] or Decimal('0')
     return {'posted': posted, 'collected': taken, 'difference': taken - posted}
+
+
+# --- Moving existing stays onto their check-in day ---------------------------
+def plan_bill_day(tenancy):
+    """What moving a stay onto its check-in day would do, or ``None``.
+
+    New stays are billed on their check-in day (``bill_day_for``). A stay
+    from before keeps its old day until moved. Moving starts at its next
+    unbilled rent: when that falls inside a period of the new cycle, one
+    short invoice covers the days up to it, charged by the day, then the
+    full rent follows on the new day. Invoices already raised stay as they
+    are. Team lets and weekly or daily stays keep their own rent day.
+
+    Returns ``{'day', 'start', 'end', 'rent', 'due'}``; ``start`` is ``None``
+    when no short invoice is needed.
+    """
+    from django.db.models import Max
+
+    from guests.services import bill_day_for
+
+    if (tenancy.billing_cycle != Tenancy.CYCLE_MONTHLY or tenancy.is_team_let
+            or not tenancy.is_live):
+        return None
+    day = bill_day_for(tenancy.check_in_date)
+    if tenancy.billing_day == day:
+        return None
+    plan = {'day': day, 'start': None, 'end': None, 'rent': None, 'due': None}
+    last_end = Invoice.objects.filter(tenancy=tenancy).aggregate(last=Max('period_end'))['last']
+    if last_end is None:
+        return plan
+    start = last_end + timezone.timedelta(days=1)
+    leaving = tenancy.actual_check_out or tenancy.expected_check_out
+    if leaving and leaving < start:
+        return None                     # billed to the end already: nothing to move
+    kept = tenancy.billing_day
+    tenancy.billing_day = day
+    try:
+        period_start, period_end = tenancy.period_for(start)
+        length = tenancy.period_length(period_start)
+    finally:
+        tenancy.billing_day = kept
+    if period_start == start:
+        return plan
+    end = min(period_end, leaving) if leaving else period_end
+    plan.update(start=start, end=end, due=tenancy.due_date_for(start, end),
+                rent=tenancy.prorata((end - start).days + 1, period_days=length))
+    return plan
+
+
+@transaction.atomic
+def move_to_check_in_day(*, tenancy, user):
+    """Apply ``plan_bill_day``: the new bill day, and the short invoice if any.
+
+    Returns ``(plan, invoice_or_None)``, or ``None`` when there was nothing to do.
+    """
+    plan = plan_bill_day(tenancy)
+    if plan is None:
+        return None
+    before = audit.snapshot(tenancy, ['billing_day'])
+    tenancy.billing_day = plan['day']
+    tenancy.save(update_fields=['billing_day', 'updated_at'])
+    audit.log(audit.AuditLog.ACTION_UPDATE, tenancy, tenant=tenancy.tenant,
+              summary=_('Rent of %(guest)s moved to day %(day)s, the check-in day') % {
+                  'guest': tenancy.guest.full_name, 'day': plan['day']},
+              changes=audit.diff(before, audit.snapshot(tenancy, ['billing_day'])))
+    invoice = None
+    if plan['start']:
+        invoice = build_invoice(
+            tenancy, user=user, period_start=plan['start'], period_end=plan['end'],
+            due_date=plan['due'], rent_amount=plan['rent'], prorata=True,
+            notes=_('Short period: rent moves to day %(day)s, the check-in day') % {
+                'day': plan['day']})
+        apply_guest_credit(guest=tenancy.guest, user=user)
+    return plan, invoice
+
+
+def stays_to_move(tenant, tenancies=None):
+    """``[(tenancy, plan), ...]`` for every live stay not yet on its check-in day."""
+    qs = tenancies if tenancies is not None else Tenancy.objects.filter(tenant=tenant)
+    qs = qs.filter(status__code__in=Tenancy.LIVE_STATUS_CODES).select_related(
+        'guest', 'building', 'floor', 'apartment', 'room', 'bed').order_by('guest__full_name')
+    rows = []
+    for tenancy in qs:
+        plan = plan_bill_day(tenancy)
+        if plan is not None:
+            rows.append((tenancy, plan))
+    return rows
+
+
+def move_stays_within(tenant, *, user, seconds=20, tenancies=None):
+    """Move stays onto their check-in day until ``seconds`` run out: ``(moved, finished)``.
+
+    Each stay is moved in its own transaction, so stopping early loses nothing.
+    """
+    import time
+
+    deadline = time.monotonic() + seconds
+    moved = 0
+    for tenancy, _plan in stays_to_move(tenant, tenancies):
+        if time.monotonic() > deadline:
+            return moved, False
+        if move_to_check_in_day(tenancy=tenancy, user=user):
+            moved += 1
+    return moved, True

@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Move to check-in days" %}{% endblock %}
+{% block topbar_title %}{% trans "Move to check-in days" %}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{% trans "Move to check-in days" %}</h1>
+<div class="sub">{% trans "Rent is billed from the check-in date. These guests checked in before that and are still billed on another day. Moving them adds one short invoice, charged by the day, up to their check-in day; then the full rent follows on that day each month. Invoices already raised are not changed." %}</div></div></div>
+
+<div class="card">
+  <div class="body tight"><div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>{% trans "Guest" %}</th><th>{% trans "Location" %}</th><th>{% trans "Checked in" %}</th>
+      <th>{% trans "Bill day" %}</th><th>{% trans "Short invoice" %}</th><th class="num">{% trans "Amount" %}</th></tr></thead>
+    <tbody>{% for tenancy, plan in rows %}
+      <tr><td><a href="{% url 'guests:tenancy_detail' tenancy.pk %}">{{ tenancy.guest.full_name }}</a></td>
+        <td class="muted" style="font-size:12px">{{ tenancy.location_label }}</td>
+        <td class="nowrap">{{ tenancy.check_in_date|date:"d M Y" }}</td>
+        <td class="nowrap">{% trans "day" %} {{ tenancy.billing_day }} → <strong>{% trans "day" %} {{ plan.day }}</strong></td>
+        <td class="nowrap">{% if plan.start %}{{ plan.start|date:"d M" }} – {{ plan.end|date:"d M Y" }}{% else %}<span class="muted">{% trans "none needed" %}</span>{% endif %}</td>
+        <td class="num">{% if plan.rent is not None %}{{ currency }} {{ plan.rent|floatformat:2 }}{% else %}—{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="6">{% include "partials/_empty.html" with message=_("Every guest is already billed on their check-in day.") %}</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+</div>
+
+{% if rows %}
+<form method="post" class="btn-row" style="margin-top:16px"
+      data-confirm="{% trans 'Move these guests to their check-in day and raise the short invoices?' %}">{% csrf_token %}
+  <button class="btn primary" type="submit">{% trans "Move them now" %}</button>
+  <a class="btn" href="{% url 'billing:invoice_list' %}">{% trans "Cancel" %}</a>
+</form>
+{% endif %}
+{% endblock %}
