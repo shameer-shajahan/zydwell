@@ -273,6 +273,22 @@ def generate_due_invoices(tenant, on_date=None, user=None, only=None):
     Safe to run repeatedly — a period already invoiced is skipped. ``only``
     narrows the run to some tenancies (a queryset of them, or their ids).
     """
+    created, _finished = generate_due_invoices_within(tenant, on_date=on_date, user=user,
+                                                      only=only)
+    return created
+
+
+def generate_due_invoices_within(tenant, seconds=None, on_date=None, user=None, only=None):
+    """``generate_due_invoices`` that stops after ``seconds``: ``(created, finished)``.
+
+    A page has about 30 seconds before the web server gives up on it, and the
+    first run after missed months can raise many invoices. Each invoice is
+    saved as it is made, so stopping early loses nothing: run again and it
+    carries on from the last invoice of each stay.
+    """
+    import time
+
+    deadline = time.monotonic() + seconds if seconds else None
     on_date = on_date or timezone.localdate()
     created = []
     tenancies = (
@@ -282,6 +298,8 @@ def generate_due_invoices(tenant, on_date=None, user=None, only=None):
     if only is not None:
         tenancies = tenancies.filter(pk__in=only)
     for tenancy in tenancies:
+        if deadline is not None and time.monotonic() > deadline:
+            return created, False
         if Invoice.objects.filter(tenancy=tenancy).exists():
             raised = _catch_up(tenancy, on_date, user)
         else:
@@ -289,7 +307,7 @@ def generate_due_invoices(tenant, on_date=None, user=None, only=None):
         if raised:
             created += raised
             apply_guest_credit(guest=tenancy.guest, user=user)
-    return created
+    return created, True
 
 
 #: At most this many missed periods are billed for one stay in one run.

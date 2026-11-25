@@ -57,7 +57,6 @@ MIDDLEWARE = [
     'core.middleware.TenantMiddleware',
     'core.middleware.PasswordChangeRequiredMiddleware',
     'core.middleware.SubscriptionLockMiddleware',
-    'core.middleware.DailyBillingMiddleware',
 ]
 
 ROOT_URLCONF = 'zydwell.urls'

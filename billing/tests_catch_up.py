@@ -1,13 +1,13 @@
-"""Missed months are billed, billing runs once a day by itself, and pending rent is listed."""
+"""Missed months are billed, the Run billing button stays inside the time limit, and
+pending rent is listed."""
 from datetime import timedelta
 from decimal import Decimal
 
 from django.urls import reverse
 from django.utils import timezone
 
-from billing import daily, services
+from billing import services
 from billing.models import Invoice
-from core.models import Tenant
 from core.tests import ZyDwellTestCase
 from guests import services as stays
 
@@ -48,37 +48,36 @@ class CatchUpTests(ZyDwellTestCase):
         self.assertLessEqual(invoices.get().period_start, self.today)
 
 
-class DailyRunTests(ZyDwellTestCase):
+class RunBillingButtonTests(ZyDwellTestCase):
+    """The button stops before the web server's time limit and carries on next press."""
+
     def setUp(self):
         super().setUp()
-        daily._done.clear()
         today = timezone.localdate()
         self.tenancy = stays.check_in(
             tenant=self.tenant, user=self.owner, guest=self.guest, room=self.room,
-            bed=self.beds[0], check_in_date=today - timedelta(days=45),
+            bed=self.beds[0], check_in_date=today - timedelta(days=75),
             monthly_rent=Decimal('800'), billing_day=1)
         stays.raise_first_invoice(tenancy=self.tenancy, user=self.owner)
 
-    def test_it_runs_once_a_day(self):
-        self.assertTrue(daily.bill_today(self.tenant))
-        self.tenant.refresh_from_db()
-        self.assertEqual(self.tenant.billing_run_on, timezone.localdate())
-        daily._done.clear()                      # another server worker
-        self.assertEqual(daily.bill_today(self.tenant), [])
+    def test_out_of_time_stops_and_keeps_what_was_raised(self):
+        created, finished = services.generate_due_invoices_within(self.tenant, seconds=1e-9)
+        self.assertEqual((created, finished), ([], False))
+        created, finished = services.generate_due_invoices_within(self.tenant, seconds=20)
+        self.assertTrue(finished)
+        self.assertGreaterEqual(len(created), 2)
 
-    def test_the_first_visit_of_the_day_bills(self):
+    def test_the_button(self):
         self.client.force_login(self.owner)
-        self.client.get(reverse('reports:dashboard'))
-        self.tenant.refresh_from_db()
-        self.assertEqual(self.tenant.billing_run_on, timezone.localdate())
+        response = self.client.post(reverse('billing:run_billing'), follow=True)
+        self.assertContains(response, 'invoice(s) raised')
         self.assertGreater(Invoice.objects.filter(tenancy=self.tenancy).count(), 1)
 
-    def test_a_locked_account_is_not_billed(self):
-        Tenant.objects.filter(pk=self.tenant.pk).update(status=Tenant.STATUS_LOCKED)
+    def test_a_page_visit_does_not_bill(self):
         self.client.force_login(self.owner)
+        before = Invoice.objects.count()
         self.client.get(reverse('reports:dashboard'))
-        self.tenant.refresh_from_db()
-        self.assertIsNone(self.tenant.billing_run_on)
+        self.assertEqual(Invoice.objects.count(), before)
 
 
 class PendingOnOverduePageTests(ZyDwellTestCase):

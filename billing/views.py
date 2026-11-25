@@ -794,7 +794,14 @@ def late_fee_rule(request):
 def run_billing(request):
     """Raise today's invoices on demand, without waiting for the nightly job."""
     if request.method == 'POST':
-        created = services.generate_due_invoices(request.tenant, user=request.user)
+        # Well inside the web server's 30 seconds; what is left waits for the next press.
+        created, finished = services.generate_due_invoices_within(
+            request.tenant, seconds=20, user=request.user)
+        if not finished:
+            messages.warning(request, _(
+                '%(n)d invoice(s) raised so far. There is more to bill: press "Run billing" '
+                'again to carry on.') % {'n': len(created)})
+            return redirect('billing:invoice_list')
         fees = services.apply_late_fees(request.tenant)
         messages.success(request, _(
             '%(n)d invoice(s) raised, %(f)d late fee(s) updated.'
