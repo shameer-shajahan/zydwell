@@ -25,6 +25,7 @@ class Expense(Skill):
     name = 'expense'
     module = MODULE_ACCOUNTING
     action = 'create'
+    title = _('Add an expense')
     example = _('electricity bill 450 for Sunrise Tower')
 
     def start(self, ctx, text):
@@ -112,9 +113,9 @@ class Expense(Skill):
         if slots.get('payee'):
             rows.append((_('Paid to'), slots['payee']))
         others = Category.objects.filter(tenant=ctx.tenant, kind=KIND_EXPENSE, is_active=True)
+        example = (others.exclude(pk=slots['category']).first() or category).name.lower()
         return say(_('Please check the expense. To change the category, type it, for example '
-                     '"category %(example)s".') % {
-            'example': (others.exclude(pk=slots['category']).first() or category).name.lower()},
+                     '"category %(example)s".') % {'example': re.split(r'\W+', example)[0]},
             rows=rows, buttons=confirm_buttons(_('Yes, save expense')))
 
     def run(self, ctx, slots):

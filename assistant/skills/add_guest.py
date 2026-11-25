@@ -40,6 +40,7 @@ class AddGuest(Skill):
     name = 'add_guest'
     module = MODULE_GUESTS
     action = 'create'
+    title = _('Add a guest')
     example = _('add guest Ravi Kumar 0501234567 Indian')
 
     def start(self, ctx, text):

@@ -14,7 +14,7 @@ from ..brain import parse
 from .add_guest import form_errors
 from .base import (NotDone, Skill, as_date, as_decimal, cancel_button, choose, confirm_buttons,
                    day, link, say)
-from .common import answer_stay, ask_stay, pick_stay, read, take_stays
+from .common import answer_stay, ask_stay, pick_stay, read, stay_place, take_stays
 
 
 def open_invoices(tenancy):
@@ -38,6 +38,7 @@ class Payment(Skill):
     name = 'payment'
     module = MODULE_BILLING
     action = 'create'
+    title = _('Record a payment')
     example = _('Ravi paid 800 cash')
 
     def start(self, ctx, text):
@@ -192,7 +193,7 @@ class Payment(Skill):
         mode = lookup.mode(ctx, slots['mode'])
         rows = [
             (_('Guest'), stay.guest.full_name),
-            (_('Bed'), stay.unit_label() or stay.location_label()),
+            (_('Bed'), stay_place(stay)),
             (_('Amount'), ctx.money(amount)),
             (_('Paid by'), mode.name if mode else '—'),
         ]

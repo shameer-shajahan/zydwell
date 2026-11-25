@@ -32,6 +32,14 @@ class Finish(Exception):
         self.messages = messages
 
 
+class Handoff(Exception):
+    """This message is really for another skill: start that one with it."""
+
+    def __init__(self, skill):
+        super().__init__(skill)
+        self.skill = skill
+
+
 class NotDone(Exception):
     """Stay at the summary and show these messages (a save failed its checks)."""
 
@@ -126,6 +134,8 @@ class Skill:
     module = ''
     action = 'view'
     confirm = True
+    #: The button label when the assistant asks "did you mean…?".
+    title = ''
     #: Shown by "help" to people who may use it.
     example = ''
 

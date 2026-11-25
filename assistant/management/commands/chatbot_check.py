@@ -3,8 +3,9 @@
     python manage.py chatbot_check "add a gust named ravi 0501234567"
     python manage.py chatbot_check --eval
 
-``--eval`` holds each training sentence out in turn, trains on the rest and
-checks the answer. "Wrong" is a sentence read as a different intent, which is
+``--eval`` splits the sentences into ten parts and, for each part, trains on
+the other nine and checks the answers — every sentence is tested once, on a
+model that never saw it. "Wrong" is a sentence read as a different intent, which is
 what to fix. "Not sure" is a sentence the model refused to guess; the
 assistant then asks again, so that is safe. A one-word sentence ("yup") is
 often "not sure" when held out, because no other sentence teaches its word.
@@ -22,7 +23,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('text', nargs='*', help='A sentence to try.')
         parser.add_argument('--eval', action='store_true',
-                            help='Leave-one-out test over dataset.json.')
+                            help='Test the model on dataset.json sentences it was not trained on.')
 
     def handle(self, *args, **options):
         if options['eval']:
@@ -40,9 +41,11 @@ class Command(BaseCommand):
         rows = classifier.load_dataset()
         total, right = Counter(), Counter()
         wrong, unsure = [], []
+        folds = 10
+        models = [classifier.train([row for i, row in enumerate(rows) if i % folds != fold])
+                  for fold in range(folds)]
         for index, (intent, text) in enumerate(rows):
-            model = classifier.train(rows[:index] + rows[index + 1:])
-            got, confidence = classifier.predict(text, model=model)
+            got, confidence = classifier.predict(text, model=models[index % folds])
             total[intent] += 1
             if got == intent:
                 right[intent] += 1
@@ -51,7 +54,7 @@ class Command(BaseCommand):
             else:
                 wrong.append((intent, text, got, confidence))
 
-        self.stdout.write(f'{len(rows)} sentences, each held out in turn\n')
+        self.stdout.write(f'{len(rows)} sentences, each tested on a model that never saw it\n')
         self.stdout.write(f'{"intent":<12}{"right":>7}{"of":>5}')
         for intent in sorted(total):
             self.stdout.write(f'{intent:<12}{right[intent]:>7}{total[intent]:>5}')

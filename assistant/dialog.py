@@ -24,7 +24,7 @@ from django.utils.translation import gettext as _
 
 from .brain import classifier
 from .skills import SKILLS
-from .skills.base import Ctx, Finish, NotDone, say, send
+from .skills.base import Ctx, Finish, Handoff, NotDone, say, send
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,9 @@ FREE_TEXT = {'tenancy', 'guest'}
 
 _PICK = re.compile(r'^@pick:(\w+):(.{0,80})$')
 _START = re.compile(r'^@start:(\w+):(.{0,200})$')
+_TEACH = re.compile(r'^@teach:(\w+)$')
+#: The last sentence the assistant did not understand, waiting for "I meant…".
+UNCLEAR_KEY = 'assistant_unclear'
 
 
 # ---------------------------------------------------------------- state
@@ -50,6 +53,13 @@ def _keep(request, state):
 
 def _clear(request):
     request.session.pop(SESSION_KEY, None)
+
+
+def _predict(ctx, text, among=None):
+    """The intent, from this account's model (the dataset plus what it was taught)."""
+    if not hasattr(ctx, 'model'):
+        ctx.model = classifier.model_for(ctx.tenant)
+    return classifier.predict(text, among=among, model=ctx.model)
 
 
 # ---------------------------------------------------------------- small talk
@@ -110,6 +120,9 @@ def reply(request, text):
     started = _START.match(text)
     if started:
         return _begin_preset(ctx, started.group(1), started.group(2))
+    taught = _TEACH.match(text)
+    if taught:
+        return _learn(ctx, taught.group(1))
     state = _state(request)
     skill = SKILLS.get(state.get('skill'))
     if skill is None:
@@ -133,7 +146,7 @@ def reply(request, text):
 
 
 def _fresh(ctx, text):
-    intent, _confidence = classifier.predict(text)
+    intent, _confidence = _predict(ctx, text)
     skill = SKILLS.get(intent)
     if skill is not None:
         return _begin(ctx, skill, text)
@@ -147,24 +160,89 @@ def _fresh(ctx, text):
         return [say(_('Nothing is in progress right now.'), buttons=_start_buttons(ctx))]
     if intent == 'other':
         return [say(_("I can't do that yet. Here is what I can do:")), _help(ctx)]
-    # Just a name? Show that guest.
+    # A guest's name and a free bed, with no verb ("akash to 102 a4"): a check-in.
+    check_in = SKILLS['check_in']
+    if ctx.allowed(check_in.module, check_in.action):
+        try:
+            slots = check_in.start(ctx, text)
+        except Handoff:
+            slots = {}
+        if slots.get('guest') and (slots.get('bed') or slots.get('place_options')):
+            return _begin(ctx, check_in, text)
+    # A name? Show that guest — and if there was more than the name
+    # ("akash gav notis"), ask what was meant too, so it can be learnt.
     info = SKILLS['guest_info']
     if ctx.allowed(info.module, info.action):
         slots = info.start(ctx, text)
-        if slots.get('guest') or slots.get('guest_options'):
+        if slots.get('guest_options'):
             return _begin(ctx, info, text)
-    return [say(_('Sorry, I did not understand that. Try "Ravi paid 800 cash" or '
-                  '"free beds", or type "help".'), buttons=_start_buttons(ctx))]
+        if slots.get('guest'):
+            card = _begin(ctx, info, text)
+            if not _words_beyond_name(ctx, text, slots['guest']):
+                return card
+            return card + _ask_meaning(ctx, text)
+    return _ask_meaning(ctx, text)
+
+
+def _words_beyond_name(ctx, text, guest_pk):
+    from . import lookup
+
+    guest = lookup.guest(ctx, guest_pk)
+    tokens = [t.lower() for t in re.findall(r"[\w']+", guest.full_name if guest else '')]
+    return [w for w in lookup.name_words(text) if lookup._word_score(w, tokens) < 0.85]
+
+
+def _ask_meaning(ctx, text):
+    """Not understood: offer the likeliest jobs, and learn from the one picked."""
+    if not hasattr(ctx, 'model'):
+        ctx.model = classifier.model_for(ctx.tenant)
+    usable = {s.name: s for s in _usable(ctx)}
+    ranked = sorted(classifier.scores(ctx.model, text).items(), key=lambda kv: -kv[1])
+    guesses = [usable[name] for name, _score in ranked if name in usable][:3]
+    if not guesses:
+        guesses = list(usable.values())[:3]
+    ctx.request.session[UNCLEAR_KEY] = text
+    buttons = [send(skill.title, f'@teach:{skill.name}') for skill in guesses]
+    buttons.append(send(_('Something else'), 'help'))
+    return [say(_('Sorry, I did not understand that. What did you want to do? Pick one and '
+                  'I will remember it for next time.'), buttons=buttons)]
+
+
+def _learn(ctx, name):
+    """The person picked what they meant: keep the sentence, then do it."""
+    from .lookup import mask_names
+    from .models import LearnedPhrase
+
+    text = ctx.request.session.pop(UNCLEAR_KEY, None)
+    skill = SKILLS.get(name)
+    if not text or skill is None:
+        return [say(_('That question is closed. What would you like to do?'),
+                    buttons=_start_buttons(ctx))]
+    if skill.module and not ctx.allowed(skill.module, skill.action):
+        return _refuse(skill)
+    phrase = mask_names(ctx, text)
+    if classifier.words(phrase):
+        LearnedPhrase.objects.update_or_create(
+            tenant=ctx.tenant, text=phrase.lower(),
+            defaults={'intent': skill.name, 'taught_by': ctx.user})
+    _clear(ctx.request)
+    return [say(_('Thanks, I will remember that.'))] + _begin(ctx, skill, text)
 
 
 def _refuse(skill):
     return [say(_('You do not have permission for that. Ask your admin for access.'))]
 
 
-def _begin(ctx, skill, text):
+def _begin(ctx, skill, text, handed=False):
     if skill.module and not ctx.allowed(skill.module, skill.action):
         return _refuse(skill)
-    state = {'skill': skill.name, 'slots': skill.start(ctx, text), 'awaiting': None}
+    try:
+        slots = skill.start(ctx, text)
+    except Handoff as other:
+        if handed or other.skill not in SKILLS:
+            raise
+        return _begin(ctx, SKILLS[other.skill], text, handed=True)
+    state = {'skill': skill.name, 'slots': slots, 'awaiting': None}
     try:
         return _advance(ctx, skill, state)
     except Finish as done:
@@ -209,7 +287,7 @@ def _continue(ctx, skill, state, text):
         skill.pick(ctx, slots, picked.group(1), picked.group(2))
         return _advance(ctx, skill, state)
 
-    intent, confidence = classifier.predict(text)
+    intent, confidence = _predict(ctx, text)
     if intent == 'cancel':
         _clear(ctx.request)
         return [say(_('Okay, cancelled. Nothing was saved.'), buttons=_start_buttons(ctx))]
@@ -245,7 +323,7 @@ def _continue(ctx, skill, state, text):
         return [say(_('Updated.'))] + _advance(ctx, skill, state)
     if switch:
         return switch_over()
-    answer, _confidence = classifier.predict(text, among={'yes', 'no', 'cancel'})
+    answer, _confidence = _predict(ctx, text, among={'yes', 'no', 'cancel'})
     if answer == 'yes':
         try:
             messages = skill.run(ctx, slots)

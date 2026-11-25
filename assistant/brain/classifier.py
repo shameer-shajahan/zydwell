@@ -18,10 +18,13 @@ model has never seen is reported as ``unknown`` rather than guessed.
 """
 import json
 import math
+import random
 import re
 from collections import Counter, defaultdict
 from functools import lru_cache
 from pathlib import Path
+
+from .spelling import normalise
 
 DATASET = Path(__file__).with_name('dataset.json')
 UNKNOWN = 'unknown'
@@ -38,7 +41,7 @@ _WORD = re.compile(r"[a-z]+")
 
 
 def words(text):
-    return _WORD.findall((text or '').lower())
+    return _WORD.findall(normalise(text or '').lower())
 
 
 def features(text):
@@ -58,13 +61,48 @@ def load_dataset(path=DATASET):
     return [(intent, text) for intent, texts in data['examples'].items() for text in texts]
 
 
-def train(rows):
-    """``rows`` is ``[(intent, text), ...]``; returns the model as a dict."""
+def typos(text, count=2):
+    """A few misspelt copies of a sentence, the way people really type.
+
+    One word of four letters or more loses a letter, swaps two, or doubles
+    one. Seeded by the sentence itself, so training is the same every time.
+    """
+    tokens = words(text)
+    long_words = [i for i, w in enumerate(tokens) if len(w) >= 4]
+    if not long_words:
+        return []
+    rng = random.Random(text)
+    out = []
+    for _n in range(count):
+        i = rng.choice(long_words)
+        word = tokens[i]
+        at = rng.randrange(1, len(word) - 1)
+        kind = rng.randrange(3)
+        if kind == 0:
+            word = word[:at] + word[at + 1:]
+        elif kind == 1:
+            word = word[:at] + word[at + 1] + word[at] + word[at + 2:]
+        else:
+            word = word[:at] + word[at] + word[at:]
+        out.append(' '.join(tokens[:i] + [word] + tokens[i + 1:]))
+    return out
+
+
+def train(rows, augment=True):
+    """``rows`` is ``[(intent, text), ...]``; returns the model as a dict.
+
+    With ``augment`` each sentence also teaches a couple of misspelt copies
+    of itself (``typos``), counted at half weight.
+    """
     counts = defaultdict(Counter)
     docs = Counter()
     for intent, text in rows:
         docs[intent] += 1
         counts[intent].update(features(text))
+        if augment:
+            for copy in typos(text):
+                for feature in features(copy):
+                    counts[intent][feature] += 0.5
     vocab = set()
     for bag in counts.values():
         vocab.update(bag)
@@ -119,8 +157,12 @@ def predict(text, among=None, model=None):
         return UNKNOWN, 0.0
     intent = max(result, key=result.get)
     confidence = result[intent]
-    known = any(w in model['words'] for w in words(text))
-    if confidence < THRESHOLD or (not known and confidence < 0.9):
+    typed = words(text)
+    known = any(w in model['words'] for w in typed)
+    # With no word it knows, only a clear lead counts: a bare name scores
+    # 0.3 at most, a misspelt sentence ("akash payd 600 cassh") far more.
+    needed = 0.75 if len(typed) >= 2 else 0.9
+    if confidence < THRESHOLD or (not known and confidence < needed):
         return UNKNOWN, confidence
     return intent, confidence
 
@@ -128,6 +170,34 @@ def predict(text, among=None, model=None):
 @lru_cache(maxsize=1)
 def get_model():
     return train(load_dataset())
+
+
+_learned_models = {}
+
+
+def model_for(tenant):
+    """The model plus the sentences this account's staff have taught it.
+
+    Retrained only when what was taught changes; a few hundred milliseconds
+    at most, then cached for the life of the process.
+    """
+    if tenant is None:
+        return get_model()
+    from assistant.models import LearnedPhrase
+
+    taught = tuple(LearnedPhrase.objects.filter(tenant=tenant).order_by('pk').values_list(
+        'intent', 'text'))
+    if not taught:
+        return get_model()
+    cached = _learned_models.get(tenant.pk)
+    if cached and cached[0] == taught:
+        return cached[1]
+    model = train(load_dataset() + list(taught))
+    # Taught sentences must not turn names into "known words": keep the
+    # dataset's own vocabulary for that.
+    model['words'] = get_model()['words']
+    _learned_models[tenant.pk] = (taught, model)
+    return model
 
 
 @lru_cache(maxsize=1)

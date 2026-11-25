@@ -362,17 +362,36 @@ class NoticeForm(forms.Form):
 
 
 class TenancyEditForm(forms.ModelForm):
-    """Rent edits are admin-only and always land in the audit log."""
+    """Rent edits are admin-only and always land in the audit log.
+
+    A new check-in date is checked the way the assistant checks it — the bed
+    must have been free from that day — and the view moves the first invoice
+    with it when nothing has been paid on it.
+    """
 
     class Meta:
         model = Tenancy
-        fields = ['monthly_rent', 'rent_mode', 'prorate_first_period', 'billing_cycle',
-                  'billing_day', 'expected_check_out', 'deposit_amount',
+        fields = ['check_in_date', 'monthly_rent', 'rent_mode', 'prorate_first_period',
+                  'billing_cycle', 'billing_day', 'expected_check_out', 'deposit_amount',
                   'first_invoice_amount', 'agreement_note']
         widgets = {
+            'check_in_date': forms.DateInput(attrs={'type': 'date'}),
             'expected_check_out': forms.DateInput(attrs={'type': 'date'}),
             'agreement_note': forms.Textarea(attrs={'rows': 2}),
         }
+        help_texts = {
+            'check_in_date': _('The first invoice moves with it when nothing is paid on it yet.'),
+        }
+
+    def clean_check_in_date(self):
+        from .services import check_in_date_problem
+
+        new_date = self.cleaned_data['check_in_date']
+        if self.instance.pk and new_date != self.instance.check_in_date:
+            problem = check_in_date_problem(self.instance, new_date)
+            if problem:
+                raise forms.ValidationError(problem)
+        return new_date
 
 
 class DepositForm(forms.Form):

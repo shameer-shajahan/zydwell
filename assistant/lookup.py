@@ -7,13 +7,14 @@ find "Ravi Kumar".
 """
 import difflib
 import re
+from datetime import timedelta
 
 from accounting.models import KIND_EXPENSE, Category
 from billing.models import PaymentMode
 from guests.models import Guest, Tenancy
 from properties.models import Room, visible_beds, visible_buildings
 
-from .brain import entities
+from .brain import classifier, entities
 
 #: How close a typed word must be to a word of a name.
 CLOSE = 0.78
@@ -108,6 +109,14 @@ def find_guests(ctx, text, mobile='', exclude_companies=True):
     return list(Guest.objects.filter(pk__in=keys).order_by('full_name')) if keys else []
 
 
+def newest_guests(ctx, days=30):
+    """Guests added lately who are not staying anywhere yet, newest first."""
+    since = ctx.today - timedelta(days=days)
+    staying = Tenancy.objects.filter(tenant=ctx.tenant, status__code__in=Tenancy.LIVE_STATUS_CODES)
+    return list(Guest.objects.filter(tenant=ctx.tenant, is_company=False, created_at__date__gte=since)
+                .exclude(pk__in=staying.values('guest_id')).order_by('-created_at')[:8])
+
+
 def guest(ctx, pk):
     return Guest.objects.filter(tenant=ctx.tenant, pk=pk).first()
 
@@ -127,25 +136,26 @@ def buildings(ctx):
 
 
 def find_building(ctx, text):
-    """``(building, words used)`` when the message names one of the user's buildings."""
-    low = ' '.join(re.findall(r'[a-z0-9]+', (text or '').lower()))
-    best, best_len = None, 0
+    """``(building, span)`` when the message names one of the user's buildings.
+
+    The whole name ("Ahli house A"), or its first word when that is
+    distinctive ("ahli"). The span is where it was found, so the caller can
+    take out just those words — not every "a" in the message.
+    """
+    text = text or ''
+    best, best_span = None, None
     for building in buildings(ctx):
         for label in filter(None, [building.name, building.code]):
             words = re.findall(r'[a-z0-9]+', label.lower())
-            if not words:
+            if not words or len(''.join(words)) < 2:
                 continue
-            phrase = ' '.join(words)
-            # "sunrise tower", or "sunrise" alone when it is distinctive enough.
-            if re.search(r'\b' + re.escape(phrase) + r'\b', low) and len(phrase) > best_len:
-                best, best_len = building, len(phrase)
-            elif len(words[0]) >= 4 and re.search(r'\b' + re.escape(words[0]) + r'\b', low) \
-                    and len(words[0]) > best_len:
-                best, best_len = building, len(words[0])
-    if best is None:
-        return None, []
-    return best, re.findall(r'[a-z0-9]+', best.name.lower()) + re.findall(
-        r'[a-z0-9]+', (best.code or '').lower())
+            match = re.search(r'\b' + r'\W+'.join(map(re.escape, words)) + r'\b', text, re.I)
+            if match is None and len(words[0]) >= 4:
+                match = re.search(r'\b' + re.escape(words[0]) + r'\b', text, re.I)
+            if match and (best_span is None
+                          or match.end() - match.start() > best_span[1] - best_span[0]):
+                best, best_span = building, match.span()
+    return best, best_span
 
 
 def beds(ctx):
@@ -204,9 +214,74 @@ def building(ctx, pk):
     return buildings(ctx).filter(pk=pk).first()
 
 
+def match_places(ctx, codes, building=None):
+    """Beds — and rooms let whole — that fit the codes typed, best first.
+
+    ``codes`` is ``[(code, kind), ...]`` from ``parse.place_codes``: "117"
+    said to be an apartment, "a5" a bed, "a" a room, or with no kind at all.
+    Each code is checked against the apartment, room and bed of every place
+    this user can see. People mix the words up ("room 101" for flat 101), so
+    a code that fits another field still counts, just less. The places that
+    fit the most codes, best scored, come back; with them, the codes that
+    fit none of those places (a mistyped flat, or a rent amount).
+    Returns ``(places, unused_codes)``; a place is ``('bed', bed)`` or
+    ``('room', room)``.
+    """
+    if not codes:
+        return [], []
+    qs = beds(ctx)
+    if building is not None:
+        qs = qs.filter(room__apartment__floor__building=building)
+    candidates = [('bed', b, b.room.apartment.name, b.room.number, b.label) for b in qs]
+    whole = rooms(ctx).filter(rent_basis__in=[Room.RENT_PER_ROOM, Room.RENT_PER_FLAT])
+    if building is not None:
+        whole = whole.filter(apartment__floor__building=building)
+    candidates += [('room', r, r.apartment.name, r.number, '') for r in whole]
+
+    ranked = []
+    for kind, obj, apartment, room_no, label in candidates:
+        fields = {'apartment': apartment.lower(), 'room': room_no.lower(), 'bed': label.lower()}
+        joined = {room_no.lower() + label.lower(), f'{room_no}-{label}'.lower()} if label else set()
+        matched, score, used = 0, 0.0, set()
+        for code, said in codes:
+            best = 0.0
+            for field, value in fields.items():
+                if value and code == value:
+                    best = max(best, 3.0 if said == field else 2.0 if said is None else 1.0)
+            if code in joined:
+                best = max(best, 3.0)
+            if best:
+                used.add(code)
+                score += best
+        matched = len(used)
+        if matched:
+            ranked.append((matched, score, kind, obj, used))
+    if not ranked:
+        return [], [code for code, _said in codes]
+    top = max((m, s) for m, s, *_rest in ranked)
+    best = [(kind, obj, used) for m, s, kind, obj, used in ranked if (m, s) == top]
+    used_any = set().union(*(used for _k, _o, used in best))
+    unused = []
+    for code, _said in codes:
+        if code not in used_any and code not in unused:
+            unused.append(code)
+    return [(kind, obj) for kind, obj, _used in best], unused
+
+
+def place_label(kind, obj):
+    if kind == 'bed':
+        return bed_label(obj)
+    return room_label(obj)
+
+
 def bed_label(bed_obj):
     room_obj = bed_obj.room
-    return f'{room_obj.apartment.floor.building.name} · {room_obj.number} · {bed_obj.label}'
+    apartment = room_obj.apartment
+    parts = [apartment.floor.building.name]
+    if apartment.name.lower() != room_obj.number.lower():
+        parts.append(apartment.name)
+    parts += [room_obj.number, bed_obj.label]
+    return ' · '.join(parts)
 
 
 def room_label(room_obj):
@@ -266,9 +341,13 @@ _CATEGORY_WORDS = {
 
 
 def find_category(ctx, text, kind=KIND_EXPENSE):
-    low = ' ' + ' '.join(re.findall(r'[a-z&-]+', (text or '').lower())) + ' '
+    """The category a message names: its own words ("plumber" is maintenance),
+    or a near miss of one ("plumbr", "electrisity")."""
+    typed = re.findall(r'[a-z&-]+', (text or '').lower())
+    low = ' ' + ' '.join(typed) + ' '
     cats = list(Category.objects.filter(tenant=ctx.tenant, kind=kind, is_active=True))
     best, best_len = None, 0
+    single = {}
     for cat in cats:
         words = set(_CATEGORY_WORDS.get(cat.code, []))
         words.add(cat.name.lower())
@@ -276,6 +355,14 @@ def find_category(ctx, text, kind=KIND_EXPENSE):
         for word in words:
             if f' {word} ' in low and len(word) > best_len:
                 best, best_len = cat, len(word)
+            if ' ' not in word and len(word) >= 5:
+                single.setdefault(word, cat)
+    if best is None:
+        for word in typed:
+            if len(word) >= 5:
+                close = difflib.get_close_matches(word, list(single), n=1, cutoff=0.82)
+                if close:
+                    return single[close[0]]
     return best
 
 
@@ -286,3 +373,25 @@ def category(ctx, pk, kind=KIND_EXPENSE):
 def other_expense(ctx):
     return Category.by_code(ctx.tenant, KIND_EXPENSE, 'other_expense') or Category.objects.filter(
         tenant=ctx.tenant, kind=KIND_EXPENSE, is_active=True).first()
+
+
+def mask_names(ctx, text):
+    """A sentence without the guest and building names in it, to learn from.
+
+    What is learnt is the way of saying something ("ravi gav notis" ->
+    "gav notis"), not who it was about.
+    """
+    names = set()
+    for full in Guest.objects.filter(tenant=ctx.tenant).values_list('full_name', flat=True):
+        names.update(t.lower() for t in re.findall(r"[\w']+", full or '') if len(t) >= 2)
+    _building, span = find_building(ctx, text)
+    if span:
+        text = text[:span[0]] + ' ' + text[span[1]:]
+    known = classifier.vocabulary()
+    kept = []
+    for word in (text or '').split():
+        bare = re.sub(r"[^\w']", '', word.lower())
+        if bare and bare in names and bare not in known:
+            continue
+        kept.append(word)
+    return ' '.join(kept)[:300]

@@ -38,6 +38,10 @@ _DATE_PATTERNS = [
     (re.compile(r'\b(?:on\s+(?:the\s+)?|the\s+)?(\d{1,2})(?:st|nd|rd|th)\b', re.I), 'ordinal'),
     # on 30
     (re.compile(r'\bon\s+(?:the\s+)?(\d{1,2})\b(?!\s*(?:aed|dhs?|dirhams?|%))', re.I), 'ordinal'),
+    # date 1, from 15, since 3, joined on 20, check in date 5: a day, never money
+    (re.compile(r'\b(?:date|dated|day|from|since|starting(?:\s+(?:on|from))?|starts?\s+(?:on|from)|'
+                r'join(?:ed|ing|s)?\s+(?:on|from)|check\s*in\s+(?:date|on|from))\s*(?:is|:|=|-)?\s*'
+                r'(?:the\s+)?(\d{1,2})\b(?!\s*(?:aed|dhs?|dirhams?|%|[/.-]\d|\.\d))', re.I), 'ordinal'),
 ]
 _RELATIVE = [
     (re.compile(r'\bday\s+after\s+tomorrow\b', re.I), 2),
@@ -70,6 +74,9 @@ def _nearest(today, month, day, year=None, forward=True):
     """A day and month with no year: the closest one, ahead when ``forward``."""
     if year:
         return _safe_date(year, month, day)
+    if forward is None:
+        options = [d for d in (_safe_date(today.year + k, month, day) for k in (-1, 0, 1)) if d]
+        return min(options, key=lambda d: abs((d - today).days)) if options else None
     found = _safe_date(today.year, month, day)
     if found is None:
         return None
@@ -83,8 +90,9 @@ def _nearest(today, month, day, year=None, forward=True):
 def find_date(text, today, *, forward=True):
     """``(date, span)`` for the first date in ``text``, or ``(None, None)``.
 
-    ``forward`` breaks ties for a bare "30th" or "monday": the coming one
-    (a leaving date) rather than the last one (a payment date).
+    ``forward`` breaks ties for a bare "30th" or "monday": ``True`` takes the
+    coming one (a leaving date), ``False`` the last one (a payment date) and
+    ``None`` the nearest (a check-in: "date 20" on 25 Nov is 20 Nov).
     """
     text = text or ''
     if _NEXT_MONTH_END.search(text):
@@ -116,6 +124,9 @@ def find_date(text, today, *, forward=True):
             elif shape == 'mon_d':
                 found = _nearest(today, MONTHS[match.group(1).lower().rstrip('.')],
                                  int(match.group(2)), _year(match.group(3), today), forward)
+            elif forward is None:
+                day = int(match.group(1))
+                found = day_of_month(day, today) if 1 <= day <= 31 else None
             else:
                 day = int(match.group(1))
                 if 1 <= day <= 31:
@@ -132,7 +143,7 @@ def find_date(text, today, *, forward=True):
     if match:
         which = (match.group(1) or '').lower()
         target = WEEKDAYS[match.group(2).lower()]
-        if which == 'last' or (not which and not forward):
+        if which == 'last' or (not which and forward is False):
             back = (today.weekday() - target) % 7 or 7
             return today - timedelta(days=back), match.span()
         ahead = (target - today.weekday()) % 7 or 7
@@ -140,6 +151,19 @@ def find_date(text, today, *, forward=True):
             ahead = 7
         return today + timedelta(days=ahead), match.span()
     return None, None
+
+
+def day_of_month(day, today):
+    """The date nearest today that falls on ``day``: "date 1" on 25 Nov is
+    1 Dec, "date 20" is 20 Nov."""
+    options = []
+    for shift in (-1, 0, 1):
+        month = (today.month - 1 + shift) % 12 + 1
+        year = today.year + (today.month - 1 + shift) // 12
+        found = _safe_date(year, month, day)
+        if found:
+            options.append(found)
+    return min(options, key=lambda d: abs((d - today).days)) if options else None
 
 
 # ---------------------------------------------------------------- periods
@@ -181,6 +205,10 @@ def find_period(text, today):
     return None, None, ''
 
 
+# ---------------------------------------------------------------- spelling
+from .spelling import normalise, normalise_word  # noqa: E402,F401  (kept here for callers)
+
+
 # ---------------------------------------------------------------- places
 ROOM = re.compile(
     r'\b(?:room|rm|r)\s*(?:no\.?|number|num|#)?\s*[:-]?\s*([a-z]?\d{1,5}[a-z]?)\b', re.I)
@@ -217,6 +245,73 @@ def find_place(text):
     return found, rest
 
 
+_PLACE_WORDS = {'apartment': 'apartment', 'flat': 'apartment', 'unit': 'apartment',
+                'room': 'room', 'rm': 'room', 'bed': 'bed', 'bedspace': 'bed', 'partition': 'bed'}
+_SKIP = {'no', 'number', 'num', 'nr'}
+_TOKEN = re.compile(r'[A-Za-z0-9]+')
+
+
+def _is_code(token):
+    """A place code: "117", "a5", "12b", "A" — a number, or letters and digits."""
+    return bool(re.fullmatch(r'[a-z]{0,2}\d{1,5}[a-z]{0,2}\d{0,3}|[a-z]', token, re.I))
+
+
+def place_codes(text):
+    """Every apartment, room and bed code typed, in any order, with its kind.
+
+    "apartment 117 a room a5 bed" gives ``[('117', 'apartment'), ('a', 'room'),
+    ('a5', 'bed'), ('a5', 'room')]`` — a code is taken from either side of
+    its word, and the database decides which reading fits. A lone letter
+    counts only next to a place word, and not as the article in "a bed".
+    Returns ``(codes, spans)``.
+    """
+    tokens = [(m.group(0), m.span()) for m in _TOKEN.finditer(text or '')]
+    low = [t.lower() for t, _span in tokens]
+    codes, spans = [], []
+
+    def add(i, kind):
+        word = low[i]
+        if (word, kind) not in codes:
+            codes.append((word, kind))
+            spans.append(tokens[i][1])
+
+    for i, word in enumerate(low):
+        kind = _PLACE_WORDS.get(word)
+        if kind is None:
+            continue
+        # After the word: "room A5", "room no 12".
+        j = i + 1
+        while j < len(low) and low[j] in _SKIP:
+            j += 1
+        if j < len(low) and _is_code(low[j]) and low[j] not in _PLACE_WORDS \
+                and not (low[j] == 'a' and j + 1 < len(low) and low[j + 1] in _PLACE_WORDS):
+            add(j, kind)
+        # Before the word: "A5 bed", "117 apartment", "a room" after "117".
+        k = i - 1
+        if k >= 0 and _is_code(low[k]) and low[k] not in _PLACE_WORDS:
+            single = len(low[k]) == 1
+            article = single and low[k] == 'a' and not (k > 0 and _is_code(low[k - 1])
+                                                         and any(c.isdigit() for c in low[k - 1]))
+            if not article:
+                add(k, kind)
+    # A pair written together: "101-B", "101/b".
+    for match in re.finditer(r'\b(\d{1,5})\s*[-/]\s*([a-z]{1,2}\d{0,3}|\d{1,2})\b', text or '', re.I):
+        for group in (1, 2):
+            code = match.group(group).lower()
+            if (code, None) not in codes:
+                codes.append((code, None))
+                spans.append(match.span(group))
+    # Codes with a digit and no place word nearby: "117 a5".
+    taken = {span for span in spans}
+    for i, word in enumerate(low):
+        if tokens[i][1] in taken or word in _PLACE_WORDS:
+            continue
+        if any(c.isdigit() for c in word) and _is_code(word):
+            codes.append((word, None))
+            spans.append(tokens[i][1])
+    return codes, spans
+
+
 # ---------------------------------------------------------------- money
 _TAGGED = {
     'deposit_received': re.compile(
@@ -250,12 +345,13 @@ def to_decimal(raw, thousand=False):
     return value * 1000 if thousand else value
 
 
-def find_money(text, tags=()):
+def find_money(text, tags=(), plain=True):
     """``({tag: Decimal}, [plain amounts], rest)``.
 
     ``tags`` picks which labelled amounts to look for ("rent 800",
     "deposit 500", "refund 300"); every other number that is not a phone,
-    date, room or bed is a plain amount, in the order typed.
+    date, room or bed is a plain amount, in the order typed — unless
+    ``plain`` is false, when the caller sorts the bare numbers out itself.
     """
     rest = text or ''
     for pattern in (EMAIL, PHONE):
@@ -274,6 +370,8 @@ def find_money(text, tags=()):
             if value is not None:
                 tagged[tag] = value
                 rest = _blank(rest, match.span())
+    if not plain:
+        return tagged, [], rest
     plain = []
     for match in _PLAIN.finditer(rest):
         value = to_decimal(match.group(1), thousand=bool(match.group(2)))

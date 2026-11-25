@@ -19,7 +19,7 @@ from properties.models import occupancy_for, occupancy_grouped
 from .. import lookup
 from ..brain import parse
 from .base import Skill, day, link, say, start
-from .common import answer_guest, ask_guest, pick_guest, read, take_guests
+from .common import answer_guest, ask_guest, pick_guest, read, stay_place, take_guests
 
 LIST_LIMIT = 10
 
@@ -49,6 +49,7 @@ class GuestInfo(Skill):
     name = 'guest_info'
     module = MODULE_GUESTS
     confirm = False
+    title = _('Guest details')
     example = _('where is Ravi / Ravi balance')
 
     def start(self, ctx, text):
@@ -102,6 +103,7 @@ class GuestInfo(Skill):
             if not (stay.status and stay.status.code == 'notice'):
                 buttons.append(start(_('Give notice'), 'give_notice', tenancy=stay.pk))
             buttons.append(start(_('Check out'), 'check_out', tenancy=stay.pk))
+            buttons.append(start(_('Change check-in date'), 'edit_check_in', tenancy=stay.pk))
         if not stay and ctx.allowed(MODULE_GUESTS, 'create'):
             buttons.append(start(_('Check in'), 'check_in', guest=guest.pk))
         return [say(guest.full_name, rows=rows, buttons=buttons)]
@@ -115,6 +117,7 @@ class Beds(Skill):
 
     def __init__(self, name):
         self.name = name
+        self.title = _('Free beds') if name == 'free_beds' else _('Occupancy')
         self.example = (_('free beds in Sunrise Tower') if name == 'free_beds'
                         else _('how many beds are occupied'))
 
@@ -174,6 +177,7 @@ class Overdue(Skill):
     name = 'overdue'
     module = MODULE_BILLING
     confirm = False
+    title = _('Who has not paid')
     example = _('who has not paid')
 
     def start(self, ctx, text):
@@ -209,7 +213,7 @@ class Overdue(Skill):
         rows = []
         for row in ranked[:LIST_LIMIT]:
             stay = row['tenancy']
-            label = f'{stay.guest.full_name} · {stay.unit_label()}'
+            label = f'{stay.guest.full_name} · {stay_place(stay)}'
             late = (_('%(days)s days late') % {'days': row['late']} if row['late']
                     else _('not due yet'))
             rows.append((label, f"{ctx.money(row['amount'])} · {late}"))
@@ -232,6 +236,7 @@ class Money(Skill):
     name = 'money'
     module = ''          # payments or the ledger: checked per question in run()
     confirm = False
+    title = _('Money totals')
     example = _("today's collection / expenses this month")
 
     def start(self, ctx, text):

@@ -15,7 +15,7 @@ from ..brain import parse
 from .add_guest import form_errors
 from .base import (Finish, NotDone, Skill, as_date, as_decimal, cancel_button, confirm_buttons, day,
                    link, say)
-from .common import answer_stay, ask_stay, pick_stay, read, take_stays
+from .common import answer_stay, ask_stay, pick_stay, read, stay_place, take_stays
 
 TAGS = ('refund', 'deduct')
 _REASON = re.compile(
@@ -47,6 +47,7 @@ class Leaving(Skill):
 
     def __init__(self, name):
         self.name = name
+        self.title = _('Check out') if name == 'check_out' else _('Give notice')
         self.example = (_('Ravi left today, refund 500') if name == 'check_out'
                         else _('Ravi will leave on 30th'))
 
@@ -142,7 +143,7 @@ class Leaving(Skill):
         stay = lookup.stay(ctx, slots['tenancy'])
         when = as_date(slots.get('date')) or ctx.today
         rows = [(_('Guest'), stay.guest.full_name),
-                (_('Bed'), stay.unit_label() or stay.location_label())]
+                (_('Bed'), stay_place(stay))]
         if slots['kind'] == 'give_notice':
             rows += [(_('Notice given on'), day(as_date(slots.get('notice_on')) or ctx.today)),
                      (_('Leaving on'), day(when))]

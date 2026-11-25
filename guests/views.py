@@ -398,10 +398,11 @@ def tenancy_edit(request, pk):
         return redirect('teams:team_edit', pk=tenancy.pk)
     is_admin = request.user.is_admin or request.user.is_super_admin
     # Snapshot before the form binds — a ModelForm mutates its instance in is_valid().
-    audited = ['monthly_rent', 'billing_day', 'deposit_amount', 'expected_check_out',
-               'billing_cycle', 'rent_mode', 'prorate_first_period',
+    audited = ['check_in_date', 'monthly_rent', 'billing_day', 'deposit_amount',
+               'expected_check_out', 'billing_cycle', 'rent_mode', 'prorate_first_period',
                'first_invoice_amount']
     before = audit.snapshot(tenancy, audited)
+    old_check_in = tenancy.check_in_date
     form = TenancyEditForm(request.POST or None, instance=tenancy)
     if not is_admin:
         form.fields['monthly_rent'].disabled = True
@@ -413,6 +414,12 @@ def tenancy_edit(request, pk):
                   summary=_('Tenancy updated for %(name)s') % {'name': obj.guest.full_name},
                   changes=changes)
         messages.success(request, _('Tenancy updated.'))
+        if obj.check_in_date != old_check_in:
+            note = services.rebill_first_invoice(
+                tenancy=obj, user=request.user, old_date=old_check_in,
+                rebill=request.user.can(MODULE_BILLING, 'edit'))
+            if note:
+                messages.info(request, note)
         return redirect('guests:tenancy_detail', pk=obj.pk)
     return render(request, 'guests/tenancy_edit.html', {'form': form, 'tenancy': tenancy})
 

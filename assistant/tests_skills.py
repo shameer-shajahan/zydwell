@@ -39,9 +39,10 @@ class AssistantCase(ZyDwellTestCase):
         return [b.get('send') for b in replies[-1].get('buttons', []) if b.get('send')]
 
     def stay(self, guest=None, bed=None, days_ago=0, invoice=True):
+        bed = bed or self.beds[0]
         tenancy = services.check_in(
-            tenant=self.tenant, user=self.owner, guest=guest or self.ravi, room=self.room,
-            bed=bed or self.beds[0], check_in_date=self.today - timedelta(days=days_ago),
+            tenant=self.tenant, user=self.owner, guest=guest or self.ravi, room=bed.room,
+            bed=bed, check_in_date=self.today - timedelta(days=days_ago),
             monthly_rent=Decimal('800'), deposit_amount=Decimal('800'),
             deposit_received=Decimal('800'))
         if invoice:
@@ -72,10 +73,10 @@ class CheckInTests(AssistantCase):
         self.stay(guest=Guest.objects.create(tenant=self.tenant, full_name='Other One',
                                              mobile='0551110000'))       # bed A taken
         replies = self.say('check in ravi to room 101')
-        self.assertIn('Which bed', self.text(replies))
-        self.assertNotIn(f'@pick:bed:{self.beds[0].pk}', self.sends(replies))
-        self.assertIn(f'@pick:bed:{self.beds[1].pk}', self.sends(replies))
-        replies = self.say(f'@pick:bed:{self.beds[2].pk}')
+        self.assertIn('Which', self.text(replies))
+        self.assertNotIn(f'@pick:place:b{self.beds[0].pk}', self.sends(replies))
+        self.assertIn(f'@pick:place:b{self.beds[1].pk}', self.sends(replies))
+        replies = self.say(f'@pick:place:b{self.beds[2].pk}')
         self.assertIn('101 · C', self.rows(replies)['Bed'])
 
     def test_a_taken_bed_is_refused(self):
@@ -320,8 +321,9 @@ class EngineTests(AssistantCase):
         tenancy = self.stay()
         self.say('ravi paid 100 cash')
         services.check_out(tenancy=tenancy, user=self.owner)
-        replies = self.say('yes')
-        self.assertEqual(replies[-1]['text'] and 200, 200)
+        with self.assertLogs('assistant.dialog', level='ERROR'):
+            replies = self.say('yes')
+        self.assertIn('start again', self.text(replies))
         self.assertFalse(Payment.objects.filter(amount=Decimal('100')).exists())
 
 

@@ -1,6 +1,7 @@
 """Check-in, check-out, bed transfer and deposit settlement."""
 from decimal import Decimal, ROUND_HALF_UP
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import (
     Case, DecimalField, F, OuterRef, Q, Subquery, Sum, Value, When,
@@ -74,6 +75,141 @@ def raise_first_invoice(*, tenancy, user):
     )
     apply_guest_credit(guest=tenancy.guest, user=user)
     return invoice
+
+
+def check_in_date_problem(tenancy, new_date):
+    """Why a stay cannot start on ``new_date``, or ``None`` when it can.
+
+    The stay may not start after it ended or after a bed transfer, and the
+    bed (or the room let whole) must have been free from that day: the guest
+    before may not still have been in it.
+    """
+    from datetime import date as date_type
+
+    if tenancy.actual_check_out and new_date > tenancy.actual_check_out:
+        return _('The stay ended on %(date)s, so it cannot start after that.') % {
+            'date': tenancy.actual_check_out.strftime('%d %b %Y')}
+    if tenancy.expected_check_out and new_date > tenancy.expected_check_out:
+        return _('The guest is leaving on %(date)s, so the stay cannot start after that.') % {
+            'date': tenancy.expected_check_out.strftime('%d %b %Y')}
+    moved = tenancy.transfers.filter(transfer_date__lt=new_date).order_by('transfer_date').first()
+    if moved:
+        return _('The guest moved beds on %(date)s, so the stay must start before that.') % {
+            'date': moved.transfer_date.strftime('%d %b %Y')}
+    ends = tenancy.actual_check_out or date_type.max
+    others = Tenancy.objects.filter(tenant=tenancy.tenant).exclude(pk=tenancy.pk)
+    if tenancy.bed_id:
+        others = others.filter(bed=tenancy.bed)
+    elif tenancy.room_id:
+        others = others.filter(room=tenancy.room, bed__isnull=True)
+    else:
+        return None
+    for other in others.select_related('guest').filter(check_in_date__lt=ends):
+        other_ends = other.actual_check_out or date_type.max
+        # Leaving and arriving on the same day is a normal change-over.
+        if other_ends > new_date:
+            return _('%(name)s was in this bed until %(date)s.') % {
+                'name': other.guest.full_name,
+                'date': other_ends.strftime('%d %b %Y') if other.actual_check_out
+                else _('now')}
+    return None
+
+
+def plan_first_invoice(tenancy, old_date, new_date):
+    """What moving the check-in date does to the first invoice, without doing it.
+
+    Returns ``(invoice, start, rent, reason)``. ``rent`` is ``None`` when the
+    invoice stays as it is, and ``reason`` then says why: it has money on it,
+    or the new date falls in another billing period (the invoices of both
+    periods then need a look by hand).
+    """
+    from billing.models import Invoice, Payment, PaymentAllocation
+
+    invoices = Invoice.objects.filter(tenancy=tenancy).exclude(status__code='cancelled')
+    invoice = (invoices.filter(period_start=old_date).order_by('pk').first()
+               or invoices.filter(period_start__lte=old_date, period_end__gte=old_date)
+               .order_by('pk').first())
+    if invoice is None:
+        return None, None, None, ''
+    paid = (invoice.paid_amount > 0
+            or Payment.objects.filter(invoice=invoice, is_reversed=False).exists()
+            or PaymentAllocation.objects.filter(invoice=invoice).exists())
+    if paid:
+        return invoice, None, None, _(
+            'Invoice %(no)s already has money paid on it, so it was not changed. Correct it on '
+            'the invoice page if the rent should change.') % {'no': invoice.number}
+    if tenancy.period_for(new_date) != tenancy.period_for(old_date):
+        return invoice, None, None, _(
+            'The new date is in another billing period, so invoice %(no)s was not changed. '
+            'Check the invoices on the stay page.') % {'no': invoice.number}
+    period_start, _period_end = tenancy.period_for(new_date)
+    start = max(period_start, new_date)
+    prorata = start > period_start and tenancy.prorate_first_period
+    if tenancy.first_invoice_amount is not None:
+        rent = tenancy.first_invoice_amount
+    elif prorata:
+        rent = tenancy.prorata((invoice.period_end - start).days + 1,
+                               period_days=tenancy.period_length(period_start))
+    else:
+        rent = tenancy.monthly_rent
+    return invoice, start, Decimal(rent).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP), ''
+
+
+@transaction.atomic
+def change_check_in_date(*, tenancy, user, new_date, rebill=True):
+    """Move a stay's check-in date, and its first invoice with it when that is safe.
+
+    ``rebill`` false (someone without billing rights) leaves every invoice
+    alone. Returns a note for the user about the invoice, or ``''``.
+    Raises ``ValidationError`` when the stay cannot start on that day.
+    """
+    old_date = tenancy.check_in_date
+    if new_date == old_date:
+        return ''
+    problem = check_in_date_problem(tenancy, new_date)
+    if problem:
+        raise ValidationError({'check_in_date': problem})
+    before = audit.snapshot(tenancy, ['check_in_date'])
+    tenancy.check_in_date = new_date
+    tenancy.full_clean(exclude=['floor', 'building', 'status'])
+    tenancy.save()
+    audit.log(audit.AuditLog.ACTION_UPDATE, tenancy, tenant=tenancy.tenant,
+              summary=_('Check-in date of %(guest)s changed from %(old)s to %(new)s') % {
+                  'guest': tenancy.guest.full_name, 'old': old_date.strftime('%d %b %Y'),
+                  'new': new_date.strftime('%d %b %Y')},
+              changes=audit.diff(before, audit.snapshot(tenancy, ['check_in_date'])))
+    return rebill_first_invoice(tenancy=tenancy, user=user, old_date=old_date,
+                                rebill=rebill)
+
+
+def rebill_first_invoice(*, tenancy, user, old_date, rebill=True):
+    """After the check-in date moved: cut the first invoice to the new date.
+
+    Returns a note for the user, or ``''`` when there was nothing to say.
+    """
+    invoice, start, rent, reason = plan_first_invoice(tenancy, old_date, tenancy.check_in_date)
+    if invoice is None:
+        return ''
+    if rent is None:
+        return reason
+    if not rebill:
+        return _('Invoice %(no)s was not changed: changing invoices needs billing rights.') % {
+            'no': invoice.number}
+    tracked = ['period_start', 'rent_amount', 'total', 'due_date']
+    before = audit.snapshot(invoice, tracked)
+    invoice.period_start = start
+    invoice.rent_amount = rent
+    invoice.is_prorata = start > tenancy.period_for(start)[0] and tenancy.prorate_first_period
+    invoice.due_date = tenancy.due_date_for(start, invoice.period_end)
+    invoice.save(update_fields=['period_start', 'rent_amount', 'is_prorata', 'due_date',
+                                'updated_at'])
+    invoice.recalculate()
+    audit.log(audit.AuditLog.ACTION_UPDATE, invoice, tenant=tenancy.tenant,
+              summary=_('Invoice %(no)s moved with the check-in date of %(guest)s') % {
+                  'no': invoice.number, 'guest': tenancy.guest.full_name},
+              changes=audit.diff(before, audit.snapshot(invoice, tracked)))
+    return _('Invoice %(no)s now runs from %(date)s: %(amount)s.') % {
+        'no': invoice.number, 'date': start.strftime('%d %b %Y'), 'amount': invoice.total}
 
 
 @transaction.atomic
