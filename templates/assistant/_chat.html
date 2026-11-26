@@ -3,6 +3,7 @@
      {% if opening_url %}data-opening-url="{{ opening_url }}"{% endif %}
      data-error="{% trans 'Could not reach the server. Check the connection and try again.' %}"
      data-retry="{% trans 'Try again' %}"
+     data-date-use="{% trans 'Use this date' %}" data-date-label="{% trans 'Date' %}"
      data-signed-out="{% trans 'Your session has ended. Reload the page and sign in again.' %}">
   <div class="chat-log" data-chat-log role="log" aria-live="polite"
        aria-label="{% trans 'Conversation with the assistant' %}"></div>

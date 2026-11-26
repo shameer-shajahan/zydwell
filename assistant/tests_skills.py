@@ -24,10 +24,25 @@ class AssistantCase(ZyDwellTestCase):
         self.ravi = Guest.objects.create(tenant=self.tenant, full_name='Ravi Kumar',
                                          mobile='0551234567')
 
+    #: Answer the chat check-in's date and deposit questions (today; no deposit,
+    #: or received when an amount was typed) so tests reach the summary.
+    auto_answer = True
+
     def say(self, text):
         response = self.client.post(reverse('assistant:message'), {'text': text})
         self.assertEqual(response.status_code, 200)
-        return response.json()['replies']
+        replies = response.json()['replies']
+        while self.auto_answer:
+            last = replies[-1]
+            if last.get('date', {}).get('key') == 'date':
+                replies = replies + self.say(f'@pick:date:{self.today.isoformat()}')
+            elif any(b.get('send') == '@pick:deposit:none' for b in last.get('buttons', [])):
+                replies = replies + self.say('@pick:deposit:none')
+            elif any(b.get('send') == '@pick:deposit:paid' for b in last.get('buttons', [])):
+                replies = replies + self.say('@pick:deposit:paid')
+            else:
+                break
+        return replies
 
     def text(self, replies):
         return ' '.join(r['text'] for r in replies)

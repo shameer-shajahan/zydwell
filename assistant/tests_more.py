@@ -228,3 +228,66 @@ class PayIntoMonthsNotInvoicedTests(FlatsLikeRealBuildingsCase):
         payment = Payment.objects.get(tenancy=self.tenancy)
         self.assertEqual(payment.amount, Decimal('1000'))
         self.assertGreaterEqual(payment.allocations.count() or 1, 1)
+
+
+class CheckInQuestionsTests(FlatsLikeRealBuildingsCase):
+    auto_answer = False
+
+    def test_the_date_is_asked_with_a_calendar(self):
+        replies = self.say('put akash in 117 a a3')
+        self.assertEqual(replies[-1]['date'], {'key': 'date', 'value': self.today.isoformat()})
+        replies = self.say('@pick:date:' + (self.today - timedelta(days=2)).isoformat())
+        self.assertIn('deposit', replies[-1]['text'])
+        rows = self.rows(self.say('500'))                 # 500 paid now
+        self.assertEqual(rows['Check-in date'], (self.today - timedelta(days=2)).strftime('%d %b %Y'))
+        self.assertEqual(rows['Deposit received now'], 'AED 500.00')
+
+    def test_a_deposit_agreed_but_not_paid(self):
+        self.say('put akash in 117 a a3 on ' + self.today.strftime('%d/%m/%Y'))
+        rows = self.rows(self.say('500 agreed, not paid'))
+        self.assertEqual(rows['Deposit agreed'], 'AED 500.00')
+        self.assertEqual(rows['Deposit received now'], 'AED 0.00')
+
+    def test_deposit_typed_asks_if_it_was_received(self):
+        replies = self.say('put akash in 117 a a3 deposit 400 on ' + self.today.strftime('%d/%m/%Y'))
+        self.assertIn('received now', replies[-1]['text'])
+        rows = self.rows(self.say('@pick:deposit:later'))
+        self.assertEqual(rows['Deposit received now'], 'AED 0.00')
+
+
+class DepositAfterPaymentTests(FlatsLikeRealBuildingsCase):
+    def test_rent_payment_offers_the_missing_deposit(self):
+        from guests import services as stays
+        tenancy = stays.check_in(
+            tenant=self.tenant, user=self.owner, guest=self.akash, room=self.room_a,
+            bed=self.a_beds['A2'], check_in_date=self.today, monthly_rent=650,
+            deposit_amount=Decimal('500'))
+        stays.raise_first_invoice(tenancy=tenancy, user=self.owner)
+        self.say('akash paid 100 cash')
+        replies = self.say('yes')
+        self.assertIn(f'@start:deposit:tenancy={tenancy.pk},amount=500', ' '.join(self.sends(replies)))
+
+
+class DataQuestionTests(FlatsLikeRealBuildingsCase):
+    def setUp(self):
+        super().setUp()
+        Guest.objects.filter(pk=self.akash.pk).update(nationality='India')
+        self.stay(guest=self.akash, bed=self.a_beds['A1'])
+        self.stay(bed=self.a_beds['A2'])                      # Ravi, no nationality
+
+    def test_how_many_guests_from_india(self):
+        self.assertIn('1 guests staying (Indian)', self.text(self.say('how many guests from india')))
+
+    def test_list_guests_in_a_flat(self):
+        rows = self.rows(self.say('list guests in apartment 117'))
+        self.assertEqual(set(rows), {'Akash', 'Ravi Kumar'})
+
+    def test_total_monthly_rent(self):
+        self.assertIn('AED 1,600.00', self.text(self.say('total monthly rent')))
+
+    def test_how_many_rooms_and_buildings(self):
+        self.assertIn('buildings', self.text(self.say('how many buildings')))
+        self.assertIn('rooms', self.text(self.say('how many rooms')))
+
+    def test_total_deposit_held(self):
+        self.assertIn('AED 1,600.00 held', self.text(self.say('total deposit held')))

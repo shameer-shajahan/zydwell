@@ -1,4 +1,6 @@
 """Check a guest in: "put Ravi in room 101 bed A at 800, deposit 500 paid"."""
+import re
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.urls import reverse
@@ -12,7 +14,7 @@ from guests.models import Tenancy
 from .. import lookup
 from ..brain import parse
 from .add_guest import form_errors
-from .base import (Handoff, NotDone, Skill, as_date, as_decimal, cancel_button,
+from .base import (Handoff, NotDone, Skill, as_date, as_decimal, cancel_button, choose,
                    confirm_buttons, day, link, say, start)
 from .common import answer_guest, ask_guest, pick_guest, read, stay_place, take_guests
 from .places import BedPicker
@@ -102,7 +104,40 @@ class CheckIn(BedPicker, Skill):
                              offer_new=True)
         if question:
             return question
-        return self._ask_place(ctx, slots) or self._ask_rent(ctx, slots)
+        return (self._ask_place(ctx, slots) or self._ask_rent(ctx, slots)
+                or self._ask_date(ctx, slots) or self._ask_deposit(ctx, slots))
+
+    def _ask_date(self, ctx, slots):
+        """The check-in day, typed or picked from a calendar — never assumed."""
+        if slots.get('date'):
+            return None
+        guest = lookup.guest(ctx, slots['guest'])
+        today, yesterday = ctx.today, ctx.today - timedelta(days=1)
+        return 'date', say(
+            _('Which day does %(name)s check in? Tap a button, pick a date or type it.') % {
+                'name': guest.full_name},
+            buttons=[choose(_('Today, %(date)s') % {'date': day(today)}, 'date', today.isoformat()),
+                     choose(_('Yesterday'), 'date', yesterday.isoformat()), cancel_button()],
+            date=('date', today.isoformat()))
+
+    def _ask_deposit(self, ctx, slots):
+        """Whether a deposit was paid at check-in, and how much."""
+        if slots.get('deposit_asked'):
+            return None
+        guest = lookup.guest(ctx, slots['guest'])
+        if 'deposit' not in slots:
+            return 'deposit', say(
+                _('Did %(name)s pay a deposit? Type the amount paid now, like 500, or '
+                  '"500 agreed, not paid".') % {'name': guest.full_name},
+                buttons=[choose(_('No deposit'), 'deposit', 'none'), cancel_button()])
+        if 'deposit_received' not in slots and as_decimal(slots['deposit']):
+            amount = ctx.money(slots['deposit'])
+            return 'deposit', say(
+                _('Was the %(amount)s deposit received now?') % {'amount': amount},
+                buttons=[choose(_('Yes, received %(amount)s') % {'amount': amount}, 'deposit',
+                                'paid'),
+                         choose(_('Not yet'), 'deposit', 'later'), cancel_button()])
+        return None
 
     def _ask_rent(self, ctx, slots):
         if as_decimal(slots.get('rent')):
@@ -131,6 +166,14 @@ class CheckIn(BedPicker, Skill):
                 return say(_('Type the apartment, room and bed, like "101 A A2".'),
                            buttons=[cancel_button()])
             return None
+        if key == 'date':
+            if not found.get('date'):
+                return say(_('Pick the date, or type it like "1 Dec" or "25/11".'),
+                           buttons=[cancel_button()], date=('date', ctx.today.isoformat()))
+            slots['date'] = found['date'].isoformat()
+            return None
+        if key == 'deposit':
+            return self._answer_deposit(ctx, slots, found)
         if key == 'rent':
             took = self._take_money(slots, found, plain_is_rent=True)
             if found.get('date'):
@@ -142,7 +185,52 @@ class CheckIn(BedPicker, Skill):
                            buttons=[cancel_button()])
         return None
 
+    _NO = re.compile(r'\b(?:no|none|nothing|zero|nil|without)\b', re.I)
+    _LATER = re.compile(r'\b(?:not\s+(?:paid|yet|received)|later|pending|agreed|due|owe)\b', re.I)
+
+    def _answer_deposit(self, ctx, slots, found):
+        text = found['text']
+        numbers = list(found['amounts']) + [Decimal(c) for c, _k in found.get('codes', [])
+                                            if c.isdigit()]
+        tagged = found['tagged']
+        if 'deposit_received' in tagged or 'deposit' in tagged:
+            self._take_money(slots, found)
+        elif numbers:
+            agreed = max(numbers)
+            slots['deposit'] = str(agreed)
+            if self._LATER.search(text):
+                slots['deposit_received'] = '0'
+            else:
+                slots['deposit_received'] = str(min(numbers) if len(numbers) > 1 else agreed)
+        elif self._NO.search(text):
+            slots['deposit'] = slots['deposit_received'] = '0'
+        elif self._LATER.search(text) and as_decimal(slots.get('deposit')):
+            slots['deposit_received'] = '0'
+        elif re.search(r'\b(?:yes|received|paid|got|took)\b', text, re.I) and as_decimal(
+                slots.get('deposit')):
+            slots['deposit_received'] = slots['deposit']
+        else:
+            return say(_('Type the deposit paid now, like 500, or tap "No deposit".'),
+                       buttons=[choose(_('No deposit'), 'deposit', 'none'), cancel_button()])
+        slots['deposit_asked'] = True
+        return None
+
     def pick(self, ctx, slots, key, value):
+        if key == 'date':
+            try:
+                slots['date'] = date.fromisoformat(str(value)).isoformat()
+            except ValueError:
+                pass
+            return
+        if key == 'deposit':
+            if value == 'none':
+                slots['deposit'] = slots['deposit_received'] = '0'
+            elif value == 'paid':
+                slots['deposit_received'] = slots.get('deposit', '0')
+            elif value == 'later':
+                slots['deposit_received'] = '0'
+            slots['deposit_asked'] = True
+            return
         if key == 'guest':
             pick_guest(ctx, slots, value)
         elif key in ('place', 'bed', 'room'):

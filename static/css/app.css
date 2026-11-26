@@ -1446,6 +1446,8 @@ table.data tfoot td { font-weight: 700; border-top: 1px solid var(--separator);
 .chat-panel .chat-rows { grid-template-columns: minmax(0, 1fr); gap: 0; }
 .chat-panel .chat-rows dt { font-size: 12.5px; margin-top: 6px; }
 .chat-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
+.chat-date { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; margin-top: 7px; }
+.chat-date input[type=date] { width: auto; min-height: 36px; padding: 6px 12px; border-radius: 99px; }
 .chat-chip {
   display: inline-flex; align-items: center; min-height: 36px; padding: 7px 15px;
   border-radius: 99px; border: 1px solid var(--tint); background: transparent; color: var(--tint);

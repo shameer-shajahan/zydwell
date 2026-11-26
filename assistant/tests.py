@@ -222,3 +222,11 @@ class LauncherTests(ZyDwellTestCase):
         replies = self.client.get(reverse('assistant:opening')).json()['replies']
         self.assertIn('Welcome back', replies[0]['text'])
         self.assertIn('mobile', replies[-1]['text'])
+
+
+class NotInTheSideBarTests(ZyDwellTestCase):
+    def test_only_the_round_button_opens_it(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse('guests:guest_list'))
+        self.assertNotIn(reverse('assistant:chat'), [item['url'] for item in response.context['nav_items']])
+        self.assertContains(response, 'chat-fab')

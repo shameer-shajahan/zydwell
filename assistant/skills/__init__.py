@@ -1,6 +1,7 @@
 """Every skill the assistant has, by the intent name the model gives it."""
 from .add_guest import AddGuest
 from .check_in import CheckIn
+from .data import DataQuestion
 from .deposit import Deposit
 from .edit_guest import EditGuest
 from .edit_stay import EditCheckIn
@@ -18,4 +19,5 @@ SKILLS = {skill.name: skill for skill in [
     Leaving('check_out'), Leaving('give_notice'), Expense(), Income(), Reminder(),
     GuestInfo(), Beds('free_beds'), Beds('occupancy'), Overdue(), Money(),
     Movements('leaving_list'), Movements('joining_list'), Documents(), Approvals(),
+    DataQuestion(),
 ]}

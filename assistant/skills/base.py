@@ -72,8 +72,12 @@ class Ctx:
 
 
 # ---------------------------------------------------------------- messages
-def say(text, *, rows=None, buttons=None):
+def say(text, *, rows=None, buttons=None, date=None):
+    """A message; ``date`` is ``(question, iso value)`` to show a calendar picker."""
     message = {'text': str(text)}
+    if date:
+        key, value = date
+        message['date'] = {'key': key, 'value': value}
     if rows:
         message['rows'] = [[str(label), str(value)] for label, value in rows]
     if buttons:

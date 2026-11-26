@@ -927,6 +927,24 @@
         });
         row.firstChild.appendChild(list);
       }
+      if (message.date && message.date.key) {
+        // A calendar to pick the answer from ("which day does he check in?").
+        var picker = document.createElement('div');
+        picker.className = 'chat-date';
+        var input = document.createElement('input');
+        input.type = 'date';
+        input.value = message.date.value || '';
+        input.setAttribute('data-chat-date', message.date.key);
+        input.setAttribute('aria-label', box.getAttribute('data-date-label') || 'Date');
+        var use = document.createElement('button');
+        use.type = 'button';
+        use.className = 'chat-chip';
+        use.textContent = box.getAttribute('data-date-use') || 'Use this date';
+        use.setAttribute('data-chat-date-use', message.date.key);
+        picker.appendChild(input);
+        picker.appendChild(use);
+        row.appendChild(picker);
+      }
       if (message.buttons && message.buttons.length) {
         var actions = document.createElement('div');
         actions.className = 'chat-actions';
@@ -984,7 +1002,8 @@
       text = (text || '').trim();
       if (!text || busy) { return; }
       // Answers to an earlier question must not be pressed later, out of turn.
-      Array.prototype.forEach.call(log.querySelectorAll('button[data-chat-send]'), function (b) {
+      Array.prototype.forEach.call(log.querySelectorAll(
+        'button[data-chat-send], button[data-chat-date-use], input[data-chat-date]'), function (b) {
         b.disabled = true;
       });
       if (!retry) { add('me', label || text); }
@@ -1032,6 +1051,19 @@
     });
 
     log.addEventListener('click', function (event) {
+      var useDate = event.target.closest('button[data-chat-date-use]');
+      if (useDate && !useDate.disabled) {
+        var field = useDate.parentNode.querySelector('input[data-chat-date]');
+        if (field && field.value) {
+          var shown = field.value;
+          try {
+            shown = new Date(field.value + 'T00:00:00').toLocaleDateString(undefined, {
+              day: '2-digit', month: 'short', year: 'numeric' });
+          } catch (err) { /* keep the ISO date */ }
+          send('@pick:' + useDate.getAttribute('data-chat-date-use') + ':' + field.value, shown);
+        }
+        return;
+      }
       var button = event.target.closest('button[data-chat-send]');
       if (!button || button.disabled) { return; }
       send(button.getAttribute('data-chat-send'), button.textContent);

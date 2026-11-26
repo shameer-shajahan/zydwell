@@ -2,6 +2,7 @@ from django.conf import settings
 from django.urls import reverse
 
 from . import navigation
+from .constants import MODULE_GUESTS
 from .models import FeatureFlag, SystemNotice
 
 
@@ -32,10 +33,13 @@ def branding(request):
         'currency': tenant.currency if tenant else settings.ZYDWELL['DEFAULT_CURRENCY'],
         'impersonating': bool(request.session.get('impersonator_id')) if hasattr(request, 'session') else False,
         'nav_items': nav_items,
-        # The floating chat button: for whoever may open the assistant, on
-        # every page but the assistant's own.
-        'assistant_launcher': request.path != assistant_url and any(
-            item['url'] == assistant_url for item in nav_items),
+        # The floating chat button — the assistant's only way in, it is not in
+        # the side bar: for whoever may open the Guests module, on every page
+        # but the assistant's own.
+        'assistant_launcher': bool(
+            tenant and user is not None and getattr(user, 'is_authenticated', False)
+            and flags.get(MODULE_GUESTS, True) and user.can(MODULE_GUESTS, 'view')
+            and request.path != assistant_url),
         # A phone hands off to the WhatsApp app and abandons the tab, so open
         # chats in place there and only use a new tab on a desktop.
         'chat_new_tab': _wants_new_tab(request),

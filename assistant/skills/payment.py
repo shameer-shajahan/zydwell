@@ -9,13 +9,13 @@ from accounting.models import KIND_INCOME
 from billing import services as billing
 from billing.forms import PaymentForm
 from billing.models import Invoice, PaymentMode
-from core.constants import MODULE_BILLING
+from core.constants import MODULE_BILLING, MODULE_GUESTS
 
 from .. import lookup
 from ..brain import parse
 from .add_guest import form_errors
 from .base import (Handoff, NotDone, Skill, as_date, as_decimal, cancel_button, choose,
-                   confirm_buttons, day, link, say)
+                   confirm_buttons, start, day, link, say)
 from .common import answer_stay, ask_stay, pick_stay, read, stay_place, take_stays
 
 
@@ -265,11 +265,17 @@ class Payment(Skill):
             text += ' ' + _('It is waiting for the owner to approve it.')
         if applied:
             text += ' ' + _('Advance credit was applied to the oldest unpaid invoices.')
+        deposit_due = max(stay.deposit_amount - stay.deposit_held(), Decimal('0'))
         left = stay.outstanding()
         if left > 0:
             text += ' ' + _('%(name)s still owes %(amount)s.') % {
                 'name': stay.guest.full_name, 'amount': ctx.money(left)}
-        return [say(text, buttons=[
-            link(_('View receipt'), reverse('billing:receipt', args=[payment.pk])),
-            link(_('Payment details'), reverse('billing:payment_detail', args=[payment.pk])),
-        ])]
+        buttons = [link(_('View receipt'), reverse('billing:receipt', args=[payment.pk])),
+                   link(_('Payment details'), reverse('billing:payment_detail', args=[payment.pk]))]
+        if deposit_due > 0 and ctx.allowed(MODULE_GUESTS, 'edit'):
+            # The deposit is a separate receipt: ask about it in the same visit.
+            text += ' ' + _('The deposit still has %(amount)s to collect.') % {
+                'amount': ctx.money(deposit_due)}
+            buttons.insert(0, start(_('Take deposit (%(amount)s)') % {
+                'amount': ctx.money(deposit_due)}, 'deposit', tenancy=stay.pk, amount=deposit_due))
+        return [say(text, buttons=buttons)]

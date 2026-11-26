@@ -207,6 +207,11 @@ def _fresh(ctx, text):
         return [say(_('Nothing is in progress right now.'), buttons=_start_buttons(ctx))]
     if intent == 'other':
         return [say(_("I can't do that yet. Here is what I can do:")), _help(ctx)]
+    # A question about the data the model has no name for ("how many guests from
+    # india?", "total deposit held"): read it and answer from the data.
+    from .skills.data import looks_like_a_question, subject_of
+    if looks_like_a_question(text) and subject_of(text):
+        return _begin(ctx, SKILLS['data_question'], text)
     # A guest's name and a free bed, with no verb ("akash to 102 a4"): a check-in.
     check_in = SKILLS['check_in']
     if ctx.allowed(check_in.module, check_in.action):
