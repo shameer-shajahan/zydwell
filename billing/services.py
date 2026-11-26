@@ -495,7 +495,9 @@ def record_multi_invoice_payment(*, tenant, user, tenancy, invoices, amount, mod
                                  reference='', paid_on=None, note='', cheque_due_date=None):
     """Record one receipt and allocate it across open invoices for one tenancy."""
     requested_ids = {invoice.pk for invoice in invoices}
-    invoices = list(Invoice.objects.select_for_update().filter(
+    # Lock the invoice rows only: Postgres refuses FOR UPDATE across the outer
+    # join the status filter needs ("nullable side of an outer join").
+    invoices = list(Invoice.objects.select_for_update(of=('self',)).filter(
         pk__in=requested_ids, tenant=tenant,
         tenancy=tenancy,
     ).exclude(status__counts_as_settled=True).order_by('due_date', 'period_start', 'pk'))
