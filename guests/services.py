@@ -20,11 +20,15 @@ from .models import BedTransfer, DepositTransaction, Tenancy
 @transaction.atomic
 def check_in(*, tenant, user, guest, room, bed, check_in_date, monthly_rent,
              deposit_amount=Decimal('0'), deposit_received=Decimal('0'),
-             billing_day=1, billing_cycle=Tenancy.CYCLE_MONTHLY,
+             billing_day=None, billing_cycle=Tenancy.CYCLE_MONTHLY,
              expected_check_out=None, agreement_note='',
              rent_mode=Tenancy.MODE_ADVANCE, prorate_first_period=True,
              first_invoice_amount=None):
     """Put a guest into a bed (or a whole room / flat) and occupy it."""
+    # Default monthly billing to the check-in day; clamp 29–31 to the 28th
+    # so every billing period has a matching day.
+    if billing_day is None:
+        billing_day = bill_day_for(check_in_date)
     tenancy = Tenancy(
         tenant=tenant,
         guest=guest,
