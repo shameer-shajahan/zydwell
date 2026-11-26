@@ -168,3 +168,46 @@ class RebuildButtonTests(CheckInDateChangeTests):
         self.client.post(reverse('guests:rebuild_invoices', args=[self.tenancy.pk]))
         self.assertEqual(sorted(numbers), sorted(Invoice.objects.filter(
             tenancy=self.tenancy).values_list('number', flat=True)))
+
+
+class CollectTheWholeBalanceTests(ZyDwellTestCase):
+    """One invoice raised, months after it never invoiced: Collect shows the whole balance."""
+
+    def setUp(self):
+        super().setUp()
+        from guests import services as stays
+        from billing.models import PaymentMode
+        self.today = timezone.localdate()
+        self.tenancy = stays.check_in(
+            tenant=self.tenant, user=self.owner, guest=self.guest, room=self.room,
+            bed=self.beds[0], check_in_date=self.today - timedelta(days=100),
+            monthly_rent=Decimal('600'), billing_day=1)
+        stays.raise_first_invoice(tenancy=self.tenancy, user=self.owner)
+        self.owed = self.tenancy.outstanding() + sum(
+            (row['rent'] for row in services.unbilled_rent(self.tenancy)), Decimal('0'))
+        self.cash = PaymentMode.by_code(self.tenant, 'cash').pk
+        self.client.force_login(self.owner)
+
+    def collect_page(self):
+        return self.client.get(reverse('billing:payment_create')
+                               + f'?tenancy={self.tenancy.pk}&collect=all')
+
+    def test_collect_raises_the_missing_months_and_offers_the_total(self):
+        response = self.collect_page()
+        self.assertEqual(services.unbilled_rent(self.tenancy), [])
+        self.assertEqual(Decimal(str(response.context['form'].initial['amount'])), self.owed)
+        self.assertContains(response, 'not invoiced yet')
+
+    def test_part_payments_many_times(self):
+        self.collect_page()
+        invoices = list(Invoice.objects.filter(tenancy=self.tenancy).order_by('period_start'))
+        for amount in ('400', '500', '300'):
+            open_ids = [i.pk for i in services.owing(Invoice.objects.filter(tenancy=self.tenancy))]
+            response = self.client.post(reverse('billing:payment_create'), {
+                'tenancy': self.tenancy.pk, 'invoices': open_ids, 'amount': amount,
+                'mode': self.cash, 'paid_on': self.today.isoformat()})
+            self.assertEqual(response.status_code, 302)
+        self.assertEqual(Payment.objects.filter(tenancy=self.tenancy).count(), 3)
+        self.assertEqual(self.tenancy.outstanding(), self.owed - Decimal('1200'))
+        invoices[0].refresh_from_db()
+        self.assertEqual(invoices[0].balance, Decimal('0'))          # oldest settled first

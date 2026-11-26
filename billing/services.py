@@ -413,6 +413,18 @@ def unbilled_rent(tenancy, on_date=None, spans=None, fill_gaps=False):
     return owed
 
 
+def bill_stay_now(tenancy, user=None):
+    """Raise the invoices one stay owes by today, before money is taken from it.
+
+    So "collect" always has every month on an invoice: the whole balance is
+    there to pay, all at once or in parts. One stay is a few invoices at most
+    (``CATCH_UP_LIMIT``), quick enough to do while the page opens.
+    """
+    created, _finished = generate_due_invoices_within(
+        tenancy.tenant, seconds=10, user=user, only=[tenancy.pk])
+    return created
+
+
 def _catch_up(tenancy, on_date, user):
     """Invoice every period ``unbilled_rent`` finds — the missed months too.
 

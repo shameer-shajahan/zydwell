@@ -48,7 +48,7 @@
         <td class="right nowrap">{% if can_collect %}
           {% if row.not_invoiced %}<form method="post" action="{% url 'billing:raise_for_stay' row.tenancy.pk %}" style="display:inline">{% csrf_token %}
             <button class="btn sm" type="submit">{% trans "Raise invoices" %}</button></form>{% endif %}
-          {% if row.total > row.not_invoiced %}<a class="btn sm accent" href="{% url 'billing:payment_create' %}?tenancy={{ row.tenancy.pk }}&amp;collect=all&amp;{% return_here %}">{% trans "Collect" %}</a>{% endif %}
+          <a class="btn sm accent" href="{% url 'billing:payment_create' %}?tenancy={{ row.tenancy.pk }}&amp;collect=all&amp;{% return_here %}">{% trans "Collect" %}</a>
         {% endif %}</td></tr>
     {% empty %}<tr><td colspan="5">{% include "partials/_empty.html" with message=_("Nothing pending. Everyone is paid up.") %}</td></tr>{% endfor %}</tbody>
   </table></div></div>

@@ -206,3 +206,25 @@ class EditTermsTests(FlatsLikeRealBuildingsCase):
         self.client.force_login(self.staff)
         replies = self.say('change akash rent to 900')
         self.assertIn('Only the owner', self.text(replies))
+
+
+class PayIntoMonthsNotInvoicedTests(FlatsLikeRealBuildingsCase):
+    def setUp(self):
+        super().setUp()
+        from guests import services as stays
+        self.tenancy = stays.check_in(
+            tenant=self.tenant, user=self.owner, guest=self.akash, room=self.room_a,
+            bed=self.a_beds['A1'], check_in_date=self.today - timedelta(days=100),
+            monthly_rent=Decimal('600'), billing_day=1)
+        stays.raise_first_invoice(tenancy=self.tenancy, user=self.owner)
+
+    def test_a_payment_reaches_the_months_not_invoiced_yet(self):
+        rows = self.rows(self.say('akash paid 1000 cash'))
+        self.assertIn('invoiced when saved', rows['For'])
+        self.assertIn('Still owed after this', rows)
+        self.say('yes')
+        from billing import services
+        self.assertEqual(services.unbilled_rent(self.tenancy), [])
+        payment = Payment.objects.get(tenancy=self.tenancy)
+        self.assertEqual(payment.amount, Decimal('1000'))
+        self.assertGreaterEqual(payment.allocations.count() or 1, 1)

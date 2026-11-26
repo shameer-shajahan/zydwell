@@ -298,6 +298,16 @@ def payment_create(request):
                        'amount': invoice.balance}
     elif tenancy_id:
         initial = {'tenancy': tenancy_id}
+        stay = request.user.scope_queryset(Tenancy.objects.filter(
+            tenant=request.tenant)).filter(pk=tenancy_id).first() if str(tenancy_id).isdigit() else None
+        if request.method == 'GET' and stay is not None and stay.is_live:
+            # Months due but never invoiced are raised first, so the whole
+            # balance is here to pay — at once or in parts.
+            raised = services.bill_stay_now(stay, request.user)
+            if raised:
+                messages.info(request, _(
+                    '%(n)d invoice(s) raised for months that were not invoiced yet.') % {
+                    'n': len(raised)})
         if collect_all:
             tenancies = request.user.scope_queryset(Tenancy.objects.filter(
                 tenant=request.tenant))

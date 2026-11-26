@@ -25,6 +25,12 @@ def open_invoices(tenancy):
         'due_date', 'period_start', 'pk'))
 
 
+def owed_now(stay, today=None):
+    """Everything the stay owes: unpaid invoices and the months not invoiced yet."""
+    unbilled = billing.unbilled_rent(stay, today)
+    return stay.outstanding() + sum((row['rent'] for row in unbilled), Decimal('0')), unbilled
+
+
 def _covering(invoices, amount):
     """The oldest invoices that together take ``amount``."""
     chosen, total = [], Decimal('0')
@@ -95,7 +101,7 @@ class Payment(Skill):
         if question:
             return question
         stay = self._stay(ctx, slots)
-        owed = stay.outstanding()
+        owed, _unbilled = owed_now(stay, ctx.today)
         amount = as_decimal(slots.get('amount'))
         if not amount or amount <= 0:
             buttons = []
@@ -182,7 +188,7 @@ class Payment(Skill):
         elif key == 'excess':
             stay = self._stay(ctx, slots)
             if value == 'owed' and stay is not None:
-                slots['amount'] = str(stay.outstanding())
+                slots['amount'] = str(owed_now(stay, ctx.today)[0])
             slots['settled'] = value
 
     def change(self, ctx, slots, text):
@@ -190,13 +196,23 @@ class Payment(Skill):
 
     # ------------------------------------------------------------ saving
     def _plan(self, ctx, slots):
+        """``(stay, amount, invoices it pays, months not invoiced yet it reaches)``."""
         stay = self._stay(ctx, slots)
         amount = as_decimal(slots['amount'])
-        invoices = [] if slots.get('settled') == 'advance' else open_invoices(stay)
-        return stay, amount, _covering(invoices, amount)
+        if slots.get('settled') == 'advance':
+            return stay, amount, [], []
+        invoices = _covering(open_invoices(stay), amount)
+        left = amount - sum((inv.balance for inv in invoices), Decimal('0'))
+        months = []
+        for row in billing.unbilled_rent(stay, ctx.today):
+            if left <= 0:
+                break
+            months.append(row)
+            left -= row['rent']
+        return stay, amount, invoices, months
 
     def summary(self, ctx, slots):
-        stay, amount, invoices = self._plan(ctx, slots)
+        stay, amount, invoices, months = self._plan(ctx, slots)
         mode = lookup.mode(ctx, slots['mode'])
         rows = [
             (_('Guest'), stay.guest.full_name),
@@ -209,11 +225,16 @@ class Payment(Skill):
         if slots.get('cheque_due'):
             rows.append((_('Cheque due'), day(slots['cheque_due'])))
         rows.append((_('Paid on'), day(as_date(slots.get('paid_on')) or ctx.today)))
-        if invoices:
-            rows.append((_('For'), ', '.join(
-                f'{inv.number} ({inv.period_label()})' for inv in invoices)))
+        paying = [f'{inv.number} ({inv.period_label()})' for inv in invoices] + [
+            f"{day(row['period_start'])} – {day(row['period_end'])} ({_('invoiced when saved')})"
+            for row in months]
+        if paying:
+            rows.append((_('For'), ', '.join(paying)))
         else:
             rows.append((_('For'), _('Advance credit (nothing is owed now)')))
+        owed, _unbilled = owed_now(stay, ctx.today)
+        if owed > amount and slots.get('settled') != 'advance':
+            rows.append((_('Still owed after this'), ctx.money(owed - amount)))
         text = _('Please check the payment. To change something, type it, for example '
                  '"900 by card".')
         if billing.needs_approval(ctx.user):
@@ -221,7 +242,10 @@ class Payment(Skill):
         return say(text, rows=rows, buttons=confirm_buttons(_('Yes, record payment')))
 
     def run(self, ctx, slots):
-        stay, amount, invoices = self._plan(ctx, slots)
+        stay = self._stay(ctx, slots)
+        if slots.get('settled') != 'advance':
+            billing.bill_stay_now(stay, ctx.user)       # the months not invoiced yet
+        stay, amount, invoices, _months = self._plan(ctx, slots)
         paid_on = as_date(slots.get('paid_on')) or ctx.today
         form = PaymentForm(data={
             'tenancy': stay.pk, 'invoices': [inv.pk for inv in invoices], 'invoice': '',
