@@ -40,7 +40,7 @@
   <th>{% trans "Period" %}</th><th>{% trans "Due" %}</th><th class="num">{% trans "Total" %}</th>
   <th class="num">{% trans "Balance" %}</th><th>{% trans "Status" %}</th><th></th></tr></thead>
   <tbody>{% for i in page %}
-    <tr><td class="mono"><a href="{% url 'billing:invoice_detail' i.pk %}">{{ i.number }}</a>{% if i.is_prorata %} <span class="badge soft-slate">{% trans "pro-rata" %}</span>{% endif %}</td>
+    <tr><td class="mono"><a href="{% url 'billing:invoice_detail' i.pk %}">{{ i.number }}</a>{% if i.combined %}<div class="muted" style="font-size:11px">{{ i.invoice_count }} {% trans "unpaid periods" %}</div>{% endif %}{% if i.is_prorata %} <span class="badge soft-slate">{% trans "pro-rata" %}</span>{% endif %}</td>
       <td>{{ i.tenancy.guest.full_name }}</td>
       <td class="muted" style="font-size:12px">{{ i.tenancy.location_label }}</td>
       <td class="nowrap">{{ i.period_label }}</td>
@@ -48,7 +48,7 @@
       <td class="num">{{ i.total|floatformat:2 }}</td>
       <td class="num"><strong>{{ i.balance|floatformat:2 }}</strong></td>
       <td>{% include "partials/_status.html" with status=i.status %}</td>
-      <td class="right nowrap">{% if can_create and i.balance > 0 %}<a class="btn sm accent" href="{% url 'billing:payment_create' %}?invoice={{ i.pk }}&amp;{% return_here %}">{% trans "Collect" %}</a>{% endif %}</td></tr>
+      <td class="right nowrap">{% if can_create and i.balance > 0 %}{% if i.combined %}<a class="btn sm accent" href="{% url 'billing:payment_create' %}?invoices={{ i.invoice_ids }}&amp;{% return_here %}">{% trans "Collect" %}</a>{% else %}<a class="btn sm accent" href="{% url 'billing:payment_create' %}?invoice={{ i.pk }}&amp;{% return_here %}">{% trans "Collect" %}</a>{% endif %}{% endif %}</td></tr>
   {% empty %}<tr><td colspan="9">{% include "partials/_empty.html" with message=_("No invoices match.") %}</td></tr>{% endfor %}</tbody>
 </table></div>{% include "partials/_pager.html" %}</div></div>
 {% endblock %}

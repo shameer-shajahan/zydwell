@@ -1,5 +1,6 @@
 """Invoices, payments, receipts, POS printing and collection monitoring."""
 from decimal import Decimal
+from types import SimpleNamespace
 
 from django.conf import settings
 from django.contrib import messages
@@ -49,6 +50,54 @@ def _scoped_payments(request):
         apartment_field='tenancy__apartment')
 
 
+def _invoice_list_rows(invoices):
+    """Combine open periods for one tenancy into a single collectable list row."""
+    groups = {}
+    rows = []
+    for invoice in invoices:
+        if invoice.balance > 0:
+            groups.setdefault(invoice.tenancy_id, []).append(invoice)
+        else:
+            rows.append(invoice)
+
+    for group in groups.values():
+        group.sort(key=lambda invoice: (invoice.period_start, invoice.period_end, invoice.pk))
+        runs = []
+        for invoice in group:
+            if runs and invoice.period_start == runs[-1][-1].period_end + timezone.timedelta(days=1):
+                runs[-1].append(invoice)
+            else:
+                runs.append([invoice])
+        for run in runs:
+            first = run[0]
+            if len(run) == 1:
+                rows.append(first)
+                continue
+            due_date = min(invoice.due_date for invoice in run)
+            period_start = min(invoice.period_start for invoice in run)
+            period_end = max(invoice.period_end for invoice in run)
+            rows.append(SimpleNamespace(
+                pk=first.pk,
+                number=first.number,
+                tenancy=first.tenancy,
+                period_start=period_start,
+                period_end=period_end,
+                period_label=f'{period_start:%d %b %Y} – {period_end:%d %b %Y}',
+                due_date=due_date,
+                total=sum((invoice.total for invoice in run), Decimal('0')),
+                paid_amount=sum((invoice.paid_amount for invoice in run), Decimal('0')),
+                balance=sum((invoice.balance for invoice in run), Decimal('0')),
+                status=next((invoice.status for invoice in run
+                             if invoice.due_date == due_date), first.status),
+                is_prorata=any(invoice.is_prorata for invoice in run),
+                days_overdue=max((invoice.days_overdue for invoice in run), default=0),
+                invoice_count=len(run),
+                invoice_ids=','.join(str(invoice.pk) for invoice in run),
+                combined=True,
+            ))
+    return sorted(rows, key=lambda row: (row.due_date, row.period_start, row.pk))
+
+
 @require_module(MODULE_BILLING)
 def invoice_list(request):
     location = LocationFilter(request)
@@ -61,8 +110,9 @@ def invoice_list(request):
         rows = rows.filter(Q(number__icontains=query) | Q(tenancy__guest__full_name__icontains=query)
                            | Q(tenancy__guest__mobile__icontains=query))
     totals = rows.aggregate(total=Sum('total'), paid=Sum('paid_amount'))
+    display_rows = _invoice_list_rows(rows)
     return render(request, 'billing/invoice_list.html', {
-        'page': paginate(request, rows, 30),
+        'page': paginate(request, display_rows, 30),
         'statuses': Status.objects.filter(tenant=request.tenant, kind=Status.KIND_INVOICE),
         'status': status, 'query': query, 'location': location,
         'sum_total': totals['total'] or Decimal('0'),
@@ -225,8 +275,22 @@ def payment_create(request):
     initial = {}
     tenancy_id = request.GET.get('tenancy')
     invoice_id = request.GET.get('invoice')
+    invoice_ids = request.GET.get('invoices', '').strip()
     collect_all = request.GET.get('collect') == 'all'
-    if invoice_id:
+    if invoice_ids:
+        try:
+            selected_ids = [int(value) for value in invoice_ids.split(',') if value]
+        except ValueError:
+            selected_ids = []
+        selected = list(services.owing(_scoped_invoices(request).filter(
+            pk__in=selected_ids)).order_by('due_date', 'period_start', 'pk'))
+        if selected and len(selected) == len(set(selected_ids)):
+            initial = {
+                'tenancy': selected[0].tenancy_id,
+                'invoices': [invoice.pk for invoice in selected],
+                'amount': sum((invoice.balance for invoice in selected), Decimal('0')),
+            }
+    elif invoice_id:
         invoice = Invoice.objects.filter(pk=invoice_id, tenant=request.tenant).first()
         if invoice:
             initial = {'invoice': invoice.pk, 'invoices': [invoice.pk],
