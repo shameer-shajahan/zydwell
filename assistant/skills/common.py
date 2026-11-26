@@ -8,6 +8,35 @@ from ..brain import entities, parse
 from .base import cancel_button, choose, say
 
 
+MEMORY_KEY = 'assistant_memory'
+#: "he paid 500", "move him", "his balance": the guest we were just talking about.
+PRONOUN = re.compile(
+    r"\b(?:he|she|him|her|his|hers|they|them|their|"
+    r"(?:same|this|that)\s+(?:guest|person|tenant|guy|man|lady|one))\b", re.I)
+
+
+def remember(ctx, *, guest=None, tenancy=None):
+    """Keep who this conversation is about, for "he", "her", "his" next time."""
+    if tenancy is not None:
+        ctx.request.session[MEMORY_KEY] = {'tenancy': tenancy.pk, 'guest': tenancy.guest_id}
+    elif guest is not None:
+        ctx.request.session[MEMORY_KEY] = {'guest': guest.pk}
+
+
+def remembered_stay(ctx):
+    memory = ctx.request.session.get(MEMORY_KEY) or {}
+    stay = lookup.stay(ctx, memory['tenancy']) if memory.get('tenancy') else None
+    if stay is None and memory.get('guest'):
+        guest = lookup.guest(ctx, memory['guest'])
+        stay = lookup.stay_of(ctx, guest) if guest else None
+    return stay
+
+
+def remembered_guest(ctx):
+    memory = ctx.request.session.get(MEMORY_KEY) or {}
+    return lookup.guest(ctx, memory['guest']) if memory.get('guest') else None
+
+
 RECENT = re.compile(
     r'\b(?:recently|just|newly|last|latest|new(?:est)?)\s+(?:added|created|registered|entered|'
     r'joined)\b|\b(?:last|latest|newest)\s+(?:guest|tenant|one|person)\b', re.I)
@@ -27,7 +56,7 @@ def read(ctx, text, *, tags=(), forward=True, place=False, building=False):
     original = text or ''
     text = parse.normalise(original)
     found = {'text': text, 'original': original, 'today': ctx.today,
-             'recent': bool(RECENT.search(text))}
+             'recent': bool(RECENT.search(text)), 'pronoun': bool(PRONOUN.search(text))}
     rest = text
     mobile = entities.extract(rest, name='marker').get('mobile', '')
     if mobile:
@@ -78,12 +107,15 @@ def stay_choice_label(stay):
 def take_stays(ctx, slots, found):
     """Fill ``tenancy`` (or the options for "which one?") from a message."""
     hits = lookup.find_stays(ctx, found['rest'], found.get('mobile', ''))
+    words = lookup.name_words(found['rest'])
+    if not hits and not words and found.get('pronoun'):
+        stay = remembered_stay(ctx)
+        hits = [stay] if stay else []
     slots.pop('tenancy_options', None)
     if len(hits) == 1:
         slots['tenancy'] = hits[0].pk
     elif hits:
         slots['tenancy_options'] = [s.pk for s in hits[:8]]
-    words = lookup.name_words(found['rest'])
     if words:
         slots['who'] = ' '.join(words)
     return bool(hits)
@@ -106,7 +138,9 @@ def ask_stay(ctx, slots, question):
         return 'tenancy', say(
             _('I could not find anyone staying called "%(name)s". Type the name again, or '
               'their mobile number.') % {'name': slots['who']}, buttons=[cancel_button()])
-    return 'tenancy', say(question, buttons=[cancel_button()])
+    last = remembered_stay(ctx)
+    suggestion = [choose(stay_choice_label(last), 'tenancy', last.pk)] if last else []
+    return 'tenancy', say(question, buttons=suggestion + [cancel_button()])
 
 
 def answer_stay(ctx, slots, text):
@@ -127,6 +161,9 @@ def pick_stay(ctx, slots, value):
 # ---------------------------------------------------------------- who: any guest
 def take_guests(ctx, slots, found):
     hits = lookup.find_guests(ctx, found['rest'], found.get('mobile', ''))
+    if not hits and found.get('pronoun') and not lookup.name_words(found['rest']):
+        guest = remembered_guest(ctx)
+        hits = [guest] if guest else []
     if found.get('recent'):
         # "the recently added guest (Akash)": the newest one wins.
         # With no name at all, the newest guest not yet staying anywhere.
@@ -174,7 +211,9 @@ def ask_guest(ctx, slots, question, *, offer_new=False):
         return 'guest', say(
             _('I could not find a guest called "%(name)s". Type the name again, or their '
               'mobile number.') % {'name': slots['who']}, buttons=buttons + [cancel_button()])
-    return 'guest', say(question, buttons=[cancel_button()])
+    last = remembered_guest(ctx)
+    suggestion = [choose(guest_choice_label(ctx, last), 'guest', last.pk)] if last else []
+    return 'guest', say(question, buttons=suggestion + [cancel_button()])
 
 
 def answer_guest(ctx, slots, text):

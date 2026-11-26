@@ -300,10 +300,10 @@ def generate_due_invoices_within(tenant, seconds=None, on_date=None, user=None, 
     for tenancy in tenancies:
         if deadline is not None and time.monotonic() > deadline:
             return created, False
-        if Invoice.objects.filter(tenancy=tenancy).exists():
-            raised = _catch_up(tenancy, on_date, user)
-        else:
-            raised = _current_period(tenancy, on_date, user)
+        # Start from check-in even when no invoice has been raised yet. This
+        # fills every billable period through the latest due period, so the
+        # invoice and overdue lists show the complete unpaid history.
+        raised = _catch_up(tenancy, on_date, user)
         if raised:
             created += raised
             apply_guest_credit(guest=tenancy.guest, user=user)
@@ -319,9 +319,9 @@ def _catch_up(tenancy, on_date, user):
 
     A day the job did not run (no server cron, a holiday) would otherwise lose
     that month for good: the run only ever looked at today's period. Each
-    missed period gets its invoice with its real due date. A stay with no
-    invoice at all is left to ``_current_period``, so a first invoice that was
-    deliberately not raised at check-in is not raised behind anyone's back.
+    missed period gets its invoice with its real due date. When there are no
+    invoices yet, start at check-in; ``period_terms`` applies the daily
+    pro-rata amount to the partial first period when the tenancy allows it.
     """
     raised = []
     for _n in range(CATCH_UP_LIMIT):

@@ -1,9 +1,11 @@
 """Record rent: "Ravi paid 800 cash", "received 1500 from Ahmed by card ref 4471"."""
+import re
 from decimal import Decimal
 
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
+from accounting.models import KIND_INCOME
 from billing import services as billing
 from billing.forms import PaymentForm
 from billing.models import Invoice, PaymentMode
@@ -12,8 +14,8 @@ from core.constants import MODULE_BILLING
 from .. import lookup
 from ..brain import parse
 from .add_guest import form_errors
-from .base import (NotDone, Skill, as_date, as_decimal, cancel_button, choose, confirm_buttons,
-                   day, link, say)
+from .base import (Handoff, NotDone, Skill, as_date, as_decimal, cancel_button, choose,
+                   confirm_buttons, day, link, say)
 from .common import answer_stay, ask_stay, pick_stay, read, stay_place, take_stays
 
 
@@ -44,7 +46,12 @@ class Payment(Skill):
     def start(self, ctx, text):
         slots = {}
         found = read(ctx, text, forward=False)
+        if re.search(r'\b(?:deposit|security)\b', found['text'], re.I):
+            raise Handoff('deposit')              # "akash paid deposit 500"
         take_stays(ctx, slots, found)
+        if not (slots.get('tenancy') or slots.get('tenancy_options') or slots.get('who')) and \
+                lookup.find_category(ctx, found['text'], kind=KIND_INCOME):
+            raise Handoff('income')               # "received 100 for laundry"
         self._take(ctx, slots, found)
         return slots
 

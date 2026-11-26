@@ -174,6 +174,16 @@ def find_period(text, today):
     def month_span(year, month):
         return date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1])
 
+    if re.search(r'\btomorrow\b', low):
+        day = today + timedelta(days=1)
+        return day, day, 'tomorrow'
+    if re.search(r'\bnext\s+week\b', low):
+        start = today + timedelta(days=7 - today.weekday())
+        return start, start + timedelta(days=6), 'next week'
+    if re.search(r'\bnext\s+month\b', low):
+        year, month = (today.year + 1, 1) if today.month == 12 else (today.year, today.month + 1)
+        start, end = month_span(year, month)
+        return start, end, 'next month'
     if re.search(r'\byesterday\b', low):
         day = today - timedelta(days=1)
         return day, day, 'yesterday'

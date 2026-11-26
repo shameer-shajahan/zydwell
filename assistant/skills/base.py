@@ -86,8 +86,12 @@ def send(label, text):
     return {'label': str(label), 'send': text}
 
 
-def link(label, href):
-    return {'label': str(label), 'href': href}
+def link(label, href, new_tab=False):
+    """A button that opens a page; ``new_tab`` for one that leaves the app (WhatsApp)."""
+    button = {'label': str(label), 'href': href}
+    if new_tab:
+        button['new_tab'] = True
+    return button
 
 
 def choose(label, key, value):

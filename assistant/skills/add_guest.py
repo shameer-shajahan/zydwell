@@ -125,6 +125,8 @@ class AddGuest(Skill):
         guest.save()
         audit.log(AuditLog.ACTION_CREATE, guest, actor=ctx.user, request=ctx.request,
                   summary=_('Guest %(name)s saved') % {'name': guest.full_name})
+        from .common import remember
+        remember(ctx, guest=guest)
         buttons = [link(_('Open guest'), reverse('guests:guest_detail', args=[guest.pk]))]
         if ctx.allowed(MODULE_GUESTS, 'create'):
             buttons.append(start(_('Check in now'), 'check_in', guest=guest.pk))

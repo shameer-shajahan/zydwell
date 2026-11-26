@@ -75,10 +75,54 @@ def _start_buttons(ctx):
     return buttons
 
 
+def _hello(ctx):
+    """Good morning / afternoon / evening, with the person's first name."""
+    from django.utils import timezone
+
+    hour = timezone.localtime().hour
+    part = (_('Good morning') if hour < 12 else _('Good afternoon') if hour < 17
+            else _('Good evening'))
+    name = (ctx.user.first_name or ctx.user.get_username() or '').strip()
+    return f'{part}, {name}!' if name else f'{part}!'
+
+
 def _greeting(ctx):
-    return say(_('Hi! Tell me what to do in your own words, for example "Ravi paid 800 cash", '
-                 '"put Ravi in room 101 bed A" or "who has not paid". Type "help" to see '
-                 'everything I can do.'), buttons=_start_buttons(ctx))
+    return say(_hello(ctx) + ' ' + _(
+        'Tell me what to do in your own words, for example "Ravi paid 800 cash", '
+        '"put Ravi in room 101 bed A" or "who has not paid". Type "help" to see '
+        'everything I can do.'), buttons=_start_buttons(ctx))
+
+
+#: Short chat people expect a person to answer kindly, not with "I did not understand".
+SMALL_TALK = [
+    (re.compile(r"\b(?:who\s+are\s+(?:you|u)|what\s+are\s+you|your\s+name|who\s+r\s+u|"
+                r"are\s+(?:you|u)\s+(?:a\s+)?(?:bot|robot|human|real))\b", re.I),
+     lambda ctx: _("I'm the ZyDwell assistant. I can add guests, check them in and out, take "
+                   "rent and deposits, record expenses, and tell you about beds, dues and "
+                   "money. Just tell me what you need, the way you would tell a colleague.")),
+    (re.compile(r"\b(?:how\s+(?:are|r)\s+(?:you|u)|how\s+is\s+it\s+going|how\s+are\s+things|"
+                r"what'?s\s+up|wassup|sup)\b", re.I),
+     lambda ctx: _("I'm doing well, thanks for asking! What shall we get done?")),
+    (re.compile(r"\b(?:good\s*night|bye|goodbye|see\s+(?:you|u)|gn|take\s+care)\b", re.I),
+     lambda ctx: _('Good night! I am here whenever you need me.')),
+    (re.compile(r"\b(?:good\s+(?:bot|job|work)|well\s+done|you\s+are\s+(?:good|great|smart|"
+                r"awesome|the\s+best)|great\s+work|nice\s+work)\b", re.I),
+     lambda ctx: _('Thank you, that is kind! Anything else?')),
+    (re.compile(r"\b(?:what\s+(?:else|next)|anything\s+else|what\s+now)\b", re.I),
+     lambda ctx: _('Here is what I can do:')),
+]
+
+
+def _small_talk(ctx, text):
+    if len(classifier.words(text)) > 7:
+        return None
+    for pattern, answer in SMALL_TALK:
+        if pattern.search(text):
+            message = answer(ctx)
+            if message == _('Here is what I can do:'):
+                return [say(message), _help(ctx)]
+            return [say(message, buttons=_start_buttons(ctx))]
+    return None
 
 
 def _help(ctx):
@@ -146,6 +190,9 @@ def reply(request, text):
 
 
 def _fresh(ctx, text):
+    chat = _small_talk(ctx, text)
+    if chat:
+        return chat
     intent, _confidence = _predict(ctx, text)
     skill = SKILLS.get(intent)
     if skill is not None:
@@ -155,7 +202,7 @@ def _fresh(ctx, text):
     if intent == 'greet':
         return [_greeting(ctx)]
     if intent == 'thanks':
-        return [say(_('You are welcome!'))]
+        return [say(_('You are welcome! Anything else?'), buttons=_start_buttons(ctx))]
     if intent in ('yes', 'no', 'cancel'):
         return [say(_('Nothing is in progress right now.'), buttons=_start_buttons(ctx))]
     if intent == 'other':
@@ -229,6 +276,21 @@ def _learn(ctx, name):
     return [say(_('Thanks, I will remember that.'))] + _begin(ctx, skill, text)
 
 
+def _remember(ctx, slots):
+    """Whoever this conversation settled on is "he" or "she" in the next one."""
+    from . import lookup
+    from .skills.common import remember
+
+    if slots.get('tenancy'):
+        stay = lookup.stay(ctx, slots['tenancy'])
+        if stay is not None:
+            remember(ctx, tenancy=stay)
+    elif slots.get('guest') and str(slots['guest']).isdigit():
+        guest = lookup.guest(ctx, slots['guest'])
+        if guest is not None:
+            remember(ctx, guest=guest)
+
+
 def _refuse(skill):
     return [say(_('You do not have permission for that. Ask your admin for access.'))]
 
@@ -272,6 +334,7 @@ def _advance(ctx, skill, state):
         state['awaiting'], message = question
         _keep(ctx.request, state)
         return [message]
+    _remember(ctx, state['slots'])
     if not skill.confirm:
         _clear(ctx.request)
         return skill.run(ctx, state['slots'])

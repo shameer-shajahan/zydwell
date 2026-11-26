@@ -338,6 +338,11 @@ _CATEGORY_WORDS = {
                      'security guard', 'helper'],
     'internet_licence': ['internet', 'wifi', 'wi-fi', 'du', 'etisalat', 'e&', 'licence', 'license',
                          'municipality', 'trade licence', 'fees', 'permit'],
+    # income
+    'utilities_share': ['laundry', 'washing machine', 'wifi share', 'internet share',
+                        'utilities share', 'electricity share', 'utility share'],
+    'key_replacement': ['key', 'keys', 'key card', 'card replacement', 'lost key', 'access card'],
+    'late_payment_fee': ['late fee', 'fine', 'penalty'],
 }
 
 
@@ -346,7 +351,9 @@ def find_category(ctx, text, kind=KIND_EXPENSE):
     or a near miss of one ("plumbr", "electrisity")."""
     typed = re.findall(r'[a-z&-]+', (text or '').lower())
     low = ' ' + ' '.join(typed) + ' '
-    cats = list(Category.objects.filter(tenant=ctx.tenant, kind=kind, is_active=True))
+    # Rent and deposits come in through payments, never by hand.
+    cats = list(Category.objects.filter(tenant=ctx.tenant, kind=kind, is_active=True,
+                                        is_system=False))
     best, best_len = None, 0
     single = {}
     for cat in cats:
@@ -371,9 +378,11 @@ def category(ctx, pk, kind=KIND_EXPENSE):
     return Category.objects.filter(tenant=ctx.tenant, kind=kind, is_active=True, pk=pk).first()
 
 
-def other_expense(ctx):
-    return Category.by_code(ctx.tenant, KIND_EXPENSE, 'other_expense') or Category.objects.filter(
-        tenant=ctx.tenant, kind=KIND_EXPENSE, is_active=True).first()
+def fallback_category(ctx, kind=KIND_EXPENSE):
+    """"Other expense" or "Other income", when nothing in the message names a category."""
+    code = 'other_expense' if kind == KIND_EXPENSE else 'other_income'
+    return Category.by_code(ctx.tenant, kind, code) or Category.objects.filter(
+        tenant=ctx.tenant, kind=kind, is_active=True, is_system=False).first()
 
 
 def mask_names(ctx, text):

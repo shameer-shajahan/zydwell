@@ -3,7 +3,9 @@
 Each answers at once, from the same data the matching screen shows the user
 — their buildings, their modules — and offers the obvious next step.
 """
+import re
 from collections import OrderedDict
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.db.models import Sum
@@ -14,6 +16,7 @@ from accounting.models import KIND_EXPENSE, LedgerEntry, totals
 from billing import services as billing
 from billing.models import Invoice, Payment
 from core.constants import MODULE_ACCOUNTING, MODULE_BILLING, MODULE_GUESTS, MODULE_PROPERTIES
+from guests.models import GuestDocument, Tenancy
 from properties.models import occupancy_for, occupancy_grouped
 
 from .. import lookup
@@ -349,8 +352,6 @@ class Money(Skill):
         return slots
 
     def run(self, ctx, slots):
-        from datetime import date
-
         start_day, end_day = date.fromisoformat(slots['start']), date.fromisoformat(slots['end'])
         building = lookup.building(ctx, slots['building']) if slots.get('building') else None
         period = _label(slots['label'], start_day, end_day)
@@ -402,7 +403,8 @@ class Money(Skill):
 
 
 def _label(label, start_day, end_day):
-    named = {'today': _('today'), 'yesterday': _('yesterday'), 'this week': _('this week'),
+    named = {'today': _('today'), 'yesterday': _('yesterday'), 'tomorrow': _('tomorrow'),
+             'next week': _('next week'), 'next month': _('next month'), 'this week': _('this week'),
              'last week': _('last week'), 'this month': _('this month'),
              'last month': _('last month'), 'this year': _('this year'),
              'last year': _('last year')}
@@ -411,3 +413,136 @@ def _label(label, start_day, end_day):
     if label:
         return _('in %(month)s') % {'month': label}
     return _('from %(start)s to %(end)s') % {'start': day(start_day), 'end': day(end_day)}
+
+
+class Documents(Skill):
+    """Passports, visas and IDs running out: "whose visa is expiring", "passport expiry list"."""
+
+    name = 'documents'
+    module = MODULE_GUESTS
+    confirm = False
+    title = _('Documents expiring')
+    example = _('whose visa is expiring this month')
+
+    def start(self, ctx, text):
+        _start, end, label = parse.find_period(text, ctx.today)
+        slots = {'until': (end or ctx.today + timedelta(days=30)).isoformat(),
+                 'label': label}
+        low = parse.normalise(text).lower()
+        for kind in ('passport', 'visa', 'emirates_id'):
+            if kind.replace('_', ' ') in low or (kind == 'emirates_id' and re.search(
+                    r'\b(?:eid|emirates\s+id|id\s+card)\b', low)):
+                slots['kind'] = kind
+        return slots
+
+    def run(self, ctx, slots):
+        until = date.fromisoformat(slots['until'])
+        docs = GuestDocument.objects.filter(
+            tenant=ctx.tenant, expiry_date__isnull=False, expiry_date__lte=until,
+        ).select_related('guest').order_by('expiry_date')
+        if slots.get('kind'):
+            docs = docs.filter(doc_type=slots['kind'])
+        if ctx.user.is_staff_member:
+            docs = docs.filter(guest_id__in=lookup.live_stays(ctx).values('guest_id'))
+        docs = list(docs[:LIST_LIMIT + 1])
+        if not docs:
+            return [say(_('No documents run out by %(date)s.') % {'date': day(until)})]
+        rows = []
+        for doc in docs[:LIST_LIMIT]:
+            left = (doc.expiry_date - ctx.today).days
+            when = (_('expired %(days)s days ago') % {'days': -left} if left < 0 else
+                    _('expires today') if left == 0 else
+                    _('%(date)s, in %(days)s days') % {'date': day(doc.expiry_date), 'days': left})
+            rows.append((f'{doc.guest.full_name} · {doc.get_doc_type_display()}', when))
+        text = _('Documents running out by %(date)s:') % {'date': day(until)}
+        if len(docs) > LIST_LIMIT:
+            text += ' ' + _('Showing the first %(n)s.') % {'n': LIST_LIMIT}
+        return [say(text, rows=rows, buttons=[
+            link(_('Open expiring documents'), reverse('guests:expiring_documents'))])]
+
+
+class Movements(Skill):
+    """Who is leaving or who joined: "who is leaving this week", "new check-ins this month"."""
+
+    module = MODULE_GUESTS
+    confirm = False
+
+    def __init__(self, name):
+        self.name = name
+        if name == 'leaving_list':
+            self.title = _('Who is leaving')
+            self.example = _('who is leaving this week')
+        else:
+            self.title = _('Who joined')
+            self.example = _('who checked in this month')
+
+    def start(self, ctx, text):
+        start_day, end_day, label = parse.find_period(text, ctx.today)
+        if start_day is None:
+            if self.name == 'leaving_list':        # the coming week
+                start_day, end_day, label = ctx.today, ctx.today + timedelta(days=7), ''
+            else:                                  # this month so far
+                start_day, end_day, label = ctx.today.replace(day=1), ctx.today, 'this month'
+        slots, _found = _place_slots(ctx, text)
+        slots.update({'start': start_day.isoformat(), 'end': end_day.isoformat(), 'label': label})
+        return slots
+
+    def run(self, ctx, slots):
+        start_day, end_day = date.fromisoformat(slots['start']), date.fromisoformat(slots['end'])
+        building = lookup.building(ctx, slots['building']) if slots.get('building') else None
+        if self.name == 'leaving_list':
+            stays = lookup.live_stays(ctx).filter(expected_check_out__range=(start_day, end_day))
+            order, field = 'expected_check_out', 'expected_check_out'
+        else:
+            stays = ctx.user.scope_queryset(Tenancy.objects.filter(
+                tenant=ctx.tenant, check_in_date__range=(start_day, end_day))).select_related(
+                'guest', 'building', 'floor', 'apartment', 'room', 'bed')
+            order, field = 'check_in_date', 'check_in_date'
+        if building is not None:
+            stays = stays.filter(building=building)
+        stays = list(stays.order_by(order)[:LIST_LIMIT + 1])
+        period = _label(slots['label'], start_day, end_day)
+        if not stays:
+            return [say(_not_found(slots) + (_('Nobody is leaving %(period)s.') if
+                                             self.name == 'leaving_list' else
+                                             _('Nobody checked in %(period)s.')) % {'period': period})]
+        rows = [(f'{s.guest.full_name} · {stay_place(s)}', day(getattr(s, field)))
+                for s in stays[:LIST_LIMIT]]
+        text = _not_found(slots) + (_('Leaving %(period)s:') if self.name == 'leaving_list'
+                                    else _('Checked in %(period)s:')) % {'period': period}
+        buttons = []
+        if self.name == 'leaving_list' and ctx.allowed(MODULE_GUESTS, 'edit'):
+            buttons = [start(_('Check out %(name)s') % {'name': s.guest.full_name}, 'check_out',
+                             tenancy=s.pk) for s in stays[:3] if s.expected_check_out <= ctx.today]
+        return [say(text, rows=rows, buttons=buttons)]
+
+
+class Approvals(Skill):
+    """Money a collector took in, waiting for the owner: "pending approvals"."""
+
+    name = 'approvals'
+    module = ''               # the owner's page: checked in run()
+    confirm = False
+    title = _('Approvals waiting')
+    example = _('payments waiting for approval')
+
+    def run(self, ctx, slots):
+        if not (ctx.user.is_admin or ctx.user.is_super_admin):
+            return [say(_('Only the owner approves payments and deposits.'))]
+        from guests.models import DepositTransaction
+
+        payments = Payment.objects.filter(tenant=ctx.tenant, approval=Payment.APPROVAL_PENDING)
+        deposits = DepositTransaction.objects.filter(tenant=ctx.tenant, approval='pending')
+        p_total = payments.aggregate(s=Sum('amount'))['s'] or Decimal('0')
+        d_total = deposits.aggregate(s=Sum('amount'))['s'] or Decimal('0')
+        if not payments.exists() and not deposits.exists():
+            return [say(_('Nothing is waiting for your approval.'))]
+        rows = [(_('Payments'), _('%(count)s · %(amount)s') % {
+                    'count': payments.count(), 'amount': ctx.money(p_total)}),
+                (_('Deposits'), _('%(count)s · %(amount)s') % {
+                    'count': deposits.count(), 'amount': ctx.money(d_total)})]
+        for payment in payments.select_related('tenancy__guest', 'collected_by')[:5]:
+            rows.append((f'{payment.receipt_number} · {payment.tenancy.guest.full_name}',
+                         f'{ctx.money(payment.amount)} · {payment.collected_by or ""}'))
+        return [say(_('Waiting for your approval:'), rows=rows,
+                    buttons=[link(_('Open approvals'), reverse('billing:approvals'))])]

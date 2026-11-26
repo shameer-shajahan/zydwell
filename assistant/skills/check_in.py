@@ -12,9 +12,10 @@ from guests.models import Tenancy
 from .. import lookup
 from ..brain import parse
 from .add_guest import form_errors
-from .base import (Handoff, NotDone, Skill, as_date, as_decimal, cancel_button, choose,
+from .base import (Handoff, NotDone, Skill, as_date, as_decimal, cancel_button,
                    confirm_buttons, day, link, say, start)
 from .common import answer_guest, ask_guest, pick_guest, read, stay_place, take_guests
+from .places import BedPicker
 
 
 TAGS = ('deposit_received', 'deposit', 'rent')
@@ -29,13 +30,7 @@ def to_collect_note(money, tenancy, invoice):
         'total': money(rent_due + deposit_due)}
 
 
-def _taken_by(bed):
-    stay = Tenancy.objects.filter(bed=bed, status__code__in=Tenancy.LIVE_STATUS_CODES).select_related(
-        'guest').first()
-    return stay.guest.full_name if stay else ''
-
-
-class CheckIn(Skill):
+class CheckIn(BedPicker, Skill):
     name = 'check_in'
     module = MODULE_GUESTS
     action = 'create'
@@ -47,10 +42,13 @@ class CheckIn(Skill):
         slots = {}
         found = read(ctx, text, tags=TAGS, forward=None, place='codes')
         take_guests(ctx, slots, found)
-        if (slots.get('guest') and found.get('date') and not found.get('codes')
-                and lookup.stay_of(ctx, lookup.guest(ctx, slots['guest']))):
+        staying = slots.get('guest') and lookup.stay_of(ctx, lookup.guest(ctx, slots['guest']))
+        if staying and found.get('date') and not found.get('codes'):
             # Already staying, a date and no bed: the check-in date is being corrected.
             raise Handoff('edit_check_in')
+        if staying and found.get('codes') and not found.get('recent'):
+            # Already staying and a bed named: "move him to 102 a1" is a transfer.
+            raise Handoff('transfer')
         self._take_place(ctx, slots, found)
         self._take_money(slots, found, plain_is_rent=True)
         if found.get('date'):
@@ -98,45 +96,6 @@ class CheckIn(Skill):
             changed = True
         return changed
 
-    def _take_place(self, ctx, slots, found):
-        """Which bed (or room let whole) the codes typed point to, checked
-        against what this user can see."""
-        building = found.get('building')
-        if building is not None:
-            slots['building'] = building.pk
-        codes = found.get('codes') or []
-        if not codes:
-            found['unused'] = []
-            return False
-        if building is None and slots.get('building'):
-            building = lookup.building(ctx, slots['building'])
-        places, unused = lookup.match_places(ctx, codes, building)
-        found['unused'] = unused
-        place_codes = [c for c in unused if not c.isdigit() or any(
-            kind for code, kind in codes if code == c)]
-        for key in ('bed', 'room', 'place_options', 'place_note'):
-            slots.pop(key, None)
-        if not places:
-            slots['place_note'] = _('I could not find %(what)s.') % {
-                'what': ' / '.join(code.upper() for code, _kind in codes)}
-            return True
-        if place_codes:
-            slots['place_note'] = _('I could not find %(what)s, so I looked for the rest.') % {
-                'what': ' / '.join(code.upper() for code in place_codes)}
-        if len(places) == 1:
-            self._set_place(slots, *places[0])
-        else:
-            slots['place_options'] = [f'{kind[0]}{obj.pk}' for kind, obj in places[:40]]
-        return True
-
-    def _set_place(self, slots, kind, obj):
-        if kind == 'bed':
-            slots['bed'], slots['room'] = obj.pk, obj.room_id
-        else:
-            slots.pop('bed', None)
-            slots['room'] = obj.pk
-        slots.pop('place_options', None)
-
     # ------------------------------------------------------------ asking
     def ask(self, ctx, slots):
         question = ask_guest(ctx, slots, _('Who is checking in? Type the guest\'s name.'),
@@ -144,62 +103,6 @@ class CheckIn(Skill):
         if question:
             return question
         return self._ask_place(ctx, slots) or self._ask_rent(ctx, slots)
-
-    def _free_bed_buttons(self, ctx, slots, room=None):
-        building = lookup.building(ctx, slots['building']) if slots.get('building') else None
-        beds = list(lookup.free_beds(ctx, building=building, room=room)[:6])
-        return [choose(lookup.bed_label(b) if room is None else _('Bed %(bed)s') % {'bed': b.label},
-                       'place', f'b{b.pk}') for b in beds]
-
-    def _ask_place(self, ctx, slots):
-        if slots.get('place_options'):
-            options = []
-            for token in slots['place_options']:
-                kind = 'bed' if token[0] == 'b' else 'room'
-                obj = lookup.bed(ctx, int(token[1:])) if kind == 'bed' else lookup.room(
-                    ctx, int(token[1:]))
-                if obj is not None and not (kind == 'bed' and (obj.is_occupied or _taken_by(obj))):
-                    options.append((kind, obj))
-            note = slots.get('place_note', '')
-            if len(options) == 1:
-                self._set_place(slots, *options[0])
-            elif options:
-                return 'place', say(' '.join(filter(None, [note, _(
-                    'More than one free bed fits. Which one?')])),
-                    buttons=[choose(lookup.place_label(k, o), 'place', f'{k[0]}{o.pk}')
-                             for k, o in options[:8]] + [cancel_button()])
-            else:
-                slots.pop('place_options', None)
-                slots['place_note'] = ' '.join(filter(None, [note, _(
-                    'Every bed that fits is taken.')]))
-        room = lookup.room(ctx, slots['room']) if slots.get('room') else None
-        bed = lookup.bed(ctx, slots['bed']) if slots.get('bed') else None
-        if bed is not None and (bed.is_occupied or _taken_by(bed)):
-            who = _taken_by(bed)
-            slots.pop('bed')
-            where = lookup.bed_label(bed)
-            note = (_('%(where)s is taken by %(name)s.') if who else
-                    _('%(where)s is not free.')) % {'where': where, 'name': who}
-            buttons = self._free_bed_buttons(ctx, slots, room=bed.room)
-            text = ' '.join(filter(None, [slots.pop('place_note', ''), note, (
-                _('Pick a free bed in the same room:') if buttons else
-                _('Type another bed, like "101 A A2".'))]))
-            return 'place', say(text, buttons=buttons + [cancel_button()])
-        if bed is not None or (room is not None and room.lets_whole_unit):
-            return None          # any note ("could not find 999") shows in the summary
-        note = slots.pop('place_note', '')
-        if room is not None:
-            buttons = self._free_bed_buttons(ctx, slots, room=room)
-            text = _('Which bed in room %(room)s?') % {'room': room.number}
-            if not buttons:
-                text = _('Room %(room)s has no free bed. Type another room and bed.') % {
-                    'room': room.number}
-            return 'place', say(' '.join(filter(None, [note, text])),
-                                buttons=buttons + [cancel_button()])
-        buttons = self._free_bed_buttons(ctx, slots)
-        text = _('Which bed? Type it like "apartment 101 room A bed A2"') + (
-            _(', or pick a free one:') if buttons else '.')
-        return 'place', say(' '.join(filter(None, [note, text])), buttons=buttons + [cancel_button()])
 
     def _ask_rent(self, ctx, slots):
         if as_decimal(slots.get('rent')):
@@ -243,15 +146,7 @@ class CheckIn(Skill):
         if key == 'guest':
             pick_guest(ctx, slots, value)
         elif key in ('place', 'bed', 'room'):
-            value = str(value)
-            if key != 'place':
-                value = key[0] + value
-            if len(value) > 1 and value[1:].isdigit():
-                obj = (lookup.bed(ctx, int(value[1:])) if value[0] == 'b'
-                       else lookup.room(ctx, int(value[1:])))
-                if obj is not None:
-                    self._set_place(slots, 'bed' if value[0] == 'b' else 'room', obj)
-                    slots.pop('place_note', None)
+            self.pick_place(ctx, slots, key, value)
 
     def change(self, ctx, slots, text):
         found = read(ctx, text, tags=TAGS, forward=None, place='codes')
@@ -334,6 +229,8 @@ class CheckIn(Skill):
             first_invoice_amount=first_amount,
         )
         invoice = services.raise_first_invoice(tenancy=tenancy, user=ctx.user)
+        from .common import remember
+        remember(ctx, tenancy=tenancy)
         text = _('Done! %(name)s is checked in to %(where)s.') % {
             'name': tenancy.guest.full_name, 'where': stay_place(tenancy)}
         text += ' ' + _('Invoice %(no)s raised for %(amount)s.') % {

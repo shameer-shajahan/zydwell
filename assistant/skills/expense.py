@@ -1,11 +1,12 @@
-"""Record an expense: "electricity bill 450 for Sunrise Tower", "paid plumber 150"."""
+"""Record an expense or other income: "electricity bill 450 for Sunrise Tower",
+"paid plumber 150", "received 100 for laundry"."""
 import re
 
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
 from accounting.forms import LedgerEntryForm
-from accounting.models import KIND_EXPENSE, Category
+from accounting.models import KIND_EXPENSE, KIND_INCOME, Category
 from core import audit
 from core.constants import MODULE_ACCOUNTING
 from core.models import AuditLog
@@ -27,6 +28,7 @@ class Expense(Skill):
     action = 'create'
     title = _('Add an expense')
     example = _('electricity bill 450 for Sunrise Tower')
+    kind = KIND_EXPENSE
 
     def start(self, ctx, text):
         slots = {'note': (text or '').strip()[:200]}
@@ -44,7 +46,7 @@ class Expense(Skill):
             changed = True
         text = found['text']
         named = _CATEGORY.search(text)
-        category = lookup.find_category(ctx, named.group(1) if named else text)
+        category = lookup.find_category(ctx, named.group(1) if named else text, kind=self.kind)
         if category is not None:
             slots['category'] = category.pk
             changed = True
@@ -78,7 +80,7 @@ class Expense(Skill):
                                    buttons=[choose(b.name, 'building', b.pk) for b in buildings]
                                    + [cancel_button()])
         if not slots.get('category'):
-            other = lookup.other_expense(ctx)
+            other = lookup.fallback_category(ctx, self.kind)
             if other is not None:
                 slots['category'] = other.pk
         return None
@@ -100,7 +102,7 @@ class Expense(Skill):
         return self._take(ctx, slots, read(ctx, text, forward=False, place=True))
 
     def summary(self, ctx, slots):
-        category = lookup.category(ctx, slots['category'])
+        category = lookup.category(ctx, slots['category'], kind=self.kind)
         place = lookup.building(ctx, slots['building']).name
         if slots.get('room'):
             room = lookup.room(ctx, slots['room'])
@@ -111,16 +113,19 @@ class Expense(Skill):
                 (_('Date'), day(as_date(slots.get('date')) or ctx.today)),
                 (_('Note'), slots.get('note', ''))]
         if slots.get('payee'):
-            rows.append((_('Paid to'), slots['payee']))
-        others = Category.objects.filter(tenant=ctx.tenant, kind=KIND_EXPENSE, is_active=True)
+            rows.append(((_('Paid to') if self.kind == KIND_EXPENSE else _('From')), slots['payee']))
+        others = Category.objects.filter(tenant=ctx.tenant, kind=self.kind, is_active=True,
+                                         is_system=False)
         example = (others.exclude(pk=slots['category']).first() or category).name.lower()
-        return say(_('Please check the expense. To change the category, type it, for example '
-                     '"category %(example)s".') % {'example': re.split(r'\W+', example)[0]},
-            rows=rows, buttons=confirm_buttons(_('Yes, save expense')))
+        what = _('expense') if self.kind == KIND_EXPENSE else _('income')
+        return say(_('Please check the %(what)s. To change the category, type it, for example '
+                     '"category %(example)s".') % {'what': what,
+                                                   'example': re.split(r'\W+', example)[0]},
+            rows=rows, buttons=confirm_buttons(_('Yes, save')))
 
     def run(self, ctx, slots):
         form = LedgerEntryForm(data={
-            'kind': KIND_EXPENSE, 'category': slots['category'], 'amount': slots['amount'],
+            'kind': self.kind, 'category': slots['category'], 'amount': slots['amount'],
             'entry_date': (as_date(slots.get('date')) or ctx.today).isoformat(),
             'description': slots.get('note', ''), 'building': slots['building'], 'floor': '',
             'apartment': '', 'room': slots.get('room') or '', 'payee': slots.get('payee', ''),
@@ -140,3 +145,12 @@ class Expense(Skill):
         return [say(_('Saved: %(amount)s for %(cat)s.') % {
             'amount': ctx.money(entry.amount), 'cat': entry.category.name},
             buttons=[link(_('Open income & expense'), reverse('accounting:ledger'))])]
+
+
+class Income(Expense):
+    """Money in that is not rent or a deposit: laundry, a key card, a fine."""
+
+    name = 'income'
+    title = _('Add other income')
+    example = _('received 100 for laundry')
+    kind = KIND_INCOME

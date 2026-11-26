@@ -913,6 +913,10 @@
           if (button.href && button.href.charAt(0) === '/' && button.href.charAt(1) !== '/') {
             el = document.createElement('a');
             el.href = button.href;
+            if (button.new_tab) {       // WhatsApp: keep the chat where it is
+              el.target = '_blank';
+              el.rel = 'noopener';
+            }
           } else if (button.send) {
             el = document.createElement('button');
             el.type = 'button';
