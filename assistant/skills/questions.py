@@ -3,6 +3,7 @@
 Each answers at once, from the same data the matching screen shows the user
 — their buildings, their modules — and offers the obvious next step.
 """
+import calendar
 import re
 from collections import OrderedDict
 from datetime import date, timedelta
@@ -142,13 +143,22 @@ class GuestInfo(Skill):
                          else _('Not staying in your buildings')))
         can_bill = ctx.allowed(MODULE_BILLING)
         owed = guest.outstanding_balance() if can_bill else None
+        unbilled = billing.unbilled_rent(stay, ctx.today) if (can_bill and stay) else []
         text = guest.full_name
         if can_bill:
+            not_invoiced = sum((row['rent'] for row in unbilled), Decimal('0'))
+            owed += not_invoiced
             text = (_('%(name)s owes %(amount)s.') if owed > 0 else
                     _('%(name)s owes nothing.')) % {'name': guest.full_name,
                                                    'amount': ctx.money(owed)}
+            if not_invoiced:
+                text += ' ' + _('%(amount)s of it is rent not invoiced yet.') % {
+                    'amount': ctx.money(not_invoiced)}
             rows.append((_('Owes'), ctx.money(owed)))
             rows += self._unpaid_rows(ctx, guest)
+            rows += [(f"{day(row['period_start'])} – {day(row['period_end'])} · "
+                      + _('not invoiced'), f"{ctx.money(row['rent'])} · {self._when(ctx, row['due_date'])}")
+                     for row in unbilled[:4]]
             credit = guest.advance_credit()
             if credit > 0:
                 rows.append((_('Advance credit'), ctx.money(credit)))
@@ -176,13 +186,15 @@ class GuestInfo(Skill):
             'due_date', 'pk')
         rows = []
         for invoice in invoices[:4]:
-            late = (ctx.today - invoice.due_date).days
-            when = (_('%(days)s days late') % {'days': late} if late > 0 else
-                    _('due today') if late == 0 else
-                    _('due %(date)s') % {'date': day(invoice.due_date)})
             rows.append((f'{invoice.number} · {invoice.period_label()}',
-                         f'{ctx.money(invoice.balance)} · {when}'))
+                         f'{ctx.money(invoice.balance)} · {self._when(ctx, invoice.due_date)}'))
         return rows
+
+    @staticmethod
+    def _when(ctx, due):
+        late = (ctx.today - due).days
+        return (_('%(days)s days late') % {'days': late} if late > 0 else
+                _('due today') if late == 0 else _('due %(date)s') % {'date': day(due)})
 
     def _next_rent(self, ctx, stay):
         """The next rent not billed yet, and when it falls due."""
@@ -296,6 +308,20 @@ class Overdue(Skill):
                                           'late': 0})
             row['amount'] += invoice.balance
             row['late'] = max(row['late'], invoice.days_overdue or 0)
+        # Rent due that nobody has invoiced yet counts the same.
+        stays = lookup.live_stays(ctx)
+        if building is not None:
+            stays = stays.filter(building=building)
+        for item in billing.unbilled_for(stays, ctx.today):
+            if slots.get('this_month'):
+                if not (ctx.today.replace(day=1) <= item['period_start'] <= ctx.today):
+                    continue
+            elif item['due_date'] >= ctx.today:
+                continue
+            row = people.setdefault(item['tenancy'].pk, {
+                'tenancy': item['tenancy'], 'amount': Decimal('0'), 'late': 0})
+            row['amount'] += item['rent']
+            row['late'] = max(row['late'], (ctx.today - item['due_date']).days)
         if not people:
             return [say(_not_found(slots) + _('%(heading)s: nobody owes anything.') % {
                 'heading': heading})]
@@ -478,6 +504,16 @@ class Movements(Skill):
 
     def start(self, ctx, text):
         start_day, end_day, label = parse.find_period(text, ctx.today)
+        if self.name == 'leaving_list' and label in ('this week', 'this month', 'this year'):
+            # Leaving "this week" is from today to its end, not the days gone by.
+            start_day = ctx.today
+            if label == 'this week':
+                end_day = ctx.today + timedelta(days=6 - ctx.today.weekday())
+            elif label == 'this month':
+                end_day = ctx.today.replace(
+                    day=calendar.monthrange(ctx.today.year, ctx.today.month)[1])
+            else:
+                end_day = ctx.today.replace(month=12, day=31)
         if start_day is None:
             if self.name == 'leaving_list':        # the coming week
                 start_day, end_day, label = ctx.today, ctx.today + timedelta(days=7), ''

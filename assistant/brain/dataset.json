@@ -1358,7 +1358,18 @@
       "deposit amount received",
       "advance deposit",
       "deposit money",
-      "add deposit"
+      "add deposit",
+      "security received",
+      "security amount received",
+      "security money paid",
+      "security received from",
+      "deposit received from",
+      "security amount from",
+      "security from",
+      "security money from",
+      "received security from",
+      "got security from",
+      "security deposit from"
     ],
     "edit_guest": [
       "change mobile",
@@ -1400,7 +1411,24 @@
       "edit guest",
       "update guest phone",
       "edit tenant details",
-      "update tenant mobile"
+      "update tenant mobile",
+      "nationality pakistani",
+      "nationality indian",
+      "nationality filipino",
+      "his nationality",
+      "her nationality",
+      "set nationality",
+      "change name to",
+      "name change to",
+      "rename to",
+      "change his name to",
+      "his name is wrong",
+      "mobile is wrong",
+      "new mobile",
+      "update his mobile to",
+      "email address is",
+      "he works at",
+      "she works in"
     ],
     "income": [
       "income",
@@ -1527,7 +1555,12 @@
       "new arrivals",
       "who came this week",
       "how many joined this month",
-      "new joinees"
+      "new joinees",
+      "new check ins today",
+      "check ins today",
+      "who checked in today",
+      "today check ins",
+      "today joinings"
     ],
     "approvals": [
       "approvals",

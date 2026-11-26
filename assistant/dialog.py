@@ -356,6 +356,15 @@ def _continue(ctx, skill, state, text):
         return [say(_('Okay, cancelled. Nothing was saved.'), buttons=_start_buttons(ctx))]
     if intent == 'help':
         return [_help(ctx)] + _advance(ctx, skill, state)
+    # "hi", "thanks", "who are you" in the middle: answer like a person, then
+    # ask the open question again — they are not names or amounts.
+    chat = _small_talk(ctx, text)
+    if chat is None and intent in ('greet', 'thanks') and confidence >= 0.9:
+        chat = [say(_hello(ctx) if intent == 'greet' else _('You are welcome!'))]
+    if chat:
+        # The reply without its "start something" buttons: we are mid-way.
+        replies = [{k: v for k, v in message.items() if k != 'buttons'} for message in chat]
+        return replies + [say(_('Back to what we were doing:'))] + _advance(ctx, skill, state)
     other = SKILLS.get(intent)
     switch = (other is not None and other.name != skill.name
               and confidence >= SWITCH_CONFIDENCE)
