@@ -317,51 +317,99 @@ def generate_due_invoices_within(tenant, seconds=None, on_date=None, user=None, 
 CATCH_UP_LIMIT = 36
 
 
-def unbilled_rent(tenancy, on_date=None):
-    """Rent a stay owes by ``on_date`` that has no invoice yet, period by period.
+#: How many billing periods one look at a stay walks through at most.
+PERIOD_SCAN_LIMIT = 600
 
-    From the day after its last invoice — or its check-in date when it has
-    none — up to the period due by ``on_date``: billed as each period opens
-    (in advance) or once it has ended (post-paid). Each period is charged as
-    its invoice would be (``period_terms``): a part period by the day. No
-    period past the leaving date. A team let never invoiced starts with the
-    current period instead. Nothing is saved, so a page can show it.
+
+def _uncovered(start, end, spans):
+    """The pieces of ``start``..``end`` that no ``(start, end)`` span covers."""
+    one = timezone.timedelta(days=1)
+    pieces, cursor = [], start
+    for span_start, span_end in sorted(spans):
+        if span_end < cursor or span_start > end:
+            continue
+        if span_start > cursor:
+            pieces.append((cursor, min(span_start - one, end)))
+        cursor = max(cursor, span_end + one)
+        if cursor > end:
+            break
+    if cursor <= end:
+        pieces.append((cursor, end))
+    return pieces
+
+
+def unbilled_rent(tenancy, on_date=None, spans=None, fill_gaps=False):
+    """Rent a stay owes by ``on_date`` that no invoice covers, piece by piece.
+
+    From its check-in date up to the period due by ``on_date`` (billed as a
+    period opens when paid in advance, once it has ended when post-paid),
+    every day no invoice covers is owed. A whole period is charged as its
+    invoice would be (``period_terms``); a piece of one — the days before a
+    first invoice, or after an invoice that was cut short — by the day. No
+    day past the leaving date. Nothing is saved, so a page can show it.
+
+    ``spans`` replaces the stay's invoices with ``(start, end)`` pairs (to see
+    what a change would do). Gaps *between* invoices are left alone unless
+    ``fill_gaps``: someone may have deleted an invoice on purpose. A team let
+    starts with its first invoice, or the current period when it has none —
+    teams are imported with joining dates long past and that rent settled
+    outside.
 
     Returns ``[{'period_start', 'period_end', 'due_date', 'rent', 'terms'}, ...]``.
     """
+    one = timezone.timedelta(days=1)
     on_date = on_date or timezone.localdate()
-    spans = list(Invoice.objects.filter(tenancy=tenancy).values_list('period_start', 'period_end'))
+    if spans is None:
+        spans = list(Invoice.objects.filter(tenancy=tenancy).values_list(
+            'period_start', 'period_end'))
+    spans = sorted(spans)
+    first_start = spans[0][0] if spans else None
     last_end = max((end for _start, end in spans), default=None)
-    if last_end:
-        anchor = last_end + timezone.timedelta(days=1)
-    elif tenancy.is_team_let:
-        # A team is often imported with a joining date long past and its old
-        # rent settled outside: it starts with the period running now.
-        anchor = tenancy.billing_period_for(on_date)[0]
+    if tenancy.is_team_let:
+        begin = first_start or tenancy.billing_period_for(on_date)[0]
     else:
-        anchor = tenancy.check_in_date
-    first = not spans
-    owed = []
-    for _n in range(CATCH_UP_LIMIT):
+        begin = tenancy.check_in_date
+    leaving = min(filter(None, [tenancy.actual_check_out, tenancy.expected_check_out]),
+                  default=None)
+    owed, first, anchor = [], not spans, begin
+    for _n in range(PERIOD_SCAN_LIMIT):
+        if len(owed) >= CATCH_UP_LIMIT:
+            break
         period_start, period_end = tenancy.period_for(anchor)
-        anchor = period_end + timezone.timedelta(days=1)
-        # A hand-made invoice can cover part of a period: treat that period as billed.
-        if any(start <= period_end and end >= period_start for start, end in spans):
+        anchor = period_end + one
+        if leaving and period_start > leaving:
+            break
+        if not fill_gaps and spans and first_start <= period_start and period_end <= last_end:
+            anchor = max(anchor, last_end + one)       # wholly inside the invoiced run
             continue
-        if any(leaving and period_start > leaving
-               for leaving in (tenancy.actual_check_out, tenancy.expected_check_out)):
+        low = max(period_start, tenancy.check_in_date, begin)
+        high = min(period_end, leaving) if leaving else period_end
+        if high < low:
+            continue
+        pieces = _uncovered(low, high, spans)
+        if not fill_gaps and spans:
+            # Only before the first invoice or after the last one.
+            pieces = [(a, min(b, first_start - one)) for a, b in pieces if a < first_start] + \
+                     [(max(a, last_end + one), b) for a, b in pieces if b > last_end]
+        stop = False
+        for piece_start, piece_end in pieces:
+            due_now = (piece_start <= on_date if tenancy.bills_in_advance
+                       else piece_end < on_date)
+            if not due_now:
+                stop = True
+                break
+            terms = period_terms(tenancy, period_start, period_end, first_invoice=first)
+            if (piece_start, piece_end) != (terms['period_start'], terms['period_end']):
+                # Part of a period: those days only, by the day.
+                terms = dict(terms, period_start=piece_start, period_end=piece_end,
+                             due_date=tenancy.due_date_for(piece_start, piece_end),
+                             rent_amount=None, prorata=True)
+            owed.append({'period_start': piece_start, 'period_end': piece_end,
+                         'due_date': terms['due_date'], 'rent': rent_for_terms(tenancy, terms),
+                         'terms': terms})
+            first = False
+        if stop:
             break
-        terms = period_terms(tenancy, period_start, period_end, first_invoice=first)
-        if terms['period_end'] < terms['period_start']:
-            break
-        due_now = (terms['period_start'] <= on_date if tenancy.bills_in_advance
-                   else terms['period_end'] < on_date)
-        if not due_now:
-            break
-        owed.append({'period_start': terms['period_start'], 'period_end': terms['period_end'],
-                     'due_date': terms['due_date'], 'rent': rent_for_terms(tenancy, terms),
-                     'terms': terms})
-        first = False
     return owed
 
 

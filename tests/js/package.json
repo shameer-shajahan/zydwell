@@ -3,7 +3,7 @@
   "private": true,
   "description": "Browser-level tests for static/js/app.js. Optional \u2014 the app itself needs no node toolchain.",
   "scripts": {
-    "test": "node picker.test.js && node permissions.test.js && node location.test.js && node loader.test.js && node chat.test.js && node billday.test.js"
+    "test": "node picker.test.js && node permissions.test.js && node location.test.js && node loader.test.js && node chat.test.js && node billday.test.js && node paypicker.test.js"
   },
   "devDependencies": {
     "jsdom": "^25.0.0"

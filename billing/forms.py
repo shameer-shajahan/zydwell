@@ -102,6 +102,9 @@ class PaymentForm(forms.ModelForm):
         tenancies = tenancies.filter(status__code__in=Tenancy.LIVE_STATUS_CODES)
         self.fields['tenancy'].queryset = tenancies
         self.fields['tenancy'].widget.attrs['data-invoice-tenancy'] = '1'
+        if not self.is_bound:
+            # A fresh form ticks all of the guest's unpaid invoices (app.js).
+            self.fields['invoices'].widget.attrs['data-fill-in'] = '1'
         invoices = Invoice.objects.filter(tenant=tenant).exclude(
             status__counts_as_settled=True
         ).select_related('tenancy__guest')

@@ -12,7 +12,10 @@
     <a class="btn" href="{% url 'messaging:send_manual' %}?guest={{ tenancy.guest_id }}">{% trans "WhatsApp" %}</a>
     {% if can_bill %}<a class="btn accent" href="{% url 'billing:payment_create' %}?tenancy={{ tenancy.pk }}&amp;collect=all&amp;{% return_here %}">{% trans "Collect all rent" %}</a>
       {% if tenancy.is_live %}<a class="btn" href="{% url 'billing:collect_advance' tenancy.pk %}?{% return_here %}">{% trans "Collect in advance" %}</a>{% endif %}
-      <a class="btn" href="{% url 'billing:invoice_create' %}?tenancy={{ tenancy.pk }}&amp;{% return_here %}">{% trans "Raise invoice" %}</a>{% endif %}
+      <a class="btn" href="{% url 'billing:invoice_create' %}?tenancy={{ tenancy.pk }}&amp;{% return_here %}">{% trans "Raise invoice" %}</a>
+      {% if can_rebuild and tenancy.is_live %}<form method="post" action="{% url 'guests:rebuild_invoices' tenancy.pk %}" style="display:inline"
+            data-confirm="{% trans 'Raise the unpaid rent invoices again from the check-in date? Paid invoices stay as they are.' %}">{% csrf_token %}
+        <button class="btn" type="submit">{% trans "Rebuild invoices" %}</button></form>{% endif %}{% endif %}
     {% if can_edit and tenancy.is_live %}
       <a class="btn" href="{% url 'guests:transfer' tenancy.pk %}">{% trans "Transfer bed" %}</a>
       <a class="btn" href="{% url 'guests:give_notice' tenancy.pk %}">{% trans "Record notice" %}</a>

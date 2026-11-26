@@ -20,6 +20,7 @@ urlpatterns = [
     path('tenancies/check-in/', views.check_in, name='check_in'),
     path('tenancies/<int:pk>/', views.tenancy_detail, name='tenancy_detail'),
     path('tenancies/<int:pk>/edit/', views.tenancy_edit, name='tenancy_edit'),
+    path('tenancies/<int:pk>/rebuild-invoices/', views.rebuild_invoices, name='rebuild_invoices'),
     path('tenancies/<int:pk>/check-out/', views.check_out, name='check_out'),
     path('tenancies/<int:pk>/transfer/', views.transfer, name='transfer'),
     path('tenancies/<int:pk>/notice/', views.give_notice, name='give_notice'),

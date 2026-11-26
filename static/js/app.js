@@ -176,19 +176,10 @@
     }
   });
 
-  /* A receipt may cover several invoices, but only within one tenancy. */
-  document.addEventListener('change', function (event) {
-    var tenancy = event.target.closest('[data-invoice-tenancy]');
-    var invoices = document.querySelector('[data-invoice-picker]');
-    if (tenancy && invoices) {
-      Array.prototype.forEach.call(invoices.options, function (option) {
-        var allowed = !option.value || option.getAttribute('data-tenancy') === tenancy.value;
-        option.hidden = !allowed;
-        if (!allowed) { option.selected = false; }
-      });
-    }
-    var picker = event.target.closest('[data-invoice-picker]');
-    if (!picker) { return; }
+  /* A receipt may cover several invoices, but only within one tenancy.
+     Picking the guest lists their unpaid invoices only, all ticked, with the
+     amount filled in — untick a month or lower the amount to take part. */
+  function invoiceTotal(picker) {
     var amount = document.querySelector('#id_amount');
     if (!amount) { return; }
     var total = 0;
@@ -196,7 +187,39 @@
       total += parseFloat(option.getAttribute('data-balance')) || 0;
     });
     amount.value = total.toFixed(2);
+  }
+
+  function invoicesFor(tenancy, invoices, fillIn) {
+    var mine = [];
+    Array.prototype.forEach.call(invoices.options, function (option) {
+      var allowed = !option.value || option.getAttribute('data-tenancy') === tenancy.value;
+      option.hidden = !allowed;
+      if (!allowed) { option.selected = false; }
+      if (allowed && option.value) { mine.push(option); }
+    });
+    var chosen = mine.filter(function (option) { return option.selected; });
+    if (fillIn && tenancy.value && mine.length && !chosen.length) {
+      mine.forEach(function (option) { option.selected = true; });
+      invoiceTotal(invoices);
+    }
+  }
+
+  document.addEventListener('change', function (event) {
+    var tenancy = event.target.closest('[data-invoice-tenancy]');
+    var invoices = document.querySelector('[data-invoice-picker]');
+    if (tenancy && invoices) { invoicesFor(tenancy, invoices, true); }
+    var picker = event.target.closest('[data-invoice-picker]');
+    if (picker) { invoiceTotal(picker); }
   });
+
+  function invoicePickerOnLoad() {
+    var tenancy = document.querySelector('[data-invoice-tenancy]');
+    var invoices = document.querySelector('[data-invoice-picker]');
+    // A form sent back with an error keeps what was ticked (none = advance credit).
+    if (tenancy && invoices && tenancy.value) {
+      invoicesFor(tenancy, invoices, invoices.hasAttribute('data-fill-in'));
+    }
+  }
 
   /* Team lets can cover a flat or one room within the selected flat. */
   function updateTeamRoomPicker() {
@@ -1084,6 +1107,7 @@
 
   function boot() {
     labelTables();
+    invoicePickerOnLoad();
     enhanceAll();
     filterRows();
     chat();

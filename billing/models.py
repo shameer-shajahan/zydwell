@@ -183,8 +183,9 @@ class Invoice(TenantScopedModel):
 
     def save(self, *args, **kwargs):
         if not self.number and self.tenant_id:
+            # Numbered by the month it bills, not the day it was raised.
             self.number = Sequence.next_value(
-                self.tenant, 'invoice', settings.ZYDWELL['INVOICE_PREFIX']
+                self.tenant, 'invoice', settings.ZYDWELL['INVOICE_PREFIX'], on=self.period_start
             )
         super().save(*args, **kwargs)
 

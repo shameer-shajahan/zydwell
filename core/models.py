@@ -190,8 +190,13 @@ class Sequence(models.Model):
         return f'{self.tenant} / {self.key} = {self.last_value}'
 
     @classmethod
-    def next_value(cls, tenant, key, prefix=''):
-        """Atomically reserve the next number. Numbers are never reused."""
+    def next_value(cls, tenant, key, prefix='', on=None):
+        """Atomically reserve the next number. Numbers are never reused.
+
+        The number shows a year and month — today's, or ``on``'s (an invoice
+        for August raised in November reads INV202608-…). The counter itself
+        runs on across months, so every number is still unique.
+        """
         from django.db import transaction
 
         with transaction.atomic():
@@ -202,7 +207,7 @@ class Sequence(models.Model):
             if prefix and not seq.prefix:
                 seq.prefix = prefix
             seq.save(update_fields=['last_value', 'prefix'])
-            return f'{seq.prefix}{timezone.localdate():%Y%m}-{seq.last_value:05d}'
+            return f'{seq.prefix}{(on or timezone.localdate()):%Y%m}-{seq.last_value:05d}'
 
 
 class Branding(TimeStampedModel):

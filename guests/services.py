@@ -128,77 +128,46 @@ def bill_day_for(check_in_date):
     return min(check_in_date.day, 28)
 
 
-def _periods(tenancy, billing_day, on_date):
-    """The billing period around ``on_date`` if the stay were billed on ``billing_day``."""
-    kept = tenancy.billing_day
-    tenancy.billing_day = billing_day
-    try:
-        period = tenancy.period_for(on_date)
-        length = tenancy.period_length(period[0])
-    finally:
-        tenancy.billing_day = kept
-    return period, length
+def _is_plain(invoice):
+    """An invoice that is only rent and has no money on it: safe to raise again."""
+    return (not invoice.payments.exists() and not invoice.payment_allocations.exists()
+            and not invoice.lines.exists() and not invoice.discount_amount
+            and not invoice.late_fee and not (invoice.status and invoice.status.counts_as_settled))
 
 
-def plan_first_invoice(tenancy, old_date, new_date):
-    """What moving the check-in date does to the first invoice, without doing it.
+def plan_check_in_change(tenancy, old_date, new_date, on_date=None):
+    """What moving the check-in date does to the stay's invoices, without doing it.
 
-    A stay billed on its check-in day keeps that rule: moved from the 25th to
-    the 18th, it is billed on the 18th, and its first invoice runs from the
-    18th for a full period. The invoice is only changed while that is safe:
-    nothing is paid on it, and (when the bill day moves) no later invoice was
-    raised on the old day. Otherwise ``rent`` is ``None`` and ``reason`` says
-    why. Returns a dict: ``invoice, start, end, rent, billing_day, reason``.
+    Every plain rent invoice (nothing paid on it, no extras, discount, late fee
+    or cancellation) is raised again from the new check-in date, so each month
+    from check-in up to today has its invoice. An invoice with money on it or
+    changed by hand stays exactly as it is, and only the days around it are
+    billed. The bill day follows the new check-in day when it followed the old
+    one and no invoice is kept (a kept invoice fixes the cycle).
+
+    Returns ``{'drop', 'keep', 'raise', 'billing_day'}``: invoices to remove,
+    invoices kept, and the ``billing.unbilled_rent`` rows to invoice.
     """
-    from billing.models import Invoice, Payment, PaymentAllocation
+    import copy
 
-    follows = (tenancy.billing_cycle == Tenancy.CYCLE_MONTHLY
+    from billing.services import unbilled_rent
+
+    invoices = list(tenancy.invoices.select_related('status').order_by('period_start'))
+    keep = [invoice for invoice in invoices if not _is_plain(invoice)]
+    drop = [invoice for invoice in invoices if _is_plain(invoice)]
+    follows = (tenancy.billing_cycle == Tenancy.CYCLE_MONTHLY and not keep
                and tenancy.billing_day == bill_day_for(old_date))
-    billing_day = bill_day_for(new_date) if follows else tenancy.billing_day
-    plan = {'invoice': None, 'start': None, 'end': None, 'rent': None,
-            'billing_day': tenancy.billing_day, 'reason': ''}
-    invoices = Invoice.objects.filter(tenancy=tenancy).exclude(status__code='cancelled')
-    invoice = (invoices.filter(period_start=old_date).order_by('pk').first()
-               or invoices.filter(period_start__lte=old_date, period_end__gte=old_date)
-               .order_by('pk').first())
-    if invoice is None:
-        # Nothing billed yet: the bill day can simply follow the date.
-        plan['billing_day'] = billing_day
-        return plan
-    plan['invoice'] = invoice
-    paid = (invoice.paid_amount > 0
-            or Payment.objects.filter(invoice=invoice, is_reversed=False).exists()
-            or PaymentAllocation.objects.filter(invoice=invoice).exists())
-    if paid:
-        plan['reason'] = _(
-            'Invoice %(no)s already has money paid on it, so it was not changed. Correct it on '
-            'the invoice page if the rent should change.') % {'no': invoice.number}
-        return plan
-    if billing_day != tenancy.billing_day and invoices.filter(
-            period_start__gt=invoice.period_start).exists():
-        plan['reason'] = _(
-            'Later invoices were raised on day %(day)s, so invoice %(no)s and the bill day were '
-            'not changed. Check the invoices on the stay page.') % {
-            'day': tenancy.billing_day, 'no': invoice.number}
-        return plan
-    (period_start, period_end), length = _periods(tenancy, billing_day, new_date)
-    if billing_day == tenancy.billing_day and (period_start, period_end) != tenancy.period_for(
-            old_date):
-        plan['reason'] = _(
-            'The new date is in another billing period, so invoice %(no)s was not changed. '
-            'Check the invoices on the stay page.') % {'no': invoice.number}
-        return plan
-    start = max(period_start, new_date)
-    prorata = start > period_start and tenancy.prorate_first_period
-    if tenancy.first_invoice_amount is not None:
-        rent = tenancy.first_invoice_amount
-    elif prorata:
-        rent = tenancy.prorata((period_end - start).days + 1, period_days=length)
-    else:
-        rent = tenancy.monthly_rent
-    plan.update(start=start, end=period_end, billing_day=billing_day, prorata=prorata,
-                rent=Decimal(rent).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
-    return plan
+    future = copy.copy(tenancy)
+    future.check_in_date = new_date
+    future.billing_day = bill_day_for(new_date) if follows else tenancy.billing_day
+    raised = unbilled_rent(future, on_date, spans=[(i.period_start, i.period_end) for i in keep],
+                           fill_gaps=True)
+    same = ([(i.period_start, i.period_end, i.rent_amount) for i in drop]
+            == [(r['period_start'], r['period_end'], r['rent']) for r in raised])
+    if same and future.billing_day == tenancy.billing_day:
+        # Already right: replacing the invoices would only change their numbers.
+        drop, raised = [], []
+    return {'drop': drop, 'keep': keep, 'raise': raised, 'billing_day': future.billing_day}
 
 
 @transaction.atomic
@@ -224,23 +193,29 @@ def change_check_in_date(*, tenancy, user, new_date, rebill=True):
                   'guest': tenancy.guest.full_name, 'old': old_date.strftime('%d %b %Y'),
                   'new': new_date.strftime('%d %b %Y')},
               changes=audit.diff(before, audit.snapshot(tenancy, ['check_in_date'])))
-    return rebill_first_invoice(tenancy=tenancy, user=user, old_date=old_date,
-                                rebill=rebill)
+    return rebill_after_check_in_change(tenancy=tenancy, user=user, old_date=old_date,
+                                        rebill=rebill)
 
 
-def rebill_first_invoice(*, tenancy, user, old_date, rebill=True):
-    """After the check-in date moved: move the first invoice (and the bill day) with it.
+@transaction.atomic
+def rebill_after_check_in_change(*, tenancy, user, old_date, rebill=True):
+    """After the check-in date moved: make the invoices match it.
 
-    Returns a note for the user, or ``''`` when there was nothing to say.
+    Applies ``plan_check_in_change`` — plain rent invoices raised again from
+    the new date up to today, the rest kept. ``rebill`` false (no billing
+    rights) leaves every invoice alone. Returns a note for the user.
     """
-    plan = plan_first_invoice(tenancy, old_date, tenancy.check_in_date)
-    invoice = plan['invoice']
+    from billing.services import apply_guest_credit, build_invoice, delete_invoice
+
+    plan = plan_check_in_change(tenancy, old_date, tenancy.check_in_date)
+    if not plan['drop'] and not plan['raise'] and plan['billing_day'] == tenancy.billing_day:
+        return ''
     if not rebill:
-        if invoice is None and plan['billing_day'] == tenancy.billing_day:
-            return ''
-        return _('Invoices and the bill day were not changed: that needs billing rights.')
+        return _('The invoices were not changed: that needs billing rights.')
+    for invoice in plan['drop']:
+        delete_invoice(invoice=invoice, user=user)
     notes = []
-    if plan['billing_day'] != tenancy.billing_day and (invoice is None or plan['rent'] is not None):
+    if plan['billing_day'] != tenancy.billing_day:
         before = audit.snapshot(tenancy, ['billing_day'])
         tenancy.billing_day = plan['billing_day']
         tenancy.save(update_fields=['billing_day', 'updated_at'])
@@ -250,27 +225,16 @@ def rebill_first_invoice(*, tenancy, user, old_date, rebill=True):
                   changes=audit.diff(before, audit.snapshot(tenancy, ['billing_day'])))
         notes.append(_('Rent is now billed on day %(day)s of each month.') % {
             'day': tenancy.billing_day})
-    if invoice is None:
-        return ' '.join(notes)
-    if plan['rent'] is None:
-        return plan['reason']
-    tracked = ['period_start', 'period_end', 'rent_amount', 'total', 'due_date']
-    before = audit.snapshot(invoice, tracked)
-    invoice.period_start = plan['start']
-    invoice.period_end = plan['end']
-    invoice.rent_amount = plan['rent']
-    invoice.is_prorata = plan['prorata']
-    invoice.due_date = tenancy.due_date_for(plan['start'], plan['end'])
-    invoice.save(update_fields=['period_start', 'period_end', 'rent_amount', 'is_prorata',
-                                'due_date', 'updated_at'])
-    invoice.recalculate()
-    audit.log(audit.AuditLog.ACTION_UPDATE, invoice, tenant=tenancy.tenant,
-              summary=_('Invoice %(no)s moved with the check-in date of %(guest)s') % {
-                  'no': invoice.number, 'guest': tenancy.guest.full_name},
-              changes=audit.diff(before, audit.snapshot(invoice, tracked)))
-    notes.insert(0, _('Invoice %(no)s now runs from %(start)s to %(end)s: %(amount)s.') % {
-        'no': invoice.number, 'start': plan['start'].strftime('%d %b %Y'),
-        'end': plan['end'].strftime('%d %b %Y'), 'amount': invoice.total})
+    created = [build_invoice(tenancy, user=user, **row['terms']) for row in plan['raise']]
+    if created:
+        apply_guest_credit(guest=tenancy.guest, user=user)
+        notes.insert(0, _('%(n)d invoice(s) from %(start)s to %(end)s: %(total)s.') % {
+            'n': len(created), 'start': created[0].period_start.strftime('%d %b %Y'),
+            'end': created[-1].period_end.strftime('%d %b %Y'),
+            'total': sum((invoice.total for invoice in created), Decimal('0'))})
+    if plan['keep']:
+        notes.append(_('Kept as they were (money paid or changed by hand): %(numbers)s.') % {
+            'numbers': ', '.join(invoice.number for invoice in plan['keep'])})
     return ' '.join(notes)
 
 

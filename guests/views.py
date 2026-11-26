@@ -131,8 +131,9 @@ def guest_detail(request, pk):
         'documents': guest.documents.all(),
         'doc_form': doc_form,
         'invoices': paginate(request, Invoice.objects.filter(
-            tenancy__guest=guest).select_related('status'), 12, param='invoice_page'),
-        'payments': Payment.objects.filter(tenancy__guest=guest).select_related('collected_by')[:12],
+            tenancy__guest=guest).select_related('status'), 30, param='invoice_page'),
+        'payments': paginate(request, Payment.objects.filter(
+            tenancy__guest=guest).select_related('collected_by'), 30, param='payment_page'),
         'outstanding': guest.outstanding_balance(),
         'credit': guest.advance_credit(),
         'can_edit': request.user.can(MODULE_GUESTS, 'edit'),
@@ -231,19 +232,20 @@ def tenancy_detail(request, pk):
     return render(request, 'guests/tenancy_detail.html', {
         'tenancy': tenancy,
         'invoices': paginate(request, Invoice.objects.filter(
-            tenancy=tenancy).select_related('status'), 12, param='invoice_page'),
+            tenancy=tenancy).select_related('status'), 30, param='invoice_page'),
         'payments': paginate(request, Payment.objects.filter(
-            tenancy=tenancy).select_related('collected_by'), 12, param='payment_page'),
-        'deposits': paginate(request, tenancy.deposit_transactions.all(), 12,
+            tenancy=tenancy).select_related('collected_by'), 30, param='payment_page'),
+        'deposits': paginate(request, tenancy.deposit_transactions.all(), 30,
                              param='deposit_page'),
         'transfers': paginate(request, tenancy.transfers.select_related(
-            'from_bed', 'to_bed'), 12, param='transfer_page'),
+            'from_bed', 'to_bed'), 30, param='transfer_page'),
         'deposit_held': tenancy.deposit_held(),
         'deposit_shortfall': tenancy.deposit_shortfall(),
         'outstanding': tenancy.outstanding(),
         'deposit_form': DepositForm(tenant=request.tenant),
         'can_edit': request.user.can(MODULE_GUESTS, 'edit'),
         'can_bill': request.user.can(MODULE_BILLING, 'create'),
+        'can_rebuild': request.user.can(MODULE_BILLING, 'edit'),
         'is_admin': request.user.is_admin or request.user.is_super_admin,
     })
 
@@ -401,6 +403,22 @@ def give_notice(request, pk):
     return render(request, 'guests/notice.html', {'form': form, 'tenancy': tenancy})
 
 
+@require_module(MODULE_BILLING, 'edit')
+def rebuild_invoices(request, pk):
+    """Raise the stay's unpaid rent invoices again from its check-in date.
+
+    For a stay whose invoices no longer match its dates (a check-in date
+    changed before invoices followed it): each month from check-in up to today
+    gets its invoice; invoices with money on them or changed by hand stay.
+    """
+    tenancy = get_object_or_404(_scoped_tenancies(request), pk=pk)
+    if request.method == 'POST':
+        note = services.rebill_after_check_in_change(
+            tenancy=tenancy, user=request.user, old_date=tenancy.check_in_date)
+        messages.success(request, note or _('The invoices already match the check-in date.'))
+    return redirect('guests:tenancy_detail', pk=tenancy.pk)
+
+
 @require_module(MODULE_GUESTS, 'edit')
 def tenancy_edit(request, pk):
     tenancy = get_object_or_404(_scoped_tenancies(request), pk=pk)
@@ -425,7 +443,7 @@ def tenancy_edit(request, pk):
                   changes=changes)
         messages.success(request, _('Tenancy updated.'))
         if obj.check_in_date != old_check_in:
-            note = services.rebill_first_invoice(
+            note = services.rebill_after_check_in_change(
                 tenancy=obj, user=request.user, old_date=old_check_in,
                 rebill=request.user.can(MODULE_BILLING, 'edit'))
             if note:
