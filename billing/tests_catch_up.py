@@ -40,12 +40,24 @@ class CatchUpTests(ZyDwellTestCase):
         self.assertLess(invoices[1].due_date, self.today)
         self.assertEqual(services.generate_due_invoices(self.tenant, on_date=self.today), [])
 
-    def test_a_stay_never_invoiced_only_gets_the_current_period(self):
+    def test_a_stay_never_invoiced_is_billed_from_check_in(self):
         tenancy = self.stay(days_ago=75, first_invoice=False)
+        unbilled = services.unbilled_rent(tenancy, self.today)
+        self.assertEqual(unbilled[0]['period_start'], tenancy.check_in_date)
         services.generate_due_invoices(self.tenant, on_date=self.today)
-        invoices = Invoice.objects.filter(tenancy=tenancy)
-        self.assertEqual(invoices.count(), 1)
-        self.assertLessEqual(invoices.get().period_start, self.today)
+        invoices = list(Invoice.objects.filter(tenancy=tenancy).order_by('period_start'))
+        self.assertEqual(invoices[0].period_start, tenancy.check_in_date)
+        # What the page showed as not invoiced is exactly what was raised.
+        self.assertEqual([(i.period_start, i.total) for i in invoices],
+                         [(row['period_start'], row['rent']) for row in unbilled])
+        self.assertEqual(services.unbilled_rent(tenancy, self.today), [])
+
+    def test_a_part_period_is_charged_by_the_day(self):
+        tenancy = self.stay(days_ago=0, first_invoice=False)       # bill day 1, mid-month
+        row = services.unbilled_rent(tenancy, self.today)[0]
+        days = (row['period_end'] - row['period_start']).days + 1
+        self.assertEqual(row['rent'], tenancy.prorata(days, period_days=tenancy.period_length(
+            tenancy.period_for(self.today)[0])))
 
 
 class RunBillingButtonTests(ZyDwellTestCase):
@@ -117,3 +129,35 @@ class LeavingDatePassedTests(ZyDwellTestCase):
                     self.assertGreaterEqual(invoice.period_end, invoice.period_start)
                     self.assertGreaterEqual(invoice.total, 0)
                     self.assertLessEqual(invoice.period_start, tenancy.expected_check_out)
+
+
+class NotInvoicedYetTests(ZyDwellTestCase):
+    """Rent due but never invoiced shows on the overdue page and in the totals."""
+
+    def setUp(self):
+        super().setUp()
+        self.today = timezone.localdate()
+        self.tenancy = stays.check_in(
+            tenant=self.tenant, user=self.owner, guest=self.guest, room=self.room,
+            bed=self.beds[0], check_in_date=self.today - timedelta(days=65),
+            monthly_rent=Decimal('800'), billing_day=1)
+        self.client.force_login(self.owner)
+
+    def test_the_page_shows_every_pending_month_and_counts_it(self):
+        owed = services.unbilled_rent(self.tenancy, self.today)
+        self.assertGreaterEqual(len(owed), 3)
+        response = self.client.get(reverse('billing:overdue'))
+        self.assertContains(response, 'Dues by guest')
+        self.assertContains(response, 'not invoiced')
+        total = sum((row['rent'] for row in owed), Decimal('0'))
+        self.assertEqual(response.context['total_due'], total)
+        self.assertEqual(response.context['not_invoiced_total'], total)
+        self.assertFalse(Invoice.objects.exists())            # nothing was saved
+
+    def test_raise_invoices_for_one_guest(self):
+        owed = services.unbilled_rent(self.tenancy, self.today)
+        self.client.post(reverse('billing:raise_for_stay', args=[self.tenancy.pk]))
+        self.assertEqual(Invoice.objects.filter(tenancy=self.tenancy).count(), len(owed))
+        response = self.client.get(reverse('billing:overdue'))
+        self.assertEqual(response.context['not_invoiced_total'], 0)
+        self.assertEqual(response.context['total_due'], sum((r['rent'] for r in owed), Decimal('0')))

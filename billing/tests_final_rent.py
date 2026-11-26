@@ -73,7 +73,8 @@ class FinalRentTests(ZyDwellTestCase):
         self.assertEqual(payment.approval, Payment.APPROVAL_NOT_REQUIRED)
         self.tenancy.refresh_from_db()
         self.assertEqual(self.tenancy.status.code, 'vacated')
-        self.assertEqual(self.tenancy.outstanding(), Decimal('0'))
+        # October was billed too (from check-in) and nobody paid it.
+        self.assertEqual(self.tenancy.outstanding(), Decimal('900.00'))
 
     def test_an_agreed_amount_replaces_the_full_month(self):
         self.check_in()

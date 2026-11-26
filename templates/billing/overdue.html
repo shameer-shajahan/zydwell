@@ -13,7 +13,8 @@
 </form>
 
 <div class="grid k4" style="margin-bottom:16px">
-  <div class="kpi red"><div class="label">{% trans "Total pending" %}</div><div class="value">{{ currency }} {{ total_due|floatformat:2 }}</div></div>
+  <div class="kpi red"><div class="label">{% trans "Total pending" %}</div><div class="value">{{ currency }} {{ total_due|floatformat:2 }}</div>
+    {% if not_invoiced_total %}<div class="hint">{% blocktrans with amount=not_invoiced_total|floatformat:2 %}incl. {{ currency }} {{ amount }} not invoiced yet{% endblocktrans %}</div>{% endif %}</div>
   <div class="kpi amber"><div class="label">0–30 {% trans "days" %}</div><div class="value">{{ currency }} {{ recent_due|floatformat:0 }}</div></div>
   <div class="kpi navy"><div class="label">{% trans "Cheques due" %}</div><div class="value">{{ cheques.paginator.count }}</div></div>
   <div class="kpi slate"><div class="label">{% trans "Deposit shortfalls" %}</div><div class="value">{{ shortfalls.paginator.count }}</div></div>
@@ -26,6 +27,32 @@
         <div class="value">{{ currency }} {{ value|floatformat:2 }}</div></div>
     {% endfor %}
   </div></div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <header><h2>{% trans "Dues by guest" %}</h2>
+    <div class="sub muted">{% trans "Every pending month from check-in up to today. Months not invoiced yet are worked out from the rent, part months by the day." %}</div></header>
+  <div class="body tight"><div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>{% trans "Guest" %}</th><th>{% trans "Pending months" %}</th>
+      <th class="num">{% trans "Days late" %}</th><th class="num">{% trans "Total due" %}</th><th></th></tr></thead>
+    <tbody>{% for row in dues %}
+      <tr><td><a href="{% url 'guests:guest_detail' row.tenancy.guest_id %}">{{ row.tenancy.guest.full_name }}</a>
+          <div class="muted" style="font-size:11px">{{ row.tenancy.location_label }}</div></td>
+        <td style="font-size:12.5px">{% for m in row.months %}
+          <div class="nowrap">{{ m.start|date:"d M" }} – {{ m.end|date:"d M Y" }} · {{ currency }} {{ m.amount|floatformat:2 }}
+            {% if m.invoice %}<a class="muted mono" href="{% url 'billing:invoice_detail' m.invoice.pk %}">{{ m.invoice.number }}</a>{% else %}<span class="badge soft-amber">{% trans "not invoiced" %}</span>{% endif %}</div>
+        {% endfor %}</td>
+        <td class="num">{% if row.days_late %}{{ row.days_late }}{% else %}<span class="badge soft-slate">{% trans "Pending" %}</span>{% endif %}</td>
+        <td class="num"><strong>{{ currency }} {{ row.total|floatformat:2 }}</strong></td>
+        <td class="right nowrap">{% if can_collect %}
+          {% if row.not_invoiced %}<form method="post" action="{% url 'billing:raise_for_stay' row.tenancy.pk %}" style="display:inline">{% csrf_token %}
+            <button class="btn sm" type="submit">{% trans "Raise invoices" %}</button></form>{% endif %}
+          {% if row.total > row.not_invoiced %}<a class="btn sm accent" href="{% url 'billing:payment_create' %}?tenancy={{ row.tenancy.pk }}&amp;collect=all&amp;{% return_here %}">{% trans "Collect" %}</a>{% endif %}
+        {% endif %}</td></tr>
+    {% empty %}<tr><td colspan="5">{% include "partials/_empty.html" with message=_("Nothing pending. Everyone is paid up.") %}</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+  {% include "partials/_pager.html" with page=dues %}
 </div>
 
 <div class="card">

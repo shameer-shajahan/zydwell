@@ -27,6 +27,7 @@ urlpatterns = [
          name='receipt_whatsapp'),
     path('payments/<int:pk>/receipt/escpos/', views.receipt_escpos, name='receipt_escpos'),
     path('overdue/', views.overdue, name='overdue'),
+    path('overdue/raise/<int:tenancy_pk>/', views.raise_for_stay, name='raise_for_stay'),
     path('collection/', views.daily_collection, name='daily_collection'),
     path('handovers/<int:pk>/confirm/', views.handover_confirm, name='handover_confirm'),
     path('printers/', views.printer_list, name='printer_list'),

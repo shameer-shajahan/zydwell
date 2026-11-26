@@ -64,7 +64,7 @@ def build_invoice(tenancy, *, period_start, period_end, due_date=None, user=None
     return invoice
 
 
-def period_terms(tenancy, period_start, period_end):
+def period_terms(tenancy, period_start, period_end, first_invoice=None):
     """How one billing period is charged: the dates, due date and rent rules.
 
     Shared by the nightly run and advance collection so a period collected
@@ -84,9 +84,12 @@ def period_terms(tenancy, period_start, period_end):
     # The month they leave in is always charged for the days stayed.
     prorata = leaving or (arriving and tenancy.prorate_first_period)
 
+    # ``first_invoice`` lets a caller that already knows (``unbilled_rent``)
+    # spare the question to the database.
+    if first_invoice is None:
+        first_invoice = not Invoice.objects.filter(tenancy=tenancy).exists()
     rent_amount = None
-    if tenancy.first_invoice_amount is not None and \
-            not Invoice.objects.filter(tenancy=tenancy).exists():
+    if tenancy.first_invoice_amount is not None and first_invoice:
         rent_amount = tenancy.first_invoice_amount
 
     return {
@@ -314,48 +317,65 @@ def generate_due_invoices_within(tenant, seconds=None, on_date=None, user=None, 
 CATCH_UP_LIMIT = 36
 
 
-def _catch_up(tenancy, on_date, user):
-    """Every period after the stay's last invoice that should have been billed by now.
+def unbilled_rent(tenancy, on_date=None):
+    """Rent a stay owes by ``on_date`` that has no invoice yet, period by period.
 
-    A day the job did not run (no server cron, a holiday) would otherwise lose
-    that month for good: the run only ever looked at today's period. Each
-    missed period gets its invoice with its real due date. When there are no
-    invoices yet, start at check-in; ``period_terms`` applies the daily
-    pro-rata amount to the partial first period when the tenancy allows it.
+    From the day after its last invoice — or its check-in date when it has
+    none — up to the period due by ``on_date``: billed as each period opens
+    (in advance) or once it has ended (post-paid). Each period is charged as
+    its invoice would be (``period_terms``): a part period by the day. No
+    period past the leaving date. A team let never invoiced starts with the
+    current period instead. Nothing is saved, so a page can show it.
+
+    Returns ``[{'period_start', 'period_end', 'due_date', 'rent', 'terms'}, ...]``.
     """
-    raised = []
+    on_date = on_date or timezone.localdate()
+    spans = list(Invoice.objects.filter(tenancy=tenancy).values_list('period_start', 'period_end'))
+    last_end = max((end for _start, end in spans), default=None)
+    if last_end:
+        anchor = last_end + timezone.timedelta(days=1)
+    elif tenancy.is_team_let:
+        # A team is often imported with a joining date long past and its old
+        # rent settled outside: it starts with the period running now.
+        anchor = tenancy.billing_period_for(on_date)[0]
+    else:
+        anchor = tenancy.check_in_date
+    first = not spans
+    owed = []
     for _n in range(CATCH_UP_LIMIT):
-        terms = next_unbilled_period(tenancy)
-        # None once the stay has (or will have) ended before the next period.
-        if terms is None or terms['period_end'] < terms['period_start']:
+        period_start, period_end = tenancy.period_for(anchor)
+        anchor = period_end + timezone.timedelta(days=1)
+        # A hand-made invoice can cover part of a period: treat that period as billed.
+        if any(start <= period_end and end >= period_start for start, end in spans):
+            continue
+        if any(leaving and period_start > leaving
+               for leaving in (tenancy.actual_check_out, tenancy.expected_check_out)):
             break
-        # Billed as the period opens (in advance) or once it has ended (post-paid).
+        terms = period_terms(tenancy, period_start, period_end, first_invoice=first)
+        if terms['period_end'] < terms['period_start']:
+            break
         due_now = (terms['period_start'] <= on_date if tenancy.bills_in_advance
                    else terms['period_end'] < on_date)
         if not due_now:
             break
-        raised.append(build_invoice(tenancy, user=user, **terms))
-    return raised
+        owed.append({'period_start': terms['period_start'], 'period_end': terms['period_end'],
+                     'due_date': terms['due_date'], 'rent': rent_for_terms(tenancy, terms),
+                     'terms': terms})
+        first = False
+    return owed
 
 
-def _current_period(tenancy, on_date, user):
-    """Today's period only — for a stay that has never been invoiced."""
-    period_start, period_end = tenancy.billing_period_for(on_date)
-    if period_end < tenancy.check_in_date:
-        return []
-    for leaving in (tenancy.actual_check_out, tenancy.expected_check_out):
-        # Gone (or due to be gone) before this period: nothing to bill — a
-        # leaving date in the past would otherwise make a negative invoice.
-        if leaving and period_start > leaving:
-            return []
-    # Match on any overlap. Checking the period's own start date misses an
-    # invoice stored under a mid-month check-in date, and bills them again
-    # on every run.
-    if Invoice.objects.filter(
-        tenancy=tenancy, period_start__lte=period_end, period_end__gte=period_start
-    ).exists():
-        return []
-    return [build_invoice(tenancy, user=user, **period_terms(tenancy, period_start, period_end))]
+def _catch_up(tenancy, on_date, user):
+    """Invoice every period ``unbilled_rent`` finds — the missed months too.
+
+    A day the job did not run (no server cron, a holiday) would otherwise lose
+    that month for good: the run used to look only at today's period. Each
+    missed period gets its invoice with its real due date, from check-in when
+    nothing was billed yet, so what the overdue page shows as "not invoiced
+    yet" is exactly what this raises.
+    """
+    return [build_invoice(tenancy, user=user, **row['terms'])
+            for row in unbilled_rent(tenancy, on_date)]
 
 
 @transaction.atomic
@@ -687,6 +707,58 @@ def aging_buckets(tenant, tenancy=None, invoices=None):
     })
     return {label: sums[f'band_{index}'] or Decimal('0')
             for index, label in enumerate(bands)}
+
+
+def aging_band(due_date, today=None):
+    """The aging bucket an amount falls in: 'current', '0-30', '31-60' or '60+'."""
+    today = today or timezone.localdate()
+    late = (today - due_date).days
+    if late <= 0:
+        return 'current'
+    return '0-30' if late <= 30 else '31-60' if late <= 60 else '60+'
+
+
+def unbilled_for(tenancies, on_date=None):
+    """``unbilled_rent`` for many stays: ``[{..., 'tenancy'}, ...]``, oldest first."""
+    on_date = on_date or timezone.localdate()
+    rows = []
+    for tenancy in tenancies:
+        rows += [dict(row, tenancy=tenancy) for row in unbilled_rent(tenancy, on_date)]
+    return sorted(rows, key=lambda row: (row['due_date'], row['tenancy'].pk))
+
+
+def dues_by_guest(invoices, unbilled, today=None):
+    """Every pending month per stay, invoiced or not yet, with the total and lateness.
+
+    ``invoices`` are unpaid invoices, ``unbilled`` rows from ``unbilled_for``.
+    Returns one dict per stay — ``tenancy, months, total, not_invoiced, oldest,
+    days_late`` — the latest first, then the largest.
+    """
+    today = today or timezone.localdate()
+    stays = {}
+
+    def entry(tenancy):
+        return stays.setdefault(tenancy.pk, {
+            'tenancy': tenancy, 'months': [], 'total': Decimal('0'),
+            'not_invoiced': Decimal('0'), 'oldest': None})
+
+    for invoice in invoices:
+        row = entry(invoice.tenancy)
+        row['months'].append({'start': invoice.period_start, 'end': invoice.period_end,
+                              'amount': invoice.balance, 'due': invoice.due_date,
+                              'invoice': invoice})
+        row['total'] += invoice.balance
+    for item in unbilled:
+        row = entry(item['tenancy'])
+        row['months'].append({'start': item['period_start'], 'end': item['period_end'],
+                              'amount': item['rent'], 'due': item['due_date'], 'invoice': None})
+        row['total'] += item['rent']
+        row['not_invoiced'] += item['rent']
+    for row in stays.values():
+        row['months'].sort(key=lambda month: month['start'])
+        row['oldest'] = min(month['due'] for month in row['months'])
+        row['days_late'] = max((today - row['oldest']).days, 0)
+    return sorted(stays.values(), key=lambda row: (-row['days_late'], -row['total']))
 
 
 def outstanding_ledger_check(tenant):

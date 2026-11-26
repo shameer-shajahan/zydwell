@@ -68,7 +68,9 @@ class InvoiceTests(ZyDwellTestCase):
     def test_generate_due_invoices_is_idempotent(self):
         first_run = services.generate_due_invoices(self.tenant, on_date=date(2026, 4, 3))
         second_run = services.generate_due_invoices(self.tenant, on_date=date(2026, 4, 3))
-        self.assertEqual(len(first_run), 1)
+        # Checked in on 1 January and never billed: January to April.
+        self.assertEqual([i.period_start for i in first_run],
+                         [date(2026, 1, 1), date(2026, 2, 1), date(2026, 3, 1), date(2026, 4, 1)])
         self.assertEqual(second_run, [])
 
     def test_aging_buckets_group_by_how_late_the_invoice_is(self):

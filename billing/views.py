@@ -454,6 +454,16 @@ def overdue(request):
     items = services.owing(invoices)
     buckets = services.aging_buckets(request.tenant, invoices=invoices)
 
+    # Rent due by today that nobody has invoiced yet (no nightly job ran, or a
+    # stay was never billed): worked out, not saved, and counted with the rest.
+    live = location.apply(request.user.scope_queryset(Tenancy.objects.filter(
+        tenant=request.tenant, status__code__in=Tenancy.LIVE_STATUS_CODES)))
+    unbilled = services.unbilled_for(
+        live.select_related('guest', 'building', 'floor', 'apartment', 'room', 'bed'), today)
+    for row in unbilled:
+        buckets[services.aging_band(row['due_date'], today)] += row['rent']
+    dues = services.dues_by_guest(items, unbilled, today)
+
     # A guest is flagged once two or more of their invoices were settled late, or
     # are late right now.
     paid_late = Payment.objects.filter(
@@ -471,8 +481,6 @@ def overdue(request):
         mode__needs_due_date=True, is_reversed=False, cheque_due_date__gte=today,
     ).order_by('cheque_due_date', 'pk')
 
-    live = location.apply(request.user.scope_queryset(Tenancy.objects.filter(
-        tenant=request.tenant, status__code__in=Tenancy.LIVE_STATUS_CODES)))
     shortfalls = with_deposit_held(live.select_related(
         'guest', 'building', 'floor', 'apartment', 'room', 'bed',
     )).annotate(shortfall=F('deposit_amount') - F('deposit_held_total')).filter(
@@ -485,6 +493,9 @@ def overdue(request):
         'aging_rows': [(label, buckets[label]) for label in
                        ('current', '0-30', '31-60', '60+')],
         'recent_due': buckets['0-30'],
+        'dues': paginate(request, dues, 25, param='guest_page'),
+        'not_invoiced_total': sum((row['rent'] for row in unbilled), Decimal('0')),
+        'can_collect': request.user.can(MODULE_BILLING, 'create'),
         'total_due': sum((buckets[key] for key in ('current', '0-30', '31-60', '60+')),
                          Decimal('0')),
         'cheques': paginate(request, cheques, 10, param='cheque_page'),
@@ -492,6 +503,19 @@ def overdue(request):
         'offenders': offenders,
         'location': location,
     })
+
+
+@require_module(MODULE_BILLING, 'create')
+def raise_for_stay(request, tenancy_pk):
+    """Raise the invoices one stay owes by today (the "not invoiced yet" months)."""
+    tenancy = get_object_or_404(request.user.scope_queryset(Tenancy.objects.filter(
+        tenant=request.tenant)).select_related('guest'), pk=tenancy_pk)
+    if request.method == 'POST':
+        created, _finished = services.generate_due_invoices_within(
+            request.tenant, seconds=20, user=request.user, only=[tenancy.pk])
+        messages.success(request, _('%(n)d invoice(s) raised for %(guest)s.') % {
+            'n': len(created), 'guest': tenancy.guest.full_name})
+    return redirect('billing:overdue')
 
 
 # --- Receipts & POS ---------------------------------------------------
