@@ -179,3 +179,30 @@ class SmallTalkMidwayTests(FlatsLikeRealBuildingsCase):
         replies = self.say('who are you')
         self.assertIn('ZyDwell assistant', self.text(replies))
         self.assertIn('Who paid', self.text(replies))
+
+
+class EditTermsTests(FlatsLikeRealBuildingsCase):
+    def setUp(self):
+        super().setUp()
+        self.tenancy = self.stay(guest=self.akash, bed=self.a_beds['A1'])
+
+    def test_the_deposit_is_200_so_update(self):
+        replies = self.say('the akash deposit is 200 so update')
+        rows = self.rows(replies)
+        self.assertEqual(rows['Deposit agreed'], 'AED 800.00 → AED 200.00')
+        self.assertIn(f'@start:deposit:tenancy={self.tenancy.pk},amount=200', ' '.join(self.sends(replies)))
+        self.say('yes')
+        self.tenancy.refresh_from_db()
+        self.assertEqual(self.tenancy.deposit_amount, Decimal('200'))
+
+    def test_bill_day(self):
+        self.say('bill day 5 for akash')
+        self.say('yes')
+        self.tenancy.refresh_from_db()
+        self.assertEqual(self.tenancy.billing_day, 5)
+
+    def test_only_the_owner_changes_rent(self):
+        self.grant(MODULE_GUESTS, can_edit=True)
+        self.client.force_login(self.staff)
+        replies = self.say('change akash rent to 900')
+        self.assertIn('Only the owner', self.text(replies))

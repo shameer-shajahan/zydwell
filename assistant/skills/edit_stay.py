@@ -1,4 +1,6 @@
 """Correct a stay's check-in date: "Akash actually came on 20th", "change his check in to 1 Nov"."""
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -21,6 +23,32 @@ def _read_date(ctx, found, text):
     if numbers:
         return parse.day_of_month(int(numbers[0]), ctx.today)
     return None
+
+
+def invoice_preview_rows(ctx, stay, plan):
+    """What a check-in date change does to the invoices, for the summary."""
+    if not ctx.allowed(MODULE_BILLING, 'edit'):
+        return [(_('Invoices'), _('not changed (that needs billing rights)'))]
+    rows = []
+    if plan['billing_day'] != stay.billing_day:
+        rows.append((_('Bill day'), _('day %(old)s → day %(new)s of each month') % {
+            'old': stay.billing_day, 'new': plan['billing_day']}))
+    raised = plan['raise']
+    if raised:
+        total = sum((row['rent'] for row in raised), Decimal('0'))
+        rows.append((_('Invoices'), _('%(n)s from %(start)s to %(end)s = %(total)s') % {
+            'n': len(raised), 'start': day(raised[0]['period_start']),
+            'end': day(raised[-1]['period_end']), 'total': ctx.money(total)}))
+        for row in raised[:6]:
+            rows.append((f"  {day(row['period_start'])} – {day(row['period_end'])}",
+                         ctx.money(row['rent'])))
+    if plan['drop']:
+        rows.append((_('Replaced'), ', '.join(invoice.number for invoice in plan['drop'])))
+    if plan['keep']:
+        rows.append((_('Kept as they are'), ', '.join(
+            f'{invoice.number} ({_("paid")} {ctx.money(invoice.paid_amount)})'
+            if invoice.paid_amount else invoice.number for invoice in plan['keep'])))
+    return rows
 
 
 class EditCheckIn(Skill):
@@ -101,27 +129,8 @@ class EditCheckIn(Skill):
         rows = [(_('Guest'), stay.guest.full_name),
                 (_('Bed'), stay_place(stay)),
                 (_('Check-in date'), f'{day(stay.check_in_date)} → {day(when)}')]
-        plan = services.plan_first_invoice(stay, stay.check_in_date, when)
-        invoice, can_bill = plan['invoice'], ctx.allowed(MODULE_BILLING, 'edit')
-        moves = plan['billing_day'] != stay.billing_day and (
-            invoice is None or plan['rent'] is not None)
-        if moves:
-            rows.append((_('Bill day'), _('day %(old)s → day %(new)s of each month') % {
-                'old': stay.billing_day, 'new': plan['billing_day']} if can_bill
-                else _('stays day %(day)s (changing it needs billing rights)') % {
-                    'day': stay.billing_day}))
-        if invoice is not None:
-            if plan['rent'] is None:
-                rows.append((_('First invoice'), plan['reason']))
-            elif not can_bill:
-                rows.append((_('First invoice'), _('%(no)s stays as it is (changing invoices '
-                                                   'needs billing rights)') % {
-                    'no': invoice.number}))
-            else:
-                rows.append((_('First invoice'), _('%(no)s will run %(start)s – %(end)s: rent '
-                                                   '%(amount)s') % {
-                    'no': invoice.number, 'start': day(plan['start']), 'end': day(plan['end']),
-                    'amount': ctx.money(plan['rent'])}))
+        rows += invoice_preview_rows(ctx, stay, services.plan_check_in_change(
+            stay, stay.check_in_date, when, ctx.today))
         return say(_('Change the check-in date?'), rows=rows,
                    buttons=confirm_buttons(_('Yes, change it')))
 

@@ -1,4 +1,5 @@
 """Take a deposit: "Akash paid deposit 500 cash", "security 1000 received from Ravi by card"."""
+import re
 from decimal import Decimal
 
 from django.urls import reverse
@@ -11,10 +12,14 @@ from guests.forms import DepositForm
 
 from .. import lookup
 from .add_guest import form_errors
-from .base import (NotDone, Skill, as_decimal, cancel_button, choose, confirm_buttons, link, say)
+from .base import (Handoff, NotDone, Skill, as_decimal, cancel_button, choose, confirm_buttons, link, say)
 from .common import answer_stay, ask_stay, pick_stay, read, stay_place, take_stays
 
 TAGS = ('deposit_received', 'deposit')
+AGREED = re.compile(r'\b(?:is|should\s+be|will\s+be|agreed|update|change|correct|set|make\s+it)\b',
+                    re.I)
+RECEIVED = re.compile(r'\b(?:paid|pay|received|recieved|gave|given|collected|got|took|taken|cash|'
+                      r'card|transfer)\b', re.I)
 
 
 class Deposit(Skill):
@@ -27,6 +32,8 @@ class Deposit(Skill):
     def start(self, ctx, text):
         slots = {}
         found = read(ctx, text, tags=TAGS, forward=False)
+        if AGREED.search(found['text']) and not RECEIVED.search(found['text']):
+            raise Handoff('edit_terms')       # "his deposit is 200, update it": the agreed amount
         take_stays(ctx, slots, found)
         self._take(ctx, slots, found)
         return slots

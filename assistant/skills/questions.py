@@ -197,13 +197,13 @@ class GuestInfo(Skill):
                 _('due today') if late == 0 else _('due %(date)s') % {'date': day(due)})
 
     def _next_rent(self, ctx, stay):
-        """The next rent not billed yet, and when it falls due."""
-        terms = billing.next_unbilled_period(stay)
-        if not terms:
+        """The next rent not billed yet that falls due after today."""
+        ahead = [row for row in billing.unbilled_rent(stay, ctx.today + timedelta(days=70))
+                 if row['due_date'] > ctx.today]
+        if not ahead:
             return ''
-        return _('%(amount)s on %(date)s') % {
-            'amount': ctx.money(billing.rent_for_terms(stay, terms)),
-            'date': day(terms['due_date'])}
+        return _('%(amount)s on %(date)s') % {'amount': ctx.money(ahead[0]['rent']),
+                                              'date': day(ahead[0]['due_date'])}
 
 
 class Beds(Skill):

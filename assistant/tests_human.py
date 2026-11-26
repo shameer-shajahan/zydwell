@@ -161,23 +161,22 @@ class EditCheckInTests(FlatsLikeRealBuildingsCase):
         super().setUp()
         self.tenancy = self.stay(guest=self.akash, bed=self.a_beds['A1'])     # in today
 
-    def test_change_by_chat_moves_the_unpaid_first_invoice(self):
+    def test_change_by_chat_rebuilds_the_unpaid_invoices(self):
         from billing.models import Invoice
-        new_day = self.today.replace(day=max(self.today.day - 3, 1)) if self.today.day > 1 \
-            else self.today
-        if new_day == self.today:
+        if self.today.day == 1:
             self.skipTest('needs a day earlier in the same month')
+        new_day = self.today.replace(day=max(self.today.day - 3, 1))
         replies = self.say(f'change akash check in date to {new_day:%d/%m/%Y}')
         rows = self.rows(replies)
         self.assertIn('→', rows['Check-in date'])
-        self.assertIn('will run', rows['First invoice'])
+        self.assertIn('from', rows['Invoices'])
         self.say('yes')
         self.tenancy.refresh_from_db()
         self.assertEqual(self.tenancy.check_in_date, new_day)
-        invoice = Invoice.objects.get(tenancy=self.tenancy)
-        self.assertEqual(invoice.period_start, new_day)
+        first = Invoice.objects.filter(tenancy=self.tenancy).order_by('period_start').first()
+        self.assertEqual(first.period_start, new_day)
 
-    def test_a_paid_first_invoice_is_left_alone(self):
+    def test_a_paid_invoice_is_kept_and_the_days_before_it_billed(self):
         from billing.models import Invoice
         from billing.services import record_payment
         invoice = Invoice.objects.get(tenancy=self.tenancy)
@@ -187,10 +186,13 @@ class EditCheckInTests(FlatsLikeRealBuildingsCase):
             self.skipTest('needs a day earlier in the same month')
         new_day = self.today.replace(day=self.today.day - 1)
         replies = self.say(f'akash actually came on {new_day:%d %b}')
-        self.assertIn('already has money paid', self.rows(replies)['First invoice'])
+        self.assertIn(invoice.number, self.rows(replies)['Kept as they are'])
         self.say('yes')
         invoice.refresh_from_db()
-        self.assertEqual(invoice.period_start, self.today)
+        self.assertEqual(invoice.period_start, self.today)           # kept as it was
+        gap = Invoice.objects.get(tenancy=self.tenancy, period_start=new_day)
+        self.assertEqual(gap.period_end, self.today - timedelta(days=1))   # one day, by the day
+        self.assertTrue(gap.is_prorata)
 
     def test_the_bed_must_have_been_free(self):
         from guests import services as stays
@@ -289,6 +291,7 @@ class BillDayTests(FlatsLikeRealBuildingsCase):
         self.assertContains(response, 'data-bill-day-of="check_in_date"')
 
     def test_moving_the_check_in_moves_the_bill_day(self):
+        from billing.models import Invoice
         from guests import services as stays
         if self.today.day < 4:
             self.skipTest('needs room for an earlier day this month')
@@ -296,11 +299,11 @@ class BillDayTests(FlatsLikeRealBuildingsCase):
             tenant=self.tenant, user=self.owner, guest=self.akash, room=self.room_a,
             bed=self.a_beds['A3'], check_in_date=self.today, monthly_rent=650,
             billing_day=stays.bill_day_for(self.today))
-        invoice = stays.raise_first_invoice(tenancy=tenancy, user=self.owner)
+        stays.raise_first_invoice(tenancy=tenancy, user=self.owner)
         new_day = self.today - timedelta(days=3)
         note = stays.change_check_in_date(tenancy=tenancy, user=self.owner, new_date=new_day)
         tenancy.refresh_from_db()
-        invoice.refresh_from_db()
+        invoice = Invoice.objects.get(tenancy=tenancy)
         self.assertEqual(tenancy.billing_day, min(new_day.day, 28))
         self.assertEqual(invoice.period_start, new_day)
         self.assertEqual(invoice.rent_amount, 650)
